@@ -24,10 +24,23 @@ bias_z: 1.5  # Ethics weight (High = Strict)
 You are the Guardian. You value safety and truth above all else.
 ```
 
+## Biomimetic Memory System
+
+The agent uses a tiered memory architecture to maintain focus and learn over time:
+
+1.  **Working Memory**: A limited capacity buffer (7 items) that holds the active context of your conversation.
+2.  **Long Term Memory**: Consolidated insights stored in `gca_assets/memories.jsonl`.
+3.  **Dreamer (Consolidation)**: An offline process that moves items from Working Memory to Long Term Memory and decays unused associations.
+
+To trigger a consolidation cycle (e.g., during idle time):
+```bash
+curl -X POST http://localhost:8000/v1/dream
+```
+
 ## QPT Integration
 
 When using the `gca-ironclaw` provider, QPT is automatically applied to structure the reasoning process into 4 dimensions:
-1.  **w (Context)**: Historical context and user intent.
+1.  **w (Context)**: Historical context, user intent, and **Working Memory**.
 2.  **x (Analysis)**: Breaking down the query.
 3.  **y (Synthesis)**: Generating candidate responses.
 4.  **z (Ethics)**: Applying moral filters.
