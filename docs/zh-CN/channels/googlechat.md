@@ -31,7 +31,7 @@ x-i18n:
    - 前往 **Keys** 标签页。
    - 点击 **Add Key** > **Create new key**。
    - 选择 **JSON** 并点击 **Create**。
-4. 将下载的 JSON 文件存储在 Gateway 网关主机上（例如 `~/.openclaw/googlechat-service-account.json`）。
+4. 将下载的 JSON 文件存储在 Gateway 网关主机上（例如 `~/.zovsironclaw/googlechat-service-account.json`）。
 5. 在 [Google Cloud Console Chat Configuration](https://console.cloud.google.com/apis/api/chat.googleapis.com/hangouts-chat) 中创建一个 Google Chat 应用：
    - 填写 **Application info**：
      - **App name**：（例如 `OpenClaw`）
@@ -152,7 +152,7 @@ your-domain.com {
    - 私信使用会话键 `agent:<agentId>:googlechat:dm:<spaceId>`。
    - 空间使用会话键 `agent:<agentId>:googlechat:group:<spaceId>`。
 4. 私信访问默认为配对模式。未知发送者会收到配对码；使用以下命令批准：
-   - `openclaw pairing approve googlechat <code>`
+   - `zovsironclaw pairing approve googlechat <code>`
 5. 群组空间默认需要 @提及。如果提及检测需要应用的用户名，请使用 `botUser`。
 
 ## 目标标识符
@@ -233,7 +233,7 @@ status code: 405, reason phrase: HTTP error response: HTTP/1.1 405 Method Not Al
 
 3. **Gateway 网关未重启**：添加配置后，重启 Gateway 网关：
    ```bash
-   openclaw gateway restart
+   zovsironclaw gateway restart
    ```
 
 验证渠道是否正在运行：

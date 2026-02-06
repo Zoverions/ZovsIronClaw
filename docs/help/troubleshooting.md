@@ -15,9 +15,9 @@ Run these in order:
 ```bash
 openclaw status
 openclaw status --all
-openclaw gateway probe
+zovsironclaw gateway probe
 openclaw logs --follow
-openclaw doctor
+zovsironclaw doctor
 ```
 
 If the gateway is reachable, deep probes:

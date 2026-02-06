@@ -43,7 +43,7 @@ Recommended flow:
 - Run the gateway in dev mode:
   - `pnpm gateway:dev`
 - Trigger the agent directly:
-  - `pnpm openclaw agent --message "Hello" --thinking low`
+  - `pnpm zovsironclaw agent --message "Hello" --thinking low`
 - Use the TUI for interactive debugging:
   - `pnpm tui`
 
@@ -55,7 +55,7 @@ State lives under the OpenClaw state directory. Default is `~/.openclaw`. If `OP
 
 To reset everything:
 
-- `openclaw.json` for config
+- `zovsironclaw.json` for config
 - `credentials/` for auth profiles and tokens
 - `agents/<agentId>/sessions/` for agent session history
 - `agents/<agentId>/sessions.json` for the session index

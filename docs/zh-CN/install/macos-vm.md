@@ -145,7 +145,7 @@ ssh youruser@192.168.64.X
 
 ```bash
 npm install -g openclaw@latest
-openclaw onboard --install-daemon
+zovsironclaw onboard --install-daemon
 ```
 
 按照新手引导提示设置你的模型提供商（Anthropic、OpenAI 等）。
@@ -157,7 +157,7 @@ openclaw onboard --install-daemon
 编辑配置文件：
 
 ```bash
-nano ~/.openclaw/openclaw.json
+nano ~/.zovsironclaw/zovsironclaw.json
 ```
 
 添加你的渠道：

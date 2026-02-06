@@ -153,7 +153,7 @@ Architecture:
 ```
 ┌──────────────────────────────┐          SSH (imsg rpc)          ┌──────────────────────────┐
 │ Gateway host (Linux/VM)      │──────────────────────────────────▶│ Mac with Messages + imsg │
-│ - openclaw gateway           │          SCP (attachments)        │ - Messages signed in     │
+│ - zovsironclaw gateway           │          SCP (attachments)        │ - Messages signed in     │
 │ - channels.imessage.cliPath  │◀──────────────────────────────────│ - Remote Login enabled   │
 └──────────────────────────────┘                                   └──────────────────────────┘
               ▲
@@ -169,7 +169,7 @@ Concrete config example (Tailscale hostname):
   channels: {
     imessage: {
       enabled: true,
-      cliPath: "~/.openclaw/scripts/imsg-ssh",
+      cliPath: "~/.zovsironclaw/scripts/imsg-ssh",
       remoteHost: "bot@mac-mini.tailnet-1234.ts.net",
       includeAttachments: true,
       dbPath: "/Users/bot/Library/Messages/chat.db",
@@ -178,7 +178,7 @@ Concrete config example (Tailscale hostname):
 }
 ```
 
-Example wrapper (`~/.openclaw/scripts/imsg-ssh`):
+Example wrapper (`~/.zovsironclaw/scripts/imsg-ssh`):
 
 ```bash
 #!/usr/bin/env bash
@@ -191,7 +191,7 @@ Notes:
 - Use SSH keys so `ssh bot@mac-mini.tailnet-1234.ts.net` works without prompts.
 - `remoteHost` should match the SSH target so SCP can fetch attachments.
 
-Multi-account support: use `channels.imessage.accounts` with per-account config and optional `name`. See [`gateway/configuration`](/gateway/configuration#telegramaccounts--discordaccounts--slackaccounts--signalaccounts--imessageaccounts) for the shared pattern. Don't commit `~/.openclaw/openclaw.json` (it often contains tokens).
+Multi-account support: use `channels.imessage.accounts` with per-account config and optional `name`. See [`gateway/configuration`](/gateway/configuration#telegramaccounts--discordaccounts--slackaccounts--signalaccounts--imessageaccounts) for the shared pattern. Don't commit `~/.zovsironclaw/zovsironclaw.json` (it often contains tokens).
 
 ## Access control (DMs + groups)
 
@@ -200,8 +200,8 @@ DMs:
 - Default: `channels.imessage.dmPolicy = "pairing"`.
 - Unknown senders receive a pairing code; messages are ignored until approved (codes expire after 1 hour).
 - Approve via:
-  - `openclaw pairing list imessage`
-  - `openclaw pairing approve imessage <CODE>`
+  - `zovsironclaw pairing list imessage`
+  - `zovsironclaw pairing approve imessage <CODE>`
 - Pairing is the default token exchange for iMessage DMs. Details: [Pairing](/start/pairing)
 
 Groups:

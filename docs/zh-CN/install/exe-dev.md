@@ -37,7 +37,7 @@ x-i18n:
 Shelley，[exe.dev](https://exe.dev) 的智能体，可以使用我们的提示立即安装 OpenClaw。使用的提示如下：
 
 ```
-Set up OpenClaw (https://docs.openclaw.ai/install) on this VM. Use the non-interactive and accept-risk flags for openclaw onboarding. Add the supplied auth or token as needed. Configure nginx to forward from the default port 18789 to the root location on the default enabled site config, making sure to enable Websocket support. Pairing is done by "openclaw devices list" and "openclaw device approve <request id>". Make sure the dashboard shows that OpenClaw's health is OK. exe.dev handles forwarding from port 8000 to port 80/443 and HTTPS for us, so the final "reachable" should be <vm-name>.exe.xyz, without port specification.
+Set up OpenClaw (https://docs.openclaw.ai/install) on this VM. Use the non-interactive and accept-risk flags for zovsironclaw onboarding. Add the supplied auth or token as needed. Configure nginx to forward from the default port 18789 to the root location on the default enabled site config, making sure to enable Websocket support. Pairing is done by "openclaw devices list" and "openclaw device approve <request id>". Make sure the dashboard shows that OpenClaw's health is OK. exe.dev handles forwarding from port 8000 to port 80/443 and HTTPS for us, so the final "reachable" should be <vm-name>.exe.xyz, without port specification.
 ```
 
 ## 手动安装
@@ -56,7 +56,7 @@ ssh exe.dev new
 ssh <vm-name>.exe.xyz
 ```
 
-提示：保持此 VM **有状态**。OpenClaw 在 `~/.openclaw/` 和 `~/.openclaw/workspace/` 下存储状态。
+提示：保持此 VM **有状态**。OpenClaw 在 `~/.zovsironclaw/` 和 `~/.zovsironclaw/workspace/` 下存储状态。
 
 ## 2) 安装先决条件（在 VM 上）
 
@@ -119,8 +119,8 @@ server {
 
 ```bash
 npm i -g openclaw@latest
-openclaw doctor
-openclaw gateway restart
+zovsironclaw doctor
+zovsironclaw gateway restart
 openclaw health
 ```
 

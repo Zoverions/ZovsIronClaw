@@ -22,9 +22,9 @@ x-i18n:
 ```bash
 openclaw status
 openclaw status --all
-openclaw gateway probe
+zovsironclaw gateway probe
 openclaw logs --follow
-openclaw doctor
+zovsironclaw doctor
 ```
 
 如果 Gateway 网关可达，进行深度探测：

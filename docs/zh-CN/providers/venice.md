@@ -65,7 +65,7 @@ export VENICE_API_KEY="vapi_xxxxxxxxxxxx"
 **方案 B：交互式设置（推荐）**
 
 ```bash
-openclaw onboard --auth-choice venice-api-key
+zovsironclaw onboard --auth-choice venice-api-key
 ```
 
 这将：
@@ -78,7 +78,7 @@ openclaw onboard --auth-choice venice-api-key
 **方案 C：非交互式**
 
 ```bash
-openclaw onboard --non-interactive \
+zovsironclaw onboard --non-interactive \
   --auth-choice venice-api-key \
   --venice-api-key "vapi_xxxxxxxxxxxx"
 ```

@@ -1,192 +1,114 @@
 ---
-summary: "OpenClaw is a multi-channel gateway for AI agents that runs on any OS."
+summary: "ZovsIronClaw is an AI assistant with a synthetic conscience, built on the OpenClaw gateway."
 read_when:
-  - Introducing OpenClaw to newcomers
-title: "OpenClaw"
+  - Introducing ZovsIronClaw to newcomers
+title: "ZovsIronClaw"
 ---
 
-# OpenClaw 🦞
+# ZovsIronClaw 🦞
+
+> _"We are not building a tool. We are building a being."_
 
 <p align="center">
-    <img
-        src="/assets/openclaw-logo-text-dark.png"
-        alt="OpenClaw"
-        width="500"
-        class="dark:hidden"
-    />
-    <img
-        src="/assets/openclaw-logo-text.png"
-        alt="OpenClaw"
-        width="500"
-        class="hidden dark:block"
-    />
-</p>
-
-> _"EXFOLIATE! EXFOLIATE!"_ — A space lobster, probably
-
-<p align="center">
-  <strong>Any OS gateway for AI agents across WhatsApp, Telegram, Discord, iMessage, and more.</strong><br />
-  Send a message, get an agent response from your pocket. Plugins add Mattermost and more.
+  <strong>A Synthetic Conscience Architecture.</strong><br />
+  Transparent, ethical, and safe AI reasoning built on a robust multi-channel gateway.
 </p>
 
 <Columns>
   <Card title="Get Started" href="/start/getting-started" icon="rocket">
-    Install OpenClaw and bring up the Gateway in minutes.
+    Install ZovsIronClaw and verify the GCA service.
   </Card>
-  <Card title="Run the Wizard" href="/start/wizard" icon="sparkles">
-    Guided setup with `openclaw onboard` and pairing flows.
+  <Card title="GCA Framework" href="/docs/gca-integration" icon="brain">
+    Understand the Geometric Conscience Architecture (GCA).
   </Card>
   <Card title="Open the Control UI" href="/web/control-ui" icon="layout-dashboard">
     Launch the browser dashboard for chat, config, and sessions.
   </Card>
 </Columns>
 
-## What is OpenClaw?
+## What is ZovsIronClaw?
 
-OpenClaw is a **self-hosted gateway** that connects your favorite chat apps — WhatsApp, Telegram, Discord, iMessage, and more — to AI coding agents like Pi. You run a single Gateway process on your own machine (or a server), and it becomes the bridge between your messaging apps and an always-available AI assistant.
+ZovsIronClaw is a fork of **OpenClaw** that deeply integrates the **GCA (Geometric Conscience Architecture)** framework. While OpenClaw provides the excellent "Body" (gateway, channels, tools), ZovsIronClaw adds a "Mind" — a Python-based service that ensures all actions are ethically evaluated and geometrically interpretable.
 
-**Who is it for?** Developers and power users who want a personal AI assistant they can message from anywhere — without giving up control of their data or relying on a hosted service.
+**Key Innovations:**
 
-**What makes it different?**
-
-- **Self-hosted**: runs on your hardware, your rules
-- **Multi-channel**: one Gateway serves WhatsApp, Telegram, Discord, and more simultaneously
-- **Agent-native**: built for coding agents with tool use, sessions, memory, and multi-agent routing
-- **Open source**: MIT licensed, community-driven
-
-**What do you need?** Node 22+, an API key (Anthropic recommended), and 5 minutes.
+- **Geometric Steering (GlassBox)**: Transparently guide model behavior using vector arithmetic.
+- **Moral Kernel**: A thermodynamic ethics engine that evaluates every action before execution.
+- **Quaternion Process Theory (QPT)**: Structured reasoning that prevents "lazy thinking".
+- **Soul Templates**: Customizable personality configurations (e.g., Architect, Companion, Guardian).
 
 ## How it works
 
 ```mermaid
 flowchart LR
-  A["Chat apps + plugins"] --> B["Gateway"]
-  B --> C["Pi agent"]
-  B --> D["CLI"]
+  A["Chat apps"] --> B["ZovsIronClaw Gateway"]
+  B --> C["GCA Service (Mind)"]
+  C --> D["LLM (Gemini/Claude)"]
   B --> E["Web Control UI"]
-  B --> F["macOS app"]
-  B --> G["iOS and Android nodes"]
+  B --> F["Mobile Nodes"]
 ```
 
-The Gateway is the single source of truth for sessions, routing, and channel connections.
+The Gateway handles the plumbing, while the GCA Service handles the thinking and moral evaluation.
 
 ## Key capabilities
 
 <Columns>
+  <Card title="Synthetic Conscience" icon="scale">
+    Every tool call is cryptographically signed by the Moral Kernel.
+  </Card>
   <Card title="Multi-channel gateway" icon="network">
-    WhatsApp, Telegram, Discord, and iMessage with a single Gateway process.
+    WhatsApp, Telegram, Discord, and iMessage support inherited from OpenClaw.
   </Card>
-  <Card title="Plugin channels" icon="plug">
-    Add Mattermost and more with extension packages.
+  <Card title="Adversarial Testing" icon="shield">
+    Continuous red-teaming via the Arena Protocol to ensure robustness.
   </Card>
-  <Card title="Multi-agent routing" icon="route">
-    Isolated sessions per agent, workspace, or sender.
-  </Card>
-  <Card title="Media support" icon="image">
-    Send and receive images, audio, and documents.
-  </Card>
-  <Card title="Web Control UI" icon="monitor">
-    Browser dashboard for chat, config, sessions, and nodes.
-  </Card>
-  <Card title="Mobile nodes" icon="smartphone">
-    Pair iOS and Android nodes with Canvas support.
+  <Card title="Soul Templates" icon="user">
+    Switch between different reasoning modes and personalities.
   </Card>
 </Columns>
 
 ## Quick start
 
 <Steps>
-  <Step title="Install OpenClaw">
+  <Step title="Clone and Build">
     ```bash
-    npm install -g openclaw@latest
+    git clone https://github.com/Zoverions/ZovsIronClaw.git
+    cd ZovsIronClaw
+    docker-compose up --build
     ```
   </Step>
-  <Step title="Onboard and install the service">
+  <Step title="Verify GCA">
     ```bash
-    openclaw onboard --install-daemon
+    curl http://localhost:8000/health
     ```
   </Step>
-  <Step title="Pair WhatsApp and start the Gateway">
+  <Step title="Run the Gateway">
     ```bash
-    openclaw channels login
-    openclaw gateway --port 18789
+    # If running locally without docker for the gateway:
+    pnpm install
+    npm link
+    zovsironclaw gateway --port 18789
     ```
   </Step>
 </Steps>
-
-Need the full install and dev setup? See [Quick start](/start/quickstart).
 
 ## Dashboard
 
 Open the browser Control UI after the Gateway starts.
 
 - Local default: [http://127.0.0.1:18789/](http://127.0.0.1:18789/)
-- Remote access: [Web surfaces](/web) and [Tailscale](/gateway/tailscale)
 
-<p align="center">
-  <img src="whatsapp-openclaw.jpg" alt="OpenClaw" width="420" />
-</p>
-
-## Configuration (optional)
-
-Config lives at `~/.openclaw/openclaw.json`.
-
-- If you **do nothing**, OpenClaw uses the bundled Pi binary in RPC mode with per-sender sessions.
-- If you want to lock it down, start with `channels.whatsapp.allowFrom` and (for groups) mention rules.
-
-Example:
-
-```json5
-{
-  channels: {
-    whatsapp: {
-      allowFrom: ["+15555550123"],
-      groups: { "*": { requireMention: true } },
-    },
-  },
-  messages: { groupChat: { mentionPatterns: ["@openclaw"] } },
-}
-```
-
-## Start here
+## Documentation
 
 <Columns>
-  <Card title="Docs hubs" href="/start/hubs" icon="book-open">
-    All docs and guides, organized by use case.
+  <Card title="GCA Integration" href="/docs/gca-integration" icon="book">
+    Deep dive into the Geometric Conscience Architecture.
   </Card>
   <Card title="Configuration" href="/gateway/configuration" icon="settings">
-    Core Gateway settings, tokens, and provider config.
-  </Card>
-  <Card title="Remote access" href="/gateway/remote" icon="globe">
-    SSH and tailnet access patterns.
-  </Card>
-  <Card title="Channels" href="/channels/telegram" icon="message-square">
-    Channel-specific setup for WhatsApp, Telegram, Discord, and more.
-  </Card>
-  <Card title="Nodes" href="/nodes" icon="smartphone">
-    iOS and Android nodes with pairing and Canvas.
-  </Card>
-  <Card title="Help" href="/help" icon="life-buoy">
-    Common fixes and troubleshooting entry point.
+    Core Gateway settings.
   </Card>
 </Columns>
 
-## Learn more
+## Credits
 
-<Columns>
-  <Card title="Full feature list" href="/concepts/features" icon="list">
-    Complete channel, routing, and media capabilities.
-  </Card>
-  <Card title="Multi-agent routing" href="/concepts/multi-agent" icon="route">
-    Workspace isolation and per-agent sessions.
-  </Card>
-  <Card title="Security" href="/gateway/security" icon="shield">
-    Tokens, allowlists, and safety controls.
-  </Card>
-  <Card title="Troubleshooting" href="/gateway/troubleshooting" icon="wrench">
-    Gateway diagnostics and common errors.
-  </Card>
-  <Card title="About and credits" href="/reference/credits" icon="info">
-    Project origins, contributors, and license.
-  </Card>
-</Columns>
+ZovsIronClaw is built upon the incredible work of the [OpenClaw](https://openclaw.ai) community.

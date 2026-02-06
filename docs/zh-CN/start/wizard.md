@@ -21,10 +21,10 @@ x-i18n:
 主要入口：
 
 ```bash
-openclaw onboard
+zovsironclaw onboard
 ```
 
-最快开始聊天的方式：打开控制界面（无需设置渠道）。运行 `openclaw dashboard` 并在浏览器中聊天。文档：[控制面板](/web/dashboard)。
+最快开始聊天的方式：打开控制界面（无需设置渠道）。运行 `zovsironclaw dashboard` 并在浏览器中聊天。文档：[控制面板](/web/dashboard)。
 
 后续重新配置：
 
@@ -67,7 +67,7 @@ openclaw configure
 要添加更多隔离的智能体（独立的工作区 + 会话 + 认证），使用：
 
 ```bash
-openclaw agents add <name>
+zovsironclaw agents add <name>
 ```
 
 提示：`--json` **不**意味着非交互模式。脚本中请使用 `--non-interactive`（和 `--workspace`）。
@@ -75,9 +75,9 @@ openclaw agents add <name>
 ## 流程详情（本地）
 
 1. **现有配置检测**
-   - 如果 `~/.openclaw/openclaw.json` 存在，选择**保留 / 修改 / 重置**。
+   - 如果 `~/.zovsironclaw/zovsironclaw.json` 存在，选择**保留 / 修改 / 重置**。
    - 重新运行向导**不会**清除任何内容，除非你明确选择**重置**（或传递 `--reset`）。
-   - 如果配置无效或包含遗留键名，向导会停止并要求你在继续之前运行 `openclaw doctor`。
+   - 如果配置无效或包含遗留键名，向导会停止并要求你在继续之前运行 `zovsironclaw doctor`。
    - 重置使用 `trash`（永不使用 `rm`）并提供范围选项：
      - 仅配置
      - 配置 + 凭证 + 会话
@@ -90,7 +90,7 @@ openclaw agents add <name>
    - **OpenAI Code (Codex) 订阅（Codex CLI）**：如果 `~/.codex/auth.json` 存在，向导可以复用它。
    - **OpenAI Code (Codex) 订阅（OAuth）**：浏览器流程；粘贴 `code#state`。
      - 当模型未设置或为 `openai/*` 时，将 `agents.defaults.model` 设置为 `openai-codex/gpt-5.2`。
-   - **OpenAI API 密钥**：如果存在则使用 `OPENAI_API_KEY`，否则提示输入密钥，然后保存到 `~/.openclaw/.env` 以便 launchd 可以读取。
+   - **OpenAI API 密钥**：如果存在则使用 `OPENAI_API_KEY`，否则提示输入密钥，然后保存到 `~/.zovsironclaw/.env` 以便 launchd 可以读取。
    - **OpenCode Zen（多模型代理）**：提示输入 `OPENCODE_API_KEY`（或 `OPENCODE_ZEN_API_KEY`，在 https://opencode.ai/auth 获取）。
    - **API 密钥**：为你存储密钥。
    - **Vercel AI Gateway（多模型代理）**：提示输入 `AI_GATEWAY_API_KEY`。
@@ -106,11 +106,11 @@ openclaw agents add <name>
    - 从检测到的选项中选择默认模型（或手动输入提供商/模型）。
    - 向导运行模型检查，如果配置的模型未知或缺少认证则发出警告。
 
-- OAuth 凭证存储在 `~/.openclaw/credentials/oauth.json`；认证配置文件存储在 `~/.openclaw/agents/<agentId>/agent/auth-profiles.json`（API 密钥 + OAuth）。
+- OAuth 凭证存储在 `~/.zovsironclaw/credentials/oauth.json`；认证配置文件存储在 `~/.zovsironclaw/agents/<agentId>/agent/auth-profiles.json`（API 密钥 + OAuth）。
 - 更多详情：[/concepts/oauth](/concepts/oauth)
 
 3. **工作区**
-   - 默认 `~/.openclaw/workspace`（可配置）。
+   - 默认 `~/.zovsironclaw/workspace`（可配置）。
    - 为智能体引导仪式播种所需的工作区文件。
    - 完整的工作区布局 + 备份指南：[智能体工作区](/concepts/agent-workspace)
 
@@ -128,7 +128,7 @@ openclaw agents add <name>
    - [Mattermost](/channels/mattermost)（插件）：机器人令牌 + 基础 URL。
    - [Signal](/channels/signal)：可选的 `signal-cli` 安装 + 账户配置。
    - [iMessage](/channels/imessage)：本地 `imsg` CLI 路径 + 数据库访问。
-   - 私信安全：默认为配对。第一条私信发送验证码；通过 `openclaw pairing approve <channel> <code>` 批准或使用允许列表。
+   - 私信安全：默认为配对。第一条私信发送验证码；通过 `zovsironclaw pairing approve <channel> <code>` 批准或使用允许列表。
 
 6. **守护进程安装**
    - macOS：LaunchAgent
@@ -172,7 +172,7 @@ openclaw agents add <name>
 
 ## 添加另一个智能体
 
-使用 `openclaw agents add <name>` 创建一个具有独立工作区、会话和认证配置文件的单独智能体。不带 `--workspace` 运行会启动向导。
+使用 `zovsironclaw agents add <name>` 创建一个具有独立工作区、会话和认证配置文件的单独智能体。不带 `--workspace` 运行会启动向导。
 
 它设置的内容：
 
@@ -182,7 +182,7 @@ openclaw agents add <name>
 
 注意事项：
 
-- 默认工作区遵循 `~/.openclaw/workspace-<agentId>`。
+- 默认工作区遵循 `~/.zovsironclaw/workspace-<agentId>`。
 - 添加 `bindings` 以路由入站消息（向导可以执行此操作）。
 - 非交互标志：`--model`、`--agent-dir`、`--bind`、`--non-interactive`。
 
@@ -191,7 +191,7 @@ openclaw agents add <name>
 使用 `--non-interactive` 自动化或脚本化新手引导：
 
 ```bash
-openclaw onboard --non-interactive \
+zovsironclaw onboard --non-interactive \
   --mode local \
   --auth-choice apiKey \
   --anthropic-api-key "$ANTHROPIC_API_KEY" \
@@ -207,7 +207,7 @@ openclaw onboard --non-interactive \
 Gemini 示例：
 
 ```bash
-openclaw onboard --non-interactive \
+zovsironclaw onboard --non-interactive \
   --mode local \
   --auth-choice gemini-api-key \
   --gemini-api-key "$GEMINI_API_KEY" \
@@ -218,7 +218,7 @@ openclaw onboard --non-interactive \
 Z.AI 示例：
 
 ```bash
-openclaw onboard --non-interactive \
+zovsironclaw onboard --non-interactive \
   --mode local \
   --auth-choice zai-api-key \
   --zai-api-key "$ZAI_API_KEY" \
@@ -229,7 +229,7 @@ openclaw onboard --non-interactive \
 Vercel AI Gateway 示例：
 
 ```bash
-openclaw onboard --non-interactive \
+zovsironclaw onboard --non-interactive \
   --mode local \
   --auth-choice ai-gateway-api-key \
   --ai-gateway-api-key "$AI_GATEWAY_API_KEY" \
@@ -240,7 +240,7 @@ openclaw onboard --non-interactive \
 Moonshot 示例：
 
 ```bash
-openclaw onboard --non-interactive \
+zovsironclaw onboard --non-interactive \
   --mode local \
   --auth-choice moonshot-api-key \
   --moonshot-api-key "$MOONSHOT_API_KEY" \
@@ -251,7 +251,7 @@ openclaw onboard --non-interactive \
 Synthetic 示例：
 
 ```bash
-openclaw onboard --non-interactive \
+zovsironclaw onboard --non-interactive \
   --mode local \
   --auth-choice synthetic-api-key \
   --synthetic-api-key "$SYNTHETIC_API_KEY" \
@@ -262,7 +262,7 @@ openclaw onboard --non-interactive \
 OpenCode Zen 示例：
 
 ```bash
-openclaw onboard --non-interactive \
+zovsironclaw onboard --non-interactive \
   --mode local \
   --auth-choice opencode-zen \
   --opencode-zen-api-key "$OPENCODE_API_KEY" \
@@ -273,8 +273,8 @@ openclaw onboard --non-interactive \
 添加智能体（非交互）示例：
 
 ```bash
-openclaw agents add work \
-  --workspace ~/.openclaw/workspace-work \
+zovsironclaw agents add work \
+  --workspace ~/.zovsironclaw/workspace-work \
   --model openai/gpt-5.2 \
   --bind whatsapp:biz \
   --non-interactive \
@@ -291,7 +291,7 @@ Gateway 网关通过 RPC 暴露向导流程（`wizard.start`、`wizard.next`、`
 向导可以从 GitHub releases 安装 `signal-cli`：
 
 - 下载适当的发布资源。
-- 存储在 `~/.openclaw/tools/signal-cli/<version>/` 下。
+- 存储在 `~/.zovsironclaw/tools/signal-cli/<version>/` 下。
 - 将 `channels.signal.cliPath` 写入你的配置。
 
 注意事项：
@@ -302,7 +302,7 @@ Gateway 网关通过 RPC 暴露向导流程（`wizard.start`、`wizard.next`、`
 
 ## 向导写入的内容
 
-`~/.openclaw/openclaw.json` 中的典型字段：
+`~/.zovsironclaw/zovsironclaw.json` 中的典型字段：
 
 - `agents.defaults.workspace`
 - `agents.defaults.model` / `models.providers`（如果选择了 Minimax）
@@ -316,10 +316,10 @@ Gateway 网关通过 RPC 暴露向导流程（`wizard.start`、`wizard.next`、`
 - `wizard.lastRunCommand`
 - `wizard.lastRunMode`
 
-`openclaw agents add` 写入 `agents.list[]` 和可选的 `bindings`。
+`zovsironclaw agents add` 写入 `agents.list[]` 和可选的 `bindings`。
 
-WhatsApp 凭证存储在 `~/.openclaw/credentials/whatsapp/<accountId>/` 下。
-会话存储在 `~/.openclaw/agents/<agentId>/sessions/` 下。
+WhatsApp 凭证存储在 `~/.zovsironclaw/credentials/whatsapp/<accountId>/` 下。
+会话存储在 `~/.zovsironclaw/agents/<agentId>/sessions/` 下。
 
 某些渠道以插件形式提供。当你在新手引导期间选择一个时，向导会在配置之前提示安装它（npm 或本地路径）。
 

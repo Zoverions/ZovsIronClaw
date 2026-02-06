@@ -81,8 +81,8 @@ openclaw directory groups list --channel zalouser --query "work"
 
 Approve via:
 
-- `openclaw pairing list zalouser`
-- `openclaw pairing approve zalouser <code>`
+- `zovsironclaw pairing list zalouser`
+- `zovsironclaw pairing approve zalouser <code>`
 
 ## Group access (optional)
 

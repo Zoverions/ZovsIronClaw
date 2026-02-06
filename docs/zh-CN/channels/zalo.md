@@ -109,8 +109,8 @@ Zalo 是一款专注于越南市场的即时通讯应用；其 Bot API 让 Gatew
 
 - 默认：`channels.zalo.dmPolicy = "pairing"`。未知发送者会收到配对码；消息在批准前会被忽略（配对码 1 小时后过期）。
 - 通过以下方式批准：
-  - `openclaw pairing list zalo`
-  - `openclaw pairing approve zalo <CODE>`
+  - `zovsironclaw pairing list zalo`
+  - `zovsironclaw pairing approve zalo <CODE>`
 - 配对是默认的令牌交换方式。详情：[配对](/start/pairing)
 - `channels.zalo.allowFrom` 接受数字用户 ID（无用户名查找功能）。
 
@@ -148,7 +148,7 @@ Zalo 是一款专注于越南市场的即时通讯应用；其 Bot API 让 Gatew
 ## 投递目标（CLI/cron）
 
 - 使用聊天 id 作为目标。
-- 示例：`openclaw message send --channel zalo --target 123456789 --message "hi"`。
+- 示例：`zovsironclaw message send --channel zalo --target 123456789 --message "hi"`。
 
 ## 故障排除
 

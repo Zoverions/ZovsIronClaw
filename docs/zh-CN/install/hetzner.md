@@ -29,7 +29,7 @@ Hetzner 定价会变化；选择最小的 Debian/Ubuntu VPS，如果遇到 OOM �
 - 租用一台小型 Linux 服务器（Hetzner VPS）
 - 安装 Docker（隔离的应用运行时）
 - 在 Docker 中启动 OpenClaw Gateway 网关
-- 在主机上持久化 `~/.openclaw` + `~/.openclaw/workspace`（重启/重建后保留）
+- 在主机上持久化 `~/.openclaw` + `~/.zovsironclaw/workspace`（重启/重建后保留）
 - 通过 SSH 隧道从你的笔记本电脑访问控制 UI
 
 Gateway 网关可以通过以下方式访问：
@@ -121,11 +121,11 @@ Docker 容器是临时的。
 
 ```bash
 mkdir -p /root/.openclaw
-mkdir -p /root/.openclaw/workspace
+mkdir -p /root/.zovsironclaw/workspace
 
 # 将所有权设置为容器用户（uid 1000）：
 chown -R 1000:1000 /root/.openclaw
-chown -R 1000:1000 /root/.openclaw/workspace
+chown -R 1000:1000 /root/.zovsironclaw/workspace
 ```
 
 ---
@@ -141,7 +141,7 @@ OPENCLAW_GATEWAY_BIND=lan
 OPENCLAW_GATEWAY_PORT=18789
 
 OPENCLAW_CONFIG_DIR=/root/.openclaw
-OPENCLAW_WORKSPACE_DIR=/root/.openclaw/workspace
+OPENCLAW_WORKSPACE_DIR=/root/.zovsironclaw/workspace
 
 GOG_KEYRING_PASSWORD=change-me-now
 XDG_CONFIG_HOME=/home/node/.openclaw
@@ -181,7 +181,7 @@ services:
       - PATH=/home/linuxbrew/.linuxbrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     volumes:
       - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
-      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.zovsironclaw/workspace
     ports:
       # 推荐：在 VPS 上保持 Gateway 网关仅限 loopback；通过 SSH 隧道访问。
       # 要公开暴露，移除 `127.0.0.1:` 前缀并相应配置防火墙。
@@ -325,12 +325,12 @@ OpenClaw 在 Docker 中运行，但 Docker 不是事实来源。
 
 | 组件             | 位置                              | 持久化机制    | 说明                        |
 | ---------------- | --------------------------------- | ------------- | --------------------------- |
-| Gateway 网关配置 | `/home/node/.openclaw/`           | 主机卷挂载    | 包括 `openclaw.json`、令牌  |
-| 模型认证配置文件 | `/home/node/.openclaw/`           | 主机卷挂载    | OAuth 令牌、API 密钥        |
-| Skill 配置       | `/home/node/.openclaw/skills/`    | 主机卷挂载    | Skill 级别状态              |
-| 智能体工作区     | `/home/node/.openclaw/workspace/` | 主机卷挂载    | 代码和智能体产物            |
-| WhatsApp 会话    | `/home/node/.openclaw/`           | 主机卷挂载    | 保留二维码登录              |
-| Gmail 密钥环     | `/home/node/.openclaw/`           | 主机卷 + 密码 | 需要 `GOG_KEYRING_PASSWORD` |
+| Gateway 网关配置 | `/home/node/.zovsironclaw/`           | 主机卷挂载    | 包括 `zovsironclaw.json`、令牌  |
+| 模型认证配置文件 | `/home/node/.zovsironclaw/`           | 主机卷挂载    | OAuth 令牌、API 密钥        |
+| Skill 配置       | `/home/node/.zovsironclaw/skills/`    | 主机卷挂载    | Skill 级别状态              |
+| 智能体工作区     | `/home/node/.zovsironclaw/workspace/` | 主机卷挂载    | 代码和智能体产物            |
+| WhatsApp 会话    | `/home/node/.zovsironclaw/`           | 主机卷挂载    | 保留二维码登录              |
+| Gmail 密钥环     | `/home/node/.zovsironclaw/`           | 主机卷 + 密码 | 需要 `GOG_KEYRING_PASSWORD` |
 | 外部二进制文件   | `/usr/local/bin/`                 | Docker 镜像   | 必须在构建时烘焙            |
 | Node 运行时      | 容器文件系统                      | Docker 镜像   | 每次镜像构建时重建          |
 | 操作系统包       | 容器文件系统                      | Docker 镜像   | 不要在运行时安装            |

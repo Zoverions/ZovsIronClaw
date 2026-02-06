@@ -28,7 +28,7 @@ x-i18n:
 
 - http://127.0.0.1:18789/（或 http://localhost:18789/）
 
-如果页面加载失败，请先启动 Gateway 网关：`openclaw gateway`。
+如果页面加载失败，请先启动 Gateway 网关：`zovsironclaw gateway`。
 
 认证在 WebSocket 握手期间通过以下方式提供：
 
@@ -72,7 +72,7 @@ openclaw devices approve <requestId>
 - Skills：状态、启用/禁用、安装、API 密钥更新（`skills.*`）
 - 节点：列表 + 能力（`node.list`）
 - 执行批准：编辑 Gateway 网关或节点允许列表 + `exec host=gateway/node` 的询问策略（`exec.approvals.*`）
-- 配置：查看/编辑 `~/.openclaw/openclaw.json`（`config.get`、`config.set`）
+- 配置：查看/编辑 `~/.zovsironclaw/zovsironclaw.json`（`config.get`、`config.set`）
 - 配置：应用 + 带验证的重启（`config.apply`）并唤醒上次活动的会话
 - 配置写入包含基础哈希保护，以防止覆盖并发编辑
 - 配置 schema + 表单渲染（`config.schema`，包括插件 + 渠道 schema）；原始 JSON 编辑器仍然可用
@@ -97,7 +97,7 @@ openclaw devices approve <requestId>
 保持 Gateway 网关在 loopback 上，让 Tailscale Serve 用 HTTPS 代理它：
 
 ```bash
-openclaw gateway --tailscale serve
+zovsironclaw gateway --tailscale serve
 ```
 
 打开：
@@ -109,7 +109,7 @@ openclaw gateway --tailscale serve
 ### 绑定到 tailnet + token
 
 ```bash
-openclaw gateway --bind tailnet --token "$(openssl rand -hex 32)"
+zovsironclaw gateway --bind tailnet --token "$(openssl rand -hex 32)"
 ```
 
 然后打开：

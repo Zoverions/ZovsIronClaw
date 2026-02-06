@@ -76,8 +76,8 @@ OpenClaw 将自动提供本地安装路径。
 
 - 默认：`channels.nextcloud-talk.dmPolicy = "pairing"`。未知发送者将收到配对码。
 - 批准方式：
-  - `openclaw pairing list nextcloud-talk`
-  - `openclaw pairing approve nextcloud-talk <CODE>`
+  - `zovsironclaw pairing list nextcloud-talk`
+  - `zovsironclaw pairing approve nextcloud-talk <CODE>`
 - 公开私信：`channels.nextcloud-talk.dmPolicy="open"` 加上 `channels.nextcloud-talk.allowFrom=["*"]`。
 
 ## 房间（群组）

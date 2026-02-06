@@ -107,7 +107,7 @@ fly secrets set DISCORD_BOT_TOKEN=MTQ...
 
 - Non-loopback binds (`--bind lan`) require `OPENCLAW_GATEWAY_TOKEN` for security.
 - Treat these tokens like passwords.
-- **Prefer env vars over config file** for all API keys and tokens. This keeps secrets out of `openclaw.json` where they could be accidentally exposed or logged.
+- **Prefer env vars over config file** for all API keys and tokens. This keeps secrets out of `zovsironclaw.json` where they could be accidentally exposed or logged.
 
 ## 4) Deploy
 
@@ -143,7 +143,7 @@ Create the config directory and file:
 
 ```bash
 mkdir -p /data
-cat > /data/openclaw.json << 'EOF'
+cat > /data/zovsironclaw.json << 'EOF'
 {
   "agents": {
     "defaults": {
@@ -195,7 +195,7 @@ cat > /data/openclaw.json << 'EOF'
 EOF
 ```
 
-**Note:** With `OPENCLAW_STATE_DIR=/data`, the config path is `/data/openclaw.json`.
+**Note:** With `OPENCLAW_STATE_DIR=/data`, the config path is `/data/zovsironclaw.json`.
 
 **Note:** The Discord token can come from either:
 
@@ -288,12 +288,12 @@ The lock file is at `/data/gateway.*.lock` (not in a subdirectory).
 
 ### Config Not Being Read
 
-If using `--allow-unconfigured`, the gateway creates a minimal config. Your custom config at `/data/openclaw.json` should be read on restart.
+If using `--allow-unconfigured`, the gateway creates a minimal config. Your custom config at `/data/zovsironclaw.json` should be read on restart.
 
 Verify the config exists:
 
 ```bash
-fly ssh console --command "cat /data/openclaw.json"
+fly ssh console --command "cat /data/zovsironclaw.json"
 ```
 
 ### Writing Config via SSH
@@ -302,17 +302,17 @@ The `fly ssh console -C` command doesn't support shell redirection. To write a c
 
 ```bash
 # Use echo + tee (pipe from local to remote)
-echo '{"your":"config"}' | fly ssh console -C "tee /data/openclaw.json"
+echo '{"your":"config"}' | fly ssh console -C "tee /data/zovsironclaw.json"
 
 # Or use sftp
 fly sftp shell
-> put /local/path/config.json /data/openclaw.json
+> put /local/path/config.json /data/zovsironclaw.json
 ```
 
 **Note:** `fly sftp` may fail if the file already exists. Delete first:
 
 ```bash
-fly ssh console --command "rm /data/openclaw.json"
+fly ssh console --command "rm /data/zovsironclaw.json"
 ```
 
 ### State Not Persisting

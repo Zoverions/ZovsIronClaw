@@ -52,7 +52,7 @@ openclaw channels logout --channel whatsapp
 ## 故障排除
 
 - 运行 `openclaw status --deep` 进行全面探测。
-- 使用 `openclaw doctor` 获取引导式修复。
+- 使用 `zovsironclaw doctor` 获取引导式修复。
 - `openclaw channels list` 输出 `Claude: HTTP 403 ... user:profile` → 用量快照需要 `user:profile` 权限范围。使用 `--no-usage`，或提供 claude.ai 会话密钥（`CLAUDE_WEB_SESSION_KEY` / `CLAUDE_WEB_COOKIE`），或通过 Claude Code CLI 重新授权。
 
 ## 能力探测

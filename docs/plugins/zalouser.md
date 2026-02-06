@@ -70,7 +70,7 @@ Channel config lives under `channels.zalouser` (not `plugins.entries.*`):
 openclaw channels login --channel zalouser
 openclaw channels logout --channel zalouser
 openclaw channels status --probe
-openclaw message send --channel zalouser --target <threadId> --message "Hello from OpenClaw"
+zovsironclaw message send --channel zalouser --target <threadId> --message "Hello from OpenClaw"
 openclaw directory peers list --channel zalouser --query "name"
 ```
 

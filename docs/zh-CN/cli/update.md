@@ -86,7 +86,7 @@ openclaw update status --timeout 10
 5. Rebase 到所选提交（仅 dev）。
 6. 安装依赖（优先使用 pnpm；npm 作为备选）。
 7. 构建 + 构建控制界面。
-8. 运行 `openclaw doctor` 作为最终的"安全更新"检查。
+8. 运行 `zovsironclaw doctor` 作为最终的"安全更新"检查。
 9. 将插件同步到当前渠道（dev 使用捆绑的扩展；stable/beta 使用 npm）并更新 npm 安装的插件。
 
 ## `--update` 简写
@@ -95,7 +95,7 @@ openclaw update status --timeout 10
 
 ## 另请参阅
 
-- `openclaw doctor`（在 git 检出上会提供先运行更新的选项）
+- `zovsironclaw doctor`（在 git 检出上会提供先运行更新的选项）
 - [开发渠道](/install/development-channels)
 - [更新](/install/updating)
 - [CLI 参考](/cli)

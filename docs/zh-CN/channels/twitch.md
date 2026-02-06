@@ -258,7 +258,7 @@ OPENCLAW_TWITCH_ACCESS_TOKEN=oauth:abc123...
 首先，运行诊断命令：
 
 ```bash
-openclaw doctor
+zovsironclaw doctor
 openclaw channels status --probe
 ```
 

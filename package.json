@@ -1,12 +1,16 @@
 {
-  "name": "openclaw",
-  "version": "2026.2.4",
-  "description": "WhatsApp gateway CLI (Baileys web) with Pi RPC agent",
+  "name": "zovsironclaw",
+  "version": "4.5.0",
+  "description": "WhatsApp gateway CLI with GCA (Geometric Conscience Architecture) integration",
   "keywords": [],
   "license": "MIT",
-  "author": "",
+  "author": "Zoverions",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zoverions/ZovsIronClaw.git"
+  },
   "bin": {
-    "openclaw": "openclaw.mjs"
+    "zovsironclaw": "zovsironclaw.mjs"
   },
   "files": [
     "assets/",
@@ -15,7 +19,7 @@
     "docs/",
     "extensions/",
     "LICENSE",
-    "openclaw.mjs",
+    "zovsironclaw.mjs",
     "README-header.png",
     "README.md",
     "skills/"
@@ -25,7 +29,7 @@
   "exports": {
     ".": "./dist/index.js",
     "./plugin-sdk": "./dist/plugin-sdk/index.js",
-    "./cli-entry": "./openclaw.mjs"
+    "./cli-entry": "./zovsironclaw.mjs"
   },
   "scripts": {
     "android:assemble": "cd apps/android && ./gradlew :app:assembleDebug",

@@ -15,7 +15,7 @@ For model selection rules, see [/concepts/models](/concepts/models).
 
 - Model refs use `provider/model` (example: `opencode/claude-opus-4-6`).
 - If you set `agents.defaults.models`, it becomes the allowlist.
-- CLI helpers: `openclaw onboard`, `openclaw models list`, `openclaw models set <provider/model>`.
+- CLI helpers: `zovsironclaw onboard`, `openclaw models list`, `openclaw models set <provider/model>`.
 
 ## Built-in providers (pi-ai catalog)
 
@@ -27,7 +27,7 @@ OpenClaw ships with the pi‑ai catalog. These providers require **no**
 - Provider: `openai`
 - Auth: `OPENAI_API_KEY`
 - Example model: `openai/gpt-5.1-codex`
-- CLI: `openclaw onboard --auth-choice openai-api-key`
+- CLI: `zovsironclaw onboard --auth-choice openai-api-key`
 
 ```json5
 {
@@ -40,7 +40,7 @@ OpenClaw ships with the pi‑ai catalog. These providers require **no**
 - Provider: `anthropic`
 - Auth: `ANTHROPIC_API_KEY` or `claude setup-token`
 - Example model: `anthropic/claude-opus-4-6`
-- CLI: `openclaw onboard --auth-choice token` (paste setup-token) or `openclaw models auth paste-token --provider anthropic`
+- CLI: `zovsironclaw onboard --auth-choice token` (paste setup-token) or `openclaw models auth paste-token --provider anthropic`
 
 ```json5
 {
@@ -53,7 +53,7 @@ OpenClaw ships with the pi‑ai catalog. These providers require **no**
 - Provider: `openai-codex`
 - Auth: OAuth (ChatGPT)
 - Example model: `openai-codex/gpt-5.3-codex`
-- CLI: `openclaw onboard --auth-choice openai-codex` or `openclaw models auth login --provider openai-codex`
+- CLI: `zovsironclaw onboard --auth-choice openai-codex` or `openclaw models auth login --provider openai-codex`
 
 ```json5
 {
@@ -66,7 +66,7 @@ OpenClaw ships with the pi‑ai catalog. These providers require **no**
 - Provider: `opencode`
 - Auth: `OPENCODE_API_KEY` (or `OPENCODE_ZEN_API_KEY`)
 - Example model: `opencode/claude-opus-4-6`
-- CLI: `openclaw onboard --auth-choice opencode-zen`
+- CLI: `zovsironclaw onboard --auth-choice opencode-zen`
 
 ```json5
 {
@@ -79,7 +79,7 @@ OpenClaw ships with the pi‑ai catalog. These providers require **no**
 - Provider: `google`
 - Auth: `GEMINI_API_KEY`
 - Example model: `google/gemini-3-pro-preview`
-- CLI: `openclaw onboard --auth-choice gemini-api-key`
+- CLI: `zovsironclaw onboard --auth-choice gemini-api-key`
 
 ### Google Vertex, Antigravity, and Gemini CLI
 
@@ -91,7 +91,7 @@ OpenClaw ships with the pi‑ai catalog. These providers require **no**
 - Gemini CLI OAuth is shipped as a bundled plugin (`google-gemini-cli-auth`, disabled by default).
   - Enable: `openclaw plugins enable google-gemini-cli-auth`
   - Login: `openclaw models auth login --provider google-gemini-cli --set-default`
-  - Note: you do **not** paste a client id or secret into `openclaw.json`. The CLI login flow stores
+  - Note: you do **not** paste a client id or secret into `zovsironclaw.json`. The CLI login flow stores
     tokens in auth profiles on the gateway host.
 
 ### Z.AI (GLM)
@@ -99,7 +99,7 @@ OpenClaw ships with the pi‑ai catalog. These providers require **no**
 - Provider: `zai`
 - Auth: `ZAI_API_KEY`
 - Example model: `zai/glm-4.7`
-- CLI: `openclaw onboard --auth-choice zai-api-key`
+- CLI: `zovsironclaw onboard --auth-choice zai-api-key`
   - Aliases: `z.ai/*` and `z-ai/*` normalize to `zai/*`
 
 ### Vercel AI Gateway
@@ -107,7 +107,7 @@ OpenClaw ships with the pi‑ai catalog. These providers require **no**
 - Provider: `vercel-ai-gateway`
 - Auth: `AI_GATEWAY_API_KEY`
 - Example model: `vercel-ai-gateway/anthropic/claude-opus-4.6`
-- CLI: `openclaw onboard --auth-choice ai-gateway-api-key`
+- CLI: `zovsironclaw onboard --auth-choice ai-gateway-api-key`
 
 ### Other built-in providers
 
@@ -205,7 +205,7 @@ Synthetic provides Anthropic-compatible models behind the `synthetic` provider:
 - Provider: `synthetic`
 - Auth: `SYNTHETIC_API_KEY`
 - Example model: `synthetic/hf:MiniMaxAI/MiniMax-M2.1`
-- CLI: `openclaw onboard --auth-choice synthetic-api-key`
+- CLI: `zovsironclaw onboard --auth-choice synthetic-api-key`
 
 ```json5
 {
@@ -308,7 +308,7 @@ Notes:
 ## CLI examples
 
 ```bash
-openclaw onboard --auth-choice opencode-zen
+zovsironclaw onboard --auth-choice opencode-zen
 openclaw models set opencode/claude-opus-4-6
 openclaw models list
 ```

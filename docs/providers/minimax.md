@@ -45,8 +45,8 @@ Enable the bundled OAuth plugin and authenticate:
 
 ```bash
 openclaw plugins enable minimax-portal-auth  # skip if already loaded.
-openclaw gateway restart  # restart if gateway is already running
-openclaw onboard --auth-choice minimax-portal
+zovsironclaw gateway restart  # restart if gateway is already running
+zovsironclaw onboard --auth-choice minimax-portal
 ```
 
 You will be prompted to select an endpoint:
@@ -122,7 +122,7 @@ Configure via CLI:
 We have seen strong results with MiniMax M2.1 on powerful hardware (e.g. a
 desktop/server) using LM Studio's local server.
 
-Configure manually via `openclaw.json`:
+Configure manually via `zovsironclaw.json`:
 
 ```json5
 {

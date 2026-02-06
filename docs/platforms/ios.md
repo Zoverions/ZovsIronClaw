@@ -30,7 +30,7 @@ Availability: internal preview. The iOS app is not publicly distributed yet.
 1. Start the Gateway:
 
 ```bash
-openclaw gateway --port 18789
+zovsironclaw gateway --port 18789
 ```
 
 2. In the iOS app, open Settings and pick a discovered gateway (or enable Manual Host and enter host/port).
@@ -46,7 +46,7 @@ openclaw nodes approve <requestId>
 
 ```bash
 openclaw nodes status
-openclaw gateway call node.list --params "{}"
+zovsironclaw gateway call node.list --params "{}"
 ```
 
 ## Discovery paths

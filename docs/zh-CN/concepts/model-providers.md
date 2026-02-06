@@ -22,7 +22,7 @@ x-i18n:
 
 - 模型引用使用 `provider/model` 格式（例如：`opencode/claude-opus-4-5`）。
 - 如果设置了 `agents.defaults.models`，它将成为允许列表。
-- CLI 辅助工具：`openclaw onboard`、`openclaw models list`、`openclaw models set <provider/model>`。
+- CLI 辅助工具：`zovsironclaw onboard`、`openclaw models list`、`openclaw models set <provider/model>`。
 
 ## 内置提供商（pi-ai 目录）
 
@@ -33,7 +33,7 @@ OpenClaw 附带 pi-ai 目录。这些提供商**不需要** `models.providers` �
 - 提供商：`openai`
 - 认证：`OPENAI_API_KEY`
 - 示例模型：`openai/gpt-5.2`
-- CLI：`openclaw onboard --auth-choice openai-api-key`
+- CLI：`zovsironclaw onboard --auth-choice openai-api-key`
 
 ```json5
 {
@@ -46,7 +46,7 @@ OpenClaw 附带 pi-ai 目录。这些提供商**不需要** `models.providers` �
 - 提供商：`anthropic`
 - 认证：`ANTHROPIC_API_KEY` 或 `claude setup-token`
 - 示例模型：`anthropic/claude-opus-4-5`
-- CLI：`openclaw onboard --auth-choice token`（粘贴 setup-token）或 `openclaw models auth paste-token --provider anthropic`
+- CLI：`zovsironclaw onboard --auth-choice token`（粘贴 setup-token）或 `openclaw models auth paste-token --provider anthropic`
 
 ```json5
 {
@@ -59,7 +59,7 @@ OpenClaw 附带 pi-ai 目录。这些提供商**不需要** `models.providers` �
 - 提供商：`openai-codex`
 - 认证：OAuth (ChatGPT)
 - 示例模型：`openai-codex/gpt-5.2`
-- CLI：`openclaw onboard --auth-choice openai-codex` 或 `openclaw models auth login --provider openai-codex`
+- CLI：`zovsironclaw onboard --auth-choice openai-codex` 或 `openclaw models auth login --provider openai-codex`
 
 ```json5
 {
@@ -72,7 +72,7 @@ OpenClaw 附带 pi-ai 目录。这些提供商**不需要** `models.providers` �
 - 提供商：`opencode`
 - 认证：`OPENCODE_API_KEY`（或 `OPENCODE_ZEN_API_KEY`）
 - 示例模型：`opencode/claude-opus-4-5`
-- CLI：`openclaw onboard --auth-choice opencode-zen`
+- CLI：`zovsironclaw onboard --auth-choice opencode-zen`
 
 ```json5
 {
@@ -85,7 +85,7 @@ OpenClaw 附带 pi-ai 目录。这些提供商**不需要** `models.providers` �
 - 提供商：`google`
 - 认证：`GEMINI_API_KEY`
 - 示例模型：`google/gemini-3-pro-preview`
-- CLI：`openclaw onboard --auth-choice gemini-api-key`
+- CLI：`zovsironclaw onboard --auth-choice gemini-api-key`
 
 ### Google Vertex、Antigravity 和 Gemini CLI
 
@@ -97,14 +97,14 @@ OpenClaw 附带 pi-ai 目录。这些提供商**不需要** `models.providers` �
 - Gemini CLI OAuth 作为捆绑插件提供（`google-gemini-cli-auth`，默认禁用）。
   - 启用：`openclaw plugins enable google-gemini-cli-auth`
   - 登录：`openclaw models auth login --provider google-gemini-cli --set-default`
-  - 注意：你**不需要**将客户端 ID 或密钥粘贴到 `openclaw.json` 中。CLI 登录流程将令牌存储在 Gateway 网关主机的认证配置文件中。
+  - 注意：你**不需要**将客户端 ID 或密钥粘贴到 `zovsironclaw.json` 中。CLI 登录流程将令牌存储在 Gateway 网关主机的认证配置文件中。
 
 ### Z.AI (GLM)
 
 - 提供商：`zai`
 - 认证：`ZAI_API_KEY`
 - 示例模型：`zai/glm-4.7`
-- CLI：`openclaw onboard --auth-choice zai-api-key`
+- CLI：`zovsironclaw onboard --auth-choice zai-api-key`
   - 别名：`z.ai/*` 和 `z-ai/*` 规范化为 `zai/*`
 
 ### Vercel AI Gateway
@@ -112,7 +112,7 @@ OpenClaw 附带 pi-ai 目录。这些提供商**不需要** `models.providers` �
 - 提供商：`vercel-ai-gateway`
 - 认证：`AI_GATEWAY_API_KEY`
 - 示例模型：`vercel-ai-gateway/anthropic/claude-opus-4.5`
-- CLI：`openclaw onboard --auth-choice ai-gateway-api-key`
+- CLI：`zovsironclaw onboard --auth-choice ai-gateway-api-key`
 
 ### 其他内置提供商
 
@@ -209,7 +209,7 @@ Synthetic 通过 `synthetic` 提供商提供 Anthropic 兼容模型：
 - 提供商：`synthetic`
 - 认证：`SYNTHETIC_API_KEY`
 - 示例模型：`synthetic/hf:MiniMaxAI/MiniMax-M2.1`
-- CLI：`openclaw onboard --auth-choice synthetic-api-key`
+- CLI：`zovsironclaw onboard --auth-choice synthetic-api-key`
 
 ```json5
 {
@@ -312,7 +312,7 @@ ollama pull llama3.3
 ## CLI 示例
 
 ```bash
-openclaw onboard --auth-choice opencode-zen
+zovsironclaw onboard --auth-choice opencode-zen
 openclaw models set opencode/claude-opus-4-5
 openclaw models list
 ```

@@ -36,16 +36,16 @@ Native companion apps for Windows are also planned; the Gateway is recommended v
 - Install guide: [Getting Started](/start/getting-started)
 - Gateway runbook: [Gateway](/gateway)
 - Gateway configuration: [Configuration](/gateway/configuration)
-- Service status: `openclaw gateway status`
+- Service status: `zovsironclaw gateway status`
 
 ## Gateway service install (CLI)
 
 Use one of these (all supported):
 
-- Wizard (recommended): `openclaw onboard --install-daemon`
-- Direct: `openclaw gateway install`
+- Wizard (recommended): `zovsironclaw onboard --install-daemon`
+- Direct: `zovsironclaw gateway install`
 - Configure flow: `openclaw configure` → select **Gateway service**
-- Repair/migrate: `openclaw doctor` (offers to install or fix the service)
+- Repair/migrate: `zovsironclaw doctor` (offers to install or fix the service)
 
 The service target depends on OS:
 

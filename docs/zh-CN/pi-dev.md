@@ -50,7 +50,7 @@ scripts/pi/run-tests.sh --live
 - 以开发模式运行 Gateway 网关：
   - `pnpm gateway:dev`
 - 直接触发智能体：
-  - `pnpm openclaw agent --message "Hello" --thinking low`
+  - `pnpm zovsironclaw agent --message "Hello" --thinking low`
 - 使用 TUI 进行交互式调试：
   - `pnpm tui`
 
@@ -62,7 +62,7 @@ scripts/pi/run-tests.sh --live
 
 要重置所有内容：
 
-- `openclaw.json` 用于配置
+- `zovsironclaw.json` 用于配置
 - `credentials/` 用于认证配置文件和 token
 - `agents/<agentId>/sessions/` 用于智能体会话历史
 - `agents/<agentId>/sessions.json` 用于会话索引

@@ -24,7 +24,7 @@ Status: ready for DMs + spaces via Google Chat API webhooks (HTTP only).
    - Go to the **Keys** tab.
    - Click **Add Key** > **Create new key**.
    - Select **JSON** and press **Create**.
-4. Store the downloaded JSON file on your gateway host (e.g., `~/.openclaw/googlechat-service-account.json`).
+4. Store the downloaded JSON file on your gateway host (e.g., `~/.zovsironclaw/googlechat-service-account.json`).
 5. Create a Google Chat app in the [Google Cloud Console Chat Configuration](https://console.cloud.google.com/apis/api/chat.googleapis.com/hangouts-chat):
    - Fill in the **Application info**:
      - **App name**: (e.g. `OpenClaw`)
@@ -146,7 +146,7 @@ Configure your tunnel's ingress rules to only route the webhook path:
    - DMs use session key `agent:<agentId>:googlechat:dm:<spaceId>`.
    - Spaces use session key `agent:<agentId>:googlechat:group:<spaceId>`.
 4. DM access is pairing by default. Unknown senders receive a pairing code; approve with:
-   - `openclaw pairing approve googlechat <code>`
+   - `zovsironclaw pairing approve googlechat <code>`
 5. Group spaces require @-mention by default. Use `botUser` if mention detection needs the app’s user name.
 
 ## Targets
@@ -228,7 +228,7 @@ This means the webhook handler isn't registered. Common causes:
 3. **Gateway not restarted**: After adding config, restart the gateway:
 
    ```bash
-   openclaw gateway restart
+   zovsironclaw gateway restart
    ```
 
 Verify the channel is running:

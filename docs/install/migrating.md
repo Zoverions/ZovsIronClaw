@@ -12,8 +12,8 @@ This guide migrates a OpenClaw Gateway from one machine to another **without red
 
 The migration is simple conceptually:
 
-- Copy the **state directory** (`$OPENCLAW_STATE_DIR`, default: `~/.openclaw/`) — this includes config, auth, sessions, and channel state.
-- Copy your **workspace** (`~/.openclaw/workspace/` by default) — this includes your agent files (memory, prompts, etc.).
+- Copy the **state directory** (`$OPENCLAW_STATE_DIR`, default: `~/.zovsironclaw/`) — this includes config, auth, sessions, and channel state.
+- Copy your **workspace** (`~/.zovsironclaw/workspace/` by default) — this includes your agent files (memory, prompts, etc.).
 
 But there are common footguns around **profiles**, **permissions**, and **partial copies**.
 
@@ -23,7 +23,7 @@ But there are common footguns around **profiles**, **permissions**, and **partia
 
 Most installs use the default:
 
-- **State dir:** `~/.openclaw/`
+- **State dir:** `~/.zovsironclaw/`
 
 But it may be different if you use:
 
@@ -42,7 +42,7 @@ Look for mentions of `OPENCLAW_STATE_DIR` / profile in the output. If you run mu
 
 Common defaults:
 
-- `~/.openclaw/workspace/` (recommended workspace)
+- `~/.zovsironclaw/workspace/` (recommended workspace)
 - a custom folder you created
 
 Your workspace is where files like `MEMORY.md`, `USER.md`, and `memory/*.md` live.
@@ -51,7 +51,7 @@ Your workspace is where files like `MEMORY.md`, `USER.md`, and `memory/*.md` liv
 
 If you copy **both** the state dir and workspace, you keep:
 
-- Gateway configuration (`openclaw.json`)
+- Gateway configuration (`zovsironclaw.json`)
 - Auth profiles / API keys / OAuth tokens
 - Session history + agent state
 - Channel state (e.g. WhatsApp login/session)
@@ -72,7 +72,7 @@ Those live under `$OPENCLAW_STATE_DIR`.
 On the **old** machine, stop the gateway first so files aren’t changing mid-copy:
 
 ```bash
-openclaw gateway stop
+zovsironclaw gateway stop
 ```
 
 (Optional but recommended) archive the state dir and workspace:
@@ -82,7 +82,7 @@ openclaw gateway stop
 cd ~
 tar -czf openclaw-state.tgz .openclaw
 
-tar -czf openclaw-workspace.tgz .openclaw/workspace
+tar -czf openclaw-workspace.tgz .zovsironclaw/workspace
 ```
 
 If you have multiple profiles/state dirs (e.g. `~/.openclaw-main`, `~/.openclaw-work`), archive each.
@@ -93,14 +93,14 @@ On the **new** machine, install the CLI (and Node if needed):
 
 - See: [Install](/install)
 
-At this stage, it’s OK if onboarding creates a fresh `~/.openclaw/` — you will overwrite it in the next step.
+At this stage, it’s OK if onboarding creates a fresh `~/.zovsironclaw/` — you will overwrite it in the next step.
 
 ### Step 2 — Copy the state dir + workspace to the new machine
 
 Copy **both**:
 
-- `$OPENCLAW_STATE_DIR` (default `~/.openclaw/`)
-- your workspace (default `~/.openclaw/workspace/`)
+- `$OPENCLAW_STATE_DIR` (default `~/.zovsironclaw/`)
+- your workspace (default `~/.zovsironclaw/workspace/`)
 
 Common approaches:
 
@@ -110,7 +110,7 @@ Common approaches:
 
 After copying, ensure:
 
-- Hidden directories were included (e.g. `.openclaw/`)
+- Hidden directories were included (e.g. `.zovsironclaw/`)
 - File ownership is correct for the user running the gateway
 
 ### Step 3 — Run Doctor (migrations + service repair)
@@ -118,7 +118,7 @@ After copying, ensure:
 On the **new** machine:
 
 ```bash
-openclaw doctor
+zovsironclaw doctor
 ```
 
 Doctor is the “safe boring” command. It repairs services, applies config migrations, and warns about mismatches.
@@ -126,7 +126,7 @@ Doctor is the “safe boring” command. It repairs services, applies config mig
 Then:
 
 ```bash
-openclaw gateway restart
+zovsironclaw gateway restart
 openclaw status
 ```
 
@@ -143,12 +143,12 @@ If you ran the old gateway with a profile (or `OPENCLAW_STATE_DIR`), and the new
 Fix: run the gateway/service using the **same** profile/state dir you migrated, then rerun:
 
 ```bash
-openclaw doctor
+zovsironclaw doctor
 ```
 
-### Footgun: copying only `openclaw.json`
+### Footgun: copying only `zovsironclaw.json`
 
-`openclaw.json` is not enough. Many providers store state under:
+`zovsironclaw.json` is not enough. Many providers store state under:
 
 - `$OPENCLAW_STATE_DIR/credentials/`
 - `$OPENCLAW_STATE_DIR/agents/<agentId>/...`

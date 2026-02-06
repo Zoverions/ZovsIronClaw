@@ -290,7 +290,7 @@ openclaw [--dev] [--profile <name>] <command>
 
 选项：
 
-- `--workspace <dir>`：智能体工作区路径（默认 `~/.openclaw/workspace`）。
+- `--workspace <dir>`：智能体工作区路径（默认 `~/.zovsironclaw/workspace`）。
 - `--wizard`：运行新手引导向导。
 - `--non-interactive`：无提示运行向导。
 - `--mode <local|remote>`：向导模式。
@@ -379,7 +379,7 @@ openclaw [--dev] [--profile <name>] <command>
 
 - `channels list`：显示已配置的渠道和认证配置文件。
 - `channels status`：检查 Gateway 网关可达性和渠道健康状况（`--probe` 运行额外检查；使用 `openclaw health` 或 `openclaw status --deep` 进行 Gateway 网关健康探测）。
-- 提示：`channels status` 在检测到常见配置错误时会打印带有建议修复的警告（然后指向 `openclaw doctor`）。
+- 提示：`channels status` 在检测到常见配置错误时会打印带有建议修复的警告（然后指向 `zovsironclaw doctor`）。
 - `channels logs`：显示 Gateway 网关日志文件中最近的渠道日志。
 - `channels add`：不传标志时使用向导式设置；标志切换到非交互模式。
 - `channels remove`：默认禁用；传 `--delete` 可无提示删除配置条目。
@@ -492,8 +492,8 @@ Gmail Pub/Sub 钩子设置 + 运行器。参见 [/automation/gmail-pubsub](/auto
 
 示例：
 
-- `openclaw message send --target +15555550123 --message "Hi"`
-- `openclaw message poll --channel discord --target channel:123 --poll-question "Snack?" --poll-option Pizza --poll-option Sushi`
+- `zovsironclaw message send --target +15555550123 --message "Hi"`
+- `zovsironclaw message poll --channel discord --target channel:123 --poll-question "Snack?" --poll-option Pizza --poll-option Sushi`
 
 ### `agent`
 

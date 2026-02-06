@@ -76,7 +76,7 @@ openclaw --version
 ## 4) Run Onboarding
 
 ```bash
-openclaw onboard --install-daemon
+zovsironclaw onboard --install-daemon
 ```
 
 The wizard will walk you through:
@@ -121,7 +121,7 @@ tailscale up
 
 # Configure Gateway to use Tailscale Serve
 openclaw config set gateway.tailscale.mode serve
-openclaw gateway restart
+zovsironclaw gateway restart
 ```
 
 Open: `https://<magicdns>/`
@@ -135,7 +135,7 @@ Notes:
 
 ```bash
 openclaw config set gateway.bind tailnet
-openclaw gateway restart
+zovsironclaw gateway restart
 ```
 
 Open: `http://<tailscale-ip>:18789` (token required).
@@ -145,8 +145,8 @@ Open: `http://<tailscale-ip>:18789` (token required).
 ### Telegram
 
 ```bash
-openclaw pairing list telegram
-openclaw pairing approve telegram <CODE>
+zovsironclaw pairing list telegram
+zovsironclaw pairing approve telegram <CODE>
 ```
 
 ### WhatsApp
@@ -194,13 +194,13 @@ htop
 
 All state lives in:
 
-- `~/.openclaw/` — config, credentials, session data
-- `~/.openclaw/workspace/` — workspace (SOUL.md, memory, etc.)
+- `~/.zovsironclaw/` — config, credentials, session data
+- `~/.zovsironclaw/workspace/` — workspace (SOUL.md, memory, etc.)
 
 These survive reboots. Back them up periodically:
 
 ```bash
-tar -czvf openclaw-backup.tar.gz ~/.openclaw ~/.openclaw/workspace
+tar -czvf openclaw-backup.tar.gz ~/.openclaw ~/.zovsironclaw/workspace
 ```
 
 ---
@@ -230,8 +230,8 @@ For the full setup guide, see [Oracle Cloud](/platforms/oracle). For signup tips
 ### Gateway won't start
 
 ```bash
-openclaw gateway status
-openclaw doctor --non-interactive
+zovsironclaw gateway status
+zovsironclaw doctor --non-interactive
 journalctl -u openclaw --no-pager -n 50
 ```
 

@@ -14,7 +14,7 @@ and the agent should rely on them directly.
 
 ## Disabling tools
 
-You can globally allow/deny tools via `tools.allow` / `tools.deny` in `openclaw.json`
+You can globally allow/deny tools via `tools.allow` / `tools.deny` in `zovsironclaw.json`
 (deny wins). This prevents disallowed tools from being sent to model providers.
 
 ```json5
@@ -414,7 +414,7 @@ Restart or apply updates to the running Gateway process (in-place).
 
 Core actions:
 
-- `restart` (authorizes + sends `SIGUSR1` for in-process restart; `openclaw gateway` restart in-place)
+- `restart` (authorizes + sends `SIGUSR1` for in-process restart; `zovsironclaw gateway` restart in-place)
 - `config.get` / `config.schema`
 - `config.apply` (validate + write config + restart + wake)
 - `config.patch` (merge partial update + restart + wake)

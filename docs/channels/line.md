@@ -107,8 +107,8 @@ Direct messages default to pairing. Unknown senders get a pairing code and their
 messages are ignored until approved.
 
 ```bash
-openclaw pairing list line
-openclaw pairing approve line <CODE>
+zovsironclaw pairing list line
+zovsironclaw pairing approve line <CODE>
 ```
 
 Allowlists and policies:

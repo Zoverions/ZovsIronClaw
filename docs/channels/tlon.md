@@ -120,7 +120,7 @@ Group authorization (restricted by default):
 
 ## Delivery targets (CLI/cron)
 
-Use these with `openclaw message send` or cron delivery:
+Use these with `zovsironclaw message send` or cron delivery:
 
 - DM: `~sampel-palnet` or `dm/~sampel-palnet`
 - Group: `chat/~host-ship/channel` or `group:~host-ship/channel`

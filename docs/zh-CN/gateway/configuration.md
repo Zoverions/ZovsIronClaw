@@ -1,7 +1,7 @@
 ---
 read_when:
   - 添加或修改配置字段时
-summary: ~/.openclaw/openclaw.json 的所有配置选项及示例
+summary: ~/.zovsironclaw/zovsironclaw.json 的所有配置选项及示例
 title: 配置
 x-i18n:
   generated_at: "2026-02-01T21:29:41Z"
@@ -14,9 +14,9 @@ x-i18n:
 
 # 配置 🔧
 
-OpenClaw 从 `~/.openclaw/openclaw.json` 读取可选的 **JSON5** 配置（支持注释和尾逗号）。
+OpenClaw 从 `~/.zovsironclaw/zovsironclaw.json` 读取可选的 **JSON5** 配置（支持注释和尾逗号）。
 
-如果文件不存在，OpenClaw 使用安全的默认值（内置 Pi 智能体 + 按发送者分会话 + 工作区 `~/.openclaw/workspace`）。通常只在以下情况需要配置：
+如果文件不存在，OpenClaw 使用安全的默认值（内置 Pi 智能体 + 按发送者分会话 + 工作区 `~/.zovsironclaw/workspace`）。通常只在以下情况需要配置：
 
 - 限制谁可以触发机器人（`channels.whatsapp.allowFrom`、`channels.telegram.allowFrom` 等）
 - 控制群组白名单 + 提及行为（`channels.whatsapp.groups`、`channels.telegram.groups`、`channels.discord.guilds`、`agents.list[].groupChat`）
@@ -35,9 +35,9 @@ OpenClaw 只接受完全匹配 schema 的配置。
 验证失败时：
 
 - Gateway 网关不会启动。
-- 只允许诊断命令（例如：`openclaw doctor`、`openclaw logs`、`openclaw health`、`openclaw status`、`openclaw service`、`openclaw help`）。
-- 运行 `openclaw doctor` 查看具体问题。
-- 运行 `openclaw doctor --fix`（或 `--yes`）应用迁移/修复。
+- 只允许诊断命令（例如：`zovsironclaw doctor`、`openclaw logs`、`openclaw health`、`openclaw status`、`openclaw service`、`openclaw help`）。
+- 运行 `zovsironclaw doctor` 查看具体问题。
+- 运行 `zovsironclaw doctor --fix`（或 `--yes`）应用迁移/修复。
 
 Doctor 不会写入任何更改，除非你明确选择了 `--fix`/`--yes`。
 
@@ -57,7 +57,7 @@ Gateway 网关通过 `config.schema` 暴露配置的 JSON Schema 表示，供 UI
 它会写入重启哨兵文件，并在 Gateway 网关恢复后 ping 最后活跃的会话。
 
 警告：`config.apply` 会替换**整个配置**。如果你只想更改部分键，
-请使用 `config.patch` 或 `openclaw config set`。请备份 `~/.openclaw/openclaw.json`。
+请使用 `config.patch` 或 `openclaw config set`。请备份 `~/.zovsironclaw/zovsironclaw.json`。
 
 参数：
 
@@ -70,9 +70,9 @@ Gateway 网关通过 `config.schema` 暴露配置的 JSON Schema 表示，供 UI
 示例（通过 `gateway call`）：
 
 ```bash
-openclaw gateway call config.get --params '{}' # capture payload.hash
-openclaw gateway call config.apply --params '{
-  "raw": "{\\n  agents: { defaults: { workspace: \\"~/.openclaw/workspace\\" } }\\n}\\n",
+zovsironclaw gateway call config.get --params '{}' # capture payload.hash
+zovsironclaw gateway call config.apply --params '{
+  "raw": "{\\n  agents: { defaults: { workspace: \\"~/.zovsironclaw/workspace\\" } }\\n}\\n",
   "baseHash": "<hash-from-config.get>",
   "sessionKey": "agent:main:whatsapp:dm:+15555550123",
   "restartDelayMs": 1000
@@ -101,8 +101,8 @@ openclaw gateway call config.apply --params '{
 示例：
 
 ```bash
-openclaw gateway call config.get --params '{}' # capture payload.hash
-openclaw gateway call config.patch --params '{
+zovsironclaw gateway call config.get --params '{}' # capture payload.hash
+zovsironclaw gateway call config.patch --params '{
   "raw": "{\\n  channels: { telegram: { groups: { \\"*\\": { requireMention: false } } } }\\n}\\n",
   "baseHash": "<hash-from-config.get>",
   "sessionKey": "agent:main:whatsapp:dm:+15555550123",
@@ -114,7 +114,7 @@ openclaw gateway call config.patch --params '{
 
 ```json5
 {
-  agents: { defaults: { workspace: "~/.openclaw/workspace" } },
+  agents: { defaults: { workspace: "~/.zovsironclaw/workspace" } },
   channels: { whatsapp: { allowFrom: ["+15555550123"] } },
 }
 ```
@@ -132,7 +132,7 @@ scripts/sandbox-setup.sh
 ```json5
 {
   agents: {
-    defaults: { workspace: "~/.openclaw/workspace" },
+    defaults: { workspace: "~/.zovsironclaw/workspace" },
     list: [
       {
         id: "main",
@@ -161,7 +161,7 @@ scripts/sandbox-setup.sh
 ### 基本用法
 
 ```json5
-// ~/.openclaw/openclaw.json
+// ~/.zovsironclaw/zovsironclaw.json
 {
   gateway: { port: 18789 },
 
@@ -176,10 +176,10 @@ scripts/sandbox-setup.sh
 ```
 
 ```json5
-// ~/.openclaw/agents.json5
+// ~/.zovsironclaw/agents.json5
 {
   defaults: { sandbox: { mode: "all", scope: "session" } },
-  list: [{ id: "main", workspace: "~/.openclaw/workspace" }],
+  list: [{ id: "main", workspace: "~/.zovsironclaw/workspace" }],
 }
 ```
 
@@ -231,7 +231,7 @@ scripts/sandbox-setup.sh
 ### 示例：多客户法律事务设置
 
 ```json5
-// ~/.openclaw/openclaw.json
+// ~/.zovsironclaw/zovsironclaw.json
 {
   gateway: { port: 18789, auth: { token: "secret" } },
 
@@ -254,7 +254,7 @@ scripts/sandbox-setup.sh
 ```
 
 ```json5
-// ~/.openclaw/clients/mueller/agents.json5
+// ~/.zovsironclaw/clients/mueller/agents.json5
 [
   { id: "mueller-transcribe", workspace: "~/clients/mueller/transcribe" },
   { id: "mueller-docs", workspace: "~/clients/mueller/docs" },
@@ -262,7 +262,7 @@ scripts/sandbox-setup.sh
 ```
 
 ```json5
-// ~/.openclaw/clients/mueller/broadcast.json5
+// ~/.zovsironclaw/clients/mueller/broadcast.json5
 {
   "120363403215116621@g.us": ["mueller-transcribe", "mueller-docs"],
 }
@@ -277,7 +277,7 @@ OpenClaw 从父进程（shell、launchd/systemd、CI 等）读取环境变量。
 此外，它还会加载：
 
 - 当前工作目录中的 `.env`（如果存在）
-- `~/.openclaw/.env`（即 `$OPENCLAW_STATE_DIR/.env`）作为全局回退 `.env`
+- `~/.zovsironclaw/.env`（即 `$OPENCLAW_STATE_DIR/.env`）作为全局回退 `.env`
 
 两个 `.env` 文件都不会覆盖已有的环境变量。
 
@@ -363,13 +363,13 @@ OpenClaw 从父进程（shell、launchd/systemd、CI 等）读取环境变量。
 
 OpenClaw 在以下位置存储**每个智能体的**认证配置文件（OAuth + API 密钥）：
 
-- `<agentDir>/auth-profiles.json`（默认：`~/.openclaw/agents/<agentId>/agent/auth-profiles.json`）
+- `<agentDir>/auth-profiles.json`（默认：`~/.zovsironclaw/agents/<agentId>/agent/auth-profiles.json`）
 
 另请参阅：[/concepts/oauth](/concepts/oauth)
 
 旧版 OAuth 导入：
 
-- `~/.openclaw/credentials/oauth.json`（或 `$OPENCLAW_STATE_DIR/credentials/oauth.json`）
+- `~/.zovsironclaw/credentials/oauth.json`（或 `$OPENCLAW_STATE_DIR/credentials/oauth.json`）
 
 内置 Pi 智能体在以下位置维护运行时缓存：
 
@@ -377,7 +377,7 @@ OpenClaw 在以下位置存储**每个智能体的**认证配置文件（OAuth +
 
 旧版智能体目录（多智能体之前）：
 
-- `~/.openclaw/agent/*`（由 `openclaw doctor` 迁移到 `~/.openclaw/agents/<defaultAgentId>/agent/*`）
+- `~/.zovsironclaw/agent/*`（由 `zovsironclaw doctor` 迁移到 `~/.zovsironclaw/agents/<defaultAgentId>/agent/*`）
 
 覆盖：
 
@@ -495,8 +495,8 @@ OpenClaw 在以下位置存储**每个智能体的**认证配置文件（OAuth +
 
 配对批准：
 
-- `openclaw pairing list whatsapp`
-- `openclaw pairing approve whatsapp <code>`
+- `zovsironclaw pairing list whatsapp`
+- `zovsironclaw pairing approve whatsapp <code>`
 
 ### `channels.whatsapp.allowFrom`
 
@@ -546,8 +546,8 @@ OpenClaw 在以下位置存储**每个智能体的**认证配置文件（OAuth +
         default: {}, // 可选；保持默认 id 稳定
         personal: {},
         biz: {
-          // 可选覆盖。默认：~/.openclaw/credentials/whatsapp/biz
-          // authDir: "~/.openclaw/credentials/whatsapp/biz",
+          // 可选覆盖。默认：~/.zovsironclaw/credentials/whatsapp/biz
+          // authDir: "~/.zovsironclaw/credentials/whatsapp/biz",
         },
       },
     },
@@ -558,7 +558,7 @@ OpenClaw 在以下位置存储**每个智能体的**认证配置文件（OAuth +
 说明：
 
 - 出站命令默认使用 `default` 账号（如果存在）；否则使用第一个配置的账号 id（排序后）。
-- 旧版单账号 Baileys 认证目录由 `openclaw doctor` 迁移到 `whatsapp/default`。
+- 旧版单账号 Baileys 认证目录由 `zovsironclaw doctor` 迁移到 `whatsapp/default`。
 
 ### `channels.telegram.accounts` / `channels.discord.accounts` / `channels.googlechat.accounts` / `channels.slack.accounts` / `channels.mattermost.accounts` / `channels.signal.accounts` / `channels.imessage.accounts`
 
@@ -742,8 +742,8 @@ OpenClaw 在以下位置存储**每个智能体的**认证配置文件（OAuth +
   - `default`：可选；当设置多个时，第一个获胜并记录警告。
     如果未设置，列表中的**第一个条目**为默认智能体。
   - `name`：智能体的显示名称。
-  - `workspace`：默认 `~/.openclaw/workspace-<agentId>`（对于 `main`，回退到 `agents.defaults.workspace`）。
-  - `agentDir`：默认 `~/.openclaw/agents/<agentId>/agent`。
+  - `workspace`：默认 `~/.zovsironclaw/workspace-<agentId>`（对于 `main`，回退到 `agents.defaults.workspace`）。
+  - `agentDir`：默认 `~/.zovsironclaw/agents/<agentId>/agent`。
   - `model`：每智能体默认模型，覆盖该智能体的 `agents.defaults.model`。
     - 字符串形式：`"provider/model"`，仅覆盖 `agents.defaults.model.primary`
     - 对象形式：`{ primary, fallbacks }`（fallbacks 覆盖 `agents.defaults.model.fallbacks`；`[]` 为该智能体禁用全局回退）
@@ -799,7 +799,7 @@ OpenClaw 在以下位置存储**每个智能体的**认证配置文件（OAuth +
     list: [
       {
         id: "personal",
-        workspace: "~/.openclaw/workspace-personal",
+        workspace: "~/.zovsironclaw/workspace-personal",
         sandbox: { mode: "off" },
       },
     ],
@@ -815,7 +815,7 @@ OpenClaw 在以下位置存储**每个智能体的**认证配置文件（OAuth +
     list: [
       {
         id: "family",
-        workspace: "~/.openclaw/workspace-family",
+        workspace: "~/.zovsironclaw/workspace-family",
         sandbox: {
           mode: "all",
           scope: "agent",
@@ -846,7 +846,7 @@ OpenClaw 在以下位置存储**每个智能体的**认证配置文件（OAuth +
     list: [
       {
         id: "public",
-        workspace: "~/.openclaw/workspace-public",
+        workspace: "~/.zovsironclaw/workspace-public",
         sandbox: {
           mode: "all",
           scope: "agent",
@@ -892,8 +892,8 @@ OpenClaw 在以下位置存储**每个智能体的**认证配置文件（OAuth +
 {
   agents: {
     list: [
-      { id: "home", default: true, workspace: "~/.openclaw/workspace-home" },
-      { id: "work", workspace: "~/.openclaw/workspace-work" },
+      { id: "home", default: true, workspace: "~/.zovsironclaw/workspace-home" },
+      { id: "work", workspace: "~/.zovsironclaw/workspace-work" },
     ],
   },
   bindings: [
@@ -1002,7 +1002,7 @@ OpenClaw 在以下位置存储**每个智能体的**认证配置文件（OAuth +
 - `channels.telegram.customCommands` 添加额外的 Telegram 机器人菜单项。名称会被规范化；与原生命令冲突的会被忽略。
 - `commands.bash: true` 启用 `! <cmd>` 运行主机 shell 命令（`/bash <cmd>` 也可作为别名）。需要 `tools.elevated.enabled` 并在 `tools.elevated.allowFrom.<channel>` 中添加发送者白名单。
 - `commands.bashForegroundMs` 控制 bash 在后台运行前等待的时间。当 bash 任务正在运行时，新的 `! <cmd>` 请求会被拒绝（一次一个）。
-- `commands.config: true` 启用 `/config`（读写 `openclaw.json`）。
+- `commands.config: true` 启用 `/config`（读写 `zovsironclaw.json`）。
 - `channels.<provider>.configWrites` 控制由该渠道发起的配置变更（默认：true）。适用于 `/config set|unset` 以及提供商特定的自动迁移（Telegram 超级群组 ID 变更、Slack 频道 ID 变更）。
 - `commands.debug: true` 启用 `/debug`（仅运行时覆盖）。
 - `commands.restart: true` 启用 `/restart` 和 gateway 工具重启动作。
@@ -1424,11 +1424,11 @@ exec ssh -T gateway-host imsg "$@"
 
 设置智能体用于文件操作的**单一全局工作区目录**。
 
-默认：`~/.openclaw/workspace`。
+默认：`~/.zovsironclaw/workspace`。
 
 ```json5
 {
-  agents: { defaults: { workspace: "~/.openclaw/workspace" } },
+  agents: { defaults: { workspace: "~/.zovsironclaw/workspace" } },
 }
 ```
 
@@ -1565,7 +1565,7 @@ WhatsApp 入站前缀通过 `channels.whatsapp.messagePrefix` 配置（已弃用
       },
       maxTextLength: 4000,
       timeoutMs: 30000,
-      prefsPath: "~/.openclaw/settings/tts.json",
+      prefsPath: "~/.zovsironclaw/settings/tts.json",
       elevenlabs: {
         apiKey: "elevenlabs_api_key",
         baseUrl: "https://api.elevenlabs.io",
@@ -2234,7 +2234,7 @@ Z.AI 模型可通过 `zai/<model>` 使用（例如 `zai/glm-4.7`），需要环�
 - scope：`"agent"`（每个智能体一个容器 + 工作区）
 - 基于 Debian bookworm-slim 的镜像
 - 智能体工作区访问：`workspaceAccess: "none"`（默认）
-  - `"none"`：在 `~/.openclaw/sandboxes` 下使用每范围的沙箱工作区
+  - `"none"`：在 `~/.zovsironclaw/sandboxes` 下使用每范围的沙箱工作区
 - `"ro"`：将沙箱工作区保持在 `/workspace`，智能体工作区以只读方式挂载到 `/agent`（禁用 `write`/`edit`/`apply_patch`）
   - `"rw"`：将智能体工作区以读写方式挂载到 `/workspace`
 - 自动清理：空闲超过 24h 或存在超过 7d
@@ -2259,7 +2259,7 @@ Z.AI 模型可通过 `zai/<model>` 使用（例如 `zai/glm-4.7`），需要环�
         mode: "non-main", // off | non-main | all
         scope: "agent", // session | agent | shared（agent 为默认）
         workspaceAccess: "none", // none | ro | rw
-        workspaceRoot: "~/.openclaw/sandboxes",
+        workspaceRoot: "~/.zovsironclaw/sandboxes",
         docker: {
           image: "openclaw-sandbox:bookworm-slim",
           containerPrefix: "openclaw-sbx-",
@@ -2369,11 +2369,11 @@ noVNC URL 会注入系统提示中，以便智能体可以引用它。
 ### `models`（自定义提供商 + 基础 URL）
 
 OpenClaw 使用 **pi-coding-agent** 模型目录。你可以通过编写
-`~/.openclaw/agents/<agentId>/agent/models.json` 或在 OpenClaw 配置中的 `models.providers` 下定义相同的 schema 来添加自定义提供商（LiteLLM、本地 OpenAI 兼容服务器、Anthropic 代理等）。
+`~/.zovsironclaw/agents/<agentId>/agent/models.json` 或在 OpenClaw 配置中的 `models.providers` 下定义相同的 schema 来添加自定义提供商（LiteLLM、本地 OpenAI 兼容服务器、Anthropic 代理等）。
 按提供商的概述 + 示例：[/concepts/model-providers](/concepts/model-providers)。
 
 当存在 `models.providers` 时，OpenClaw 在启动时将 `models.json` 写入/合并到
-`~/.openclaw/agents/<agentId>/agent/`：
+`~/.zovsironclaw/agents/<agentId>/agent/`：
 
 - 默认行为：**合并**（保留现有提供商，按名称覆盖）
 - 设为 `models.mode: "replace"` 覆盖文件内容
@@ -2424,7 +2424,7 @@ pi-ai 内置的 `opencode` 提供商；从 https://opencode.ai/auth 设置 `OPEN
 
 - 模型引用使用 `opencode/<modelId>`（示例：`opencode/claude-opus-4-5`）。
 - 如果你通过 `agents.defaults.models` 启用白名单，请添加你计划使用的每个模型。
-- 快捷方式：`openclaw onboard --auth-choice opencode-zen`。
+- 快捷方式：`zovsironclaw onboard --auth-choice opencode-zen`。
 
 ```json5
 {
@@ -2442,7 +2442,7 @@ pi-ai 内置的 `opencode` 提供商；从 https://opencode.ai/auth 设置 `OPEN
 Z.AI 模型通过内置的 `zai` 提供商提供。在环境中设置 `ZAI_API_KEY`
 并通过 provider/model 引用模型。
 
-快捷方式：`openclaw onboard --auth-choice zai-api-key`。
+快捷方式：`zovsironclaw onboard --auth-choice zai-api-key`。
 
 ```json5
 {
@@ -2506,7 +2506,7 @@ Z.AI 模型通过内置的 `zai` 提供商提供。在环境中设置 `ZAI_API_K
 
 说明：
 
-- 在环境中设置 `MOONSHOT_API_KEY` 或使用 `openclaw onboard --auth-choice moonshot-api-key`。
+- 在环境中设置 `MOONSHOT_API_KEY` 或使用 `zovsironclaw onboard --auth-choice moonshot-api-key`。
 - 模型引用：`moonshot/kimi-k2.5`。
 - 如需中国端点，使用 `https://api.moonshot.cn/v1`。
 
@@ -2528,7 +2528,7 @@ Z.AI 模型通过内置的 `zai` 提供商提供。在环境中设置 `ZAI_API_K
 
 说明：
 
-- 在环境中设置 `KIMI_API_KEY` 或使用 `openclaw onboard --auth-choice kimi-code-api-key`。
+- 在环境中设置 `KIMI_API_KEY` 或使用 `zovsironclaw onboard --auth-choice kimi-code-api-key`。
 - 模型引用：`kimi-coding/k2p5`。
 
 ### Synthetic（Anthropic 兼容）
@@ -2570,7 +2570,7 @@ Z.AI 模型通过内置的 `zai` 提供商提供。在环境中设置 `ZAI_API_K
 
 说明：
 
-- 设置 `SYNTHETIC_API_KEY` 或使用 `openclaw onboard --auth-choice synthetic-api-key`。
+- 设置 `SYNTHETIC_API_KEY` 或使用 `zovsironclaw onboard --auth-choice synthetic-api-key`。
 - 模型引用：`synthetic/hf:MiniMaxAI/MiniMax-M2.1`。
 - 基础 URL 应省略 `/v1`，因为 Anthropic 客户端会自动附加。
 
@@ -2618,7 +2618,7 @@ Z.AI 模型通过内置的 `zai` 提供商提供。在环境中设置 `ZAI_API_K
 
 说明：
 
-- 设置 `MINIMAX_API_KEY` 环境变量或使用 `openclaw onboard --auth-choice minimax-api`。
+- 设置 `MINIMAX_API_KEY` 环境变量或使用 `zovsironclaw onboard --auth-choice minimax-api`。
 - 可用模型：`MiniMax-M2.1`（默认）。
 - 如需精确费用跟踪，请在 `models.json` 中更新定价。
 
@@ -2668,7 +2668,7 @@ Z.AI 模型通过内置的 `zai` 提供商提供。在环境中设置 `ZAI_API_K
 - 支持的 API：`openai-completions`、`openai-responses`、`anthropic-messages`、
   `google-generative-ai`
 - 对于自定义认证需求使用 `authHeader: true` + `headers`。
-- 如果你希望 `models.json` 存储在其他位置，请使用 `OPENCLAW_AGENT_DIR`（或 `PI_CODING_AGENT_DIR`）覆盖智能体配置根目录（默认：`~/.openclaw/agents/main/agent`）。
+- 如果你希望 `models.json` 存储在其他位置，请使用 `OPENCLAW_AGENT_DIR`（或 `PI_CODING_AGENT_DIR`）覆盖智能体配置根目录（默认：`~/.zovsironclaw/agents/main/agent`）。
 
 ### `session`
 
@@ -2693,9 +2693,9 @@ Z.AI 模型通过内置的 `zai` 提供商提供。在环境中设置 `ZAI_API_K
       group: { mode: "idle", idleMinutes: 120 },
     },
     resetTriggers: ["/new", "/reset"],
-    // 默认已按智能体存储在 ~/.openclaw/agents/<agentId>/sessions/sessions.json
+    // 默认已按智能体存储在 ~/.zovsironclaw/agents/<agentId>/sessions/sessions.json
     // 你可以使用 {agentId} 模板进行覆盖：
-    store: "~/.openclaw/agents/{agentId}/sessions/sessions.json",
+    store: "~/.zovsironclaw/agents/{agentId}/sessions/sessions.json",
     // 私聊折叠到 agent:<agentId>:<mainKey>（默认："main"）。
     mainKey: "main",
     agentToAgent: {
@@ -2734,7 +2734,7 @@ Z.AI 模型通过内置的 `zai` 提供商提供。在环境中设置 `ZAI_API_K
 
 ### `skills`（Skills 配置）
 
-控制内置白名单、安装偏好、额外 Skills 文件夹和每 Skills 覆盖。适用于**内置**Skills 和 `~/.openclaw/skills`（工作区 Skills 在名称冲突时仍然优先）。
+控制内置白名单、安装偏好、额外 Skills 文件夹和每 Skills 覆盖。适用于**内置**Skills 和 `~/.zovsironclaw/skills`（工作区 Skills 在名称冲突时仍然优先）。
 
 字段：
 
@@ -2779,7 +2779,7 @@ Z.AI 模型通过内置的 `zai` 提供商提供。在环境中设置 `ZAI_API_K
 
 ### `plugins`（扩展）
 
-控制插件发现、允许/拒绝和每插件配置。插件从 `~/.openclaw/extensions`、`<workspace>/.openclaw/extensions` 以及任何 `plugins.load.paths` 条目加载。**配置更改需要重启 Gateway 网关。**
+控制插件发现、允许/拒绝和每插件配置。插件从 `~/.zovsironclaw/extensions`、`<workspace>/.zovsironclaw/extensions` 以及任何 `plugins.load.paths` 条目加载。**配置更改需要重启 Gateway 网关。**
 参见 [/plugin](/plugin) 了解详情。
 
 字段：
@@ -2828,7 +2828,7 @@ OpenClaw 可以为 OpenClaw 启动一个**专用、隔离的** Chrome/Brave/Edge
 - 控制服务：仅 local loopback（端口从 `gateway.port` 派生，默认 `18791`）
 - CDP URL：`http://127.0.0.1:18792`（控制服务 + 1，旧版单配置文件）
 - 配置文件颜色：`#FF4500`（龙虾橙）
-- 注意：控制服务器由运行中的 Gateway 网关（OpenClaw.app 菜单栏或 `openclaw gateway`）启动。
+- 注意：控制服务器由运行中的 Gateway 网关（OpenClaw.app 菜单栏或 `zovsironclaw gateway`）启动。
 - 自动检测顺序：如果为 Chromium 内核则使用默认浏览器；否则 Chrome → Brave → Edge → Chromium → Chrome Canary。
 
 ```json5
@@ -2920,7 +2920,7 @@ OpenClaw 可以为 OpenClaw 启动一个**专用、隔离的** Chrome/Brave/Edge
 
 说明：
 
-- `openclaw gateway` 拒绝启动，除非 `gateway.mode` 设为 `local`（或你传递了覆盖标志）。
+- `zovsironclaw gateway` 拒绝启动，除非 `gateway.mode` 设为 `local`（或你传递了覆盖标志）。
 - `gateway.port` 控制用于 WebSocket + HTTP（控制台 UI、hooks、A2UI）的单一多路复用端口。
 - OpenAI Chat Completions 端点：**默认禁用**；通过 `gateway.http.endpoints.chatCompletions.enabled: true` 启用。
 - 优先级：`--port` > `OPENCLAW_GATEWAY_PORT` > `gateway.port` > 默认 `18789`。
@@ -2953,7 +2953,7 @@ OpenClaw 可以为 OpenClaw 启动一个**专用、隔离的** Chrome/Brave/Edge
 
 macOS 应用行为：
 
-- OpenClaw.app 监视 `~/.openclaw/openclaw.json`，当 `gateway.mode` 或 `gateway.remote.url` 变更时实时切换模式。
+- OpenClaw.app 监视 `~/.zovsironclaw/zovsironclaw.json`，当 `gateway.mode` 或 `gateway.remote.url` 变更时实时切换模式。
 - 如果 `gateway.mode` 未设置但 `gateway.remote.url` 已设置，macOS 应用将其视为远程模式。
 - 当你在 macOS 应用中更改连接模式时，它会将 `gateway.mode`（以及远程模式下的 `gateway.remote.url` + `gateway.remote.transport`）写回配置文件。
 
@@ -2987,7 +2987,7 @@ macOS 应用行为：
 
 ### `gateway.reload`（配置热重载）
 
-Gateway 网关监视 `~/.openclaw/openclaw.json`（或 `OPENCLAW_CONFIG_PATH`）并自动应用更改。
+Gateway 网关监视 `~/.zovsironclaw/zovsironclaw.json`（或 `OPENCLAW_CONFIG_PATH`）并自动应用更改。
 
 模式：
 
@@ -3011,7 +3011,7 @@ Gateway 网关监视 `~/.openclaw/openclaw.json`（或 `OPENCLAW_CONFIG_PATH`）
 
 监视的文件：
 
-- `~/.openclaw/openclaw.json`（或 `OPENCLAW_CONFIG_PATH`）
+- `~/.zovsironclaw/zovsironclaw.json`（或 `OPENCLAW_CONFIG_PATH`）
 
 热应用（无需完全重启 Gateway 网关）：
 
@@ -3052,9 +3052,9 @@ Gateway 网关监视 `~/.openclaw/openclaw.json`（或 `OPENCLAW_CONFIG_PATH`）
 示例：
 
 ```bash
-OPENCLAW_CONFIG_PATH=~/.openclaw/a.json \
+OPENCLAW_CONFIG_PATH=~/.zovsironclaw/a.json \
 OPENCLAW_STATE_DIR=~/.openclaw-a \
-openclaw gateway --port 19001
+zovsironclaw gateway --port 19001
 ```
 
 ### `hooks`（Gateway 网关 webhook）
@@ -3074,7 +3074,7 @@ openclaw gateway --port 19001
     token: "shared-secret",
     path: "/hooks",
     presets: ["gmail"],
-    transformsDir: "~/.openclaw/hooks",
+    transformsDir: "~/.zovsironclaw/hooks",
     mappings: [
       {
         match: { path: "gmail" },
@@ -3169,7 +3169,7 @@ Tailscale 可以正确代理 `/gmail-pubsub`（它会去除设置的路径前缀
 
 Gateway 网关通过 HTTP 提供 HTML/CSS/JS 目录服务，以便 iOS/Android 节点可以简单地 `canvas.navigate` 到它。
 
-默认根目录：`~/.openclaw/workspace/canvas`
+默认根目录：`~/.zovsironclaw/workspace/canvas`
 默认端口：`18793`（选择此端口以避免 OpenClaw 浏览器 CDP 端口 `18792`）
 服务器监听 **Gateway 网关绑定主机**（LAN 或 Tailnet），以便节点可以访问。
 
@@ -3189,7 +3189,7 @@ Gateway 网关通过 HTTP 提供 HTML/CSS/JS 目录服务，以便 iOS/Android �
 ```json5
 {
   canvasHost: {
-    root: "~/.openclaw/workspace/canvas",
+    root: "~/.zovsironclaw/workspace/canvas",
     port: 18793,
     liveReload: true,
   },
@@ -3243,9 +3243,9 @@ TLS：
     bind: "tailnet",
     tls: {
       enabled: true,
-      // 省略时使用 ~/.openclaw/bridge/tls/bridge-{cert,key}.pem。
-      // certPath: "~/.openclaw/bridge/tls/bridge-cert.pem",
-      // keyPath: "~/.openclaw/bridge/tls/bridge-key.pem"
+      // 省略时使用 ~/.zovsironclaw/bridge/tls/bridge-{cert,key}.pem。
+      // certPath: "~/.zovsironclaw/bridge/tls/bridge-cert.pem",
+      // keyPath: "~/.zovsironclaw/bridge/tls/bridge-key.pem"
     },
   },
 }
@@ -3268,7 +3268,7 @@ TLS：
 
 ### `discovery.wideArea`（广域 Bonjour / 单播 DNS‑SD）
 
-启用后，Gateway 网关在 `~/.openclaw/dns/` 下使用配置的发现域（示例：`openclaw.internal.`）为 `_openclaw-gw._tcp` 写入单播 DNS-SD 区域。
+启用后，Gateway 网关在 `~/.zovsironclaw/dns/` 下使用配置的发现域（示例：`openclaw.internal.`）为 `_openclaw-gw._tcp` 写入单播 DNS-SD 区域。
 
 要使 iOS/Android 跨网络发现（跨地域访问），请配合以下使用：
 

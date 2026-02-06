@@ -22,9 +22,9 @@ Quick triage commands (in order):
 | `openclaw status`                  | Local summary: OS + update, gateway reachability/mode, service, agents/sessions, provider config state | First check, quick overview                       |
 | `openclaw status --all`            | Full local diagnosis (read-only, pasteable, safe-ish) incl. log tail                                   | When you need to share a debug report             |
 | `openclaw status --deep`           | Runs gateway health checks (incl. provider probes; requires reachable gateway)                         | When “configured” doesn’t mean “working”          |
-| `openclaw gateway probe`           | Gateway discovery + reachability (local + remote targets)                                              | When you suspect you’re probing the wrong gateway |
+| `zovsironclaw gateway probe`           | Gateway discovery + reachability (local + remote targets)                                              | When you suspect you’re probing the wrong gateway |
 | `openclaw channels status --probe` | Asks the running gateway for channel status (and optionally probes)                                    | When gateway is reachable but channels misbehave  |
-| `openclaw gateway status`          | Supervisor state (launchd/systemd/schtasks), runtime PID/exit, last gateway error                      | When the service “looks loaded” but nothing runs  |
+| `zovsironclaw gateway status`          | Supervisor state (launchd/systemd/schtasks), runtime PID/exit, last gateway error                      | When the service “looks loaded” but nothing runs  |
 | `openclaw logs --follow`           | Live logs (best signal for runtime issues)                                                             | When you need the actual failure reason           |
 
 **Sharing output:** prefer `openclaw status --all` (it redacts tokens). If you paste `openclaw status`, consider setting `OPENCLAW_SHOW_SECRETS=0` first (token previews).
@@ -105,8 +105,8 @@ can appear “loaded” while nothing is running.
 **Check:**
 
 ```bash
-openclaw gateway status
-openclaw doctor
+zovsironclaw gateway status
+zovsironclaw doctor
 ```
 
 Doctor/service will show runtime state (PID/last exit) and log hints.
@@ -180,14 +180,14 @@ The gateway service runs with a **minimal PATH** to avoid shell/manager cruft:
 
 This intentionally excludes version managers (nvm/fnm/volta/asdf) and package
 managers (pnpm/npm) because the service does not load your shell init. Runtime
-variables like `DISPLAY` should live in `~/.openclaw/.env` (loaded early by the
+variables like `DISPLAY` should live in `~/.zovsironclaw/.env` (loaded early by the
 gateway).
 Exec runs on `host=gateway` merge your login-shell `PATH` into the exec environment,
 so missing tools usually mean your shell init isn’t exporting them (or set
 `tools.exec.pathPrepend`). See [/tools/exec](/tools/exec).
 
 WhatsApp + Telegram channels require **Node**; Bun is unsupported. If your
-service was installed with Bun or a version-managed Node path, run `openclaw doctor`
+service was installed with Bun or a version-managed Node path, run `zovsironclaw doctor`
 to migrate to a system Node install.
 
 ### Skill missing API key in sandbox
@@ -215,31 +215,31 @@ the Gateway likely refused to bind.
 
 **Check:**
 
-- `gateway.mode` must be `local` for `openclaw gateway` and the service.
-- If you set `gateway.mode=remote`, the **CLI defaults** to a remote URL. The service can still be running locally, but your CLI may be probing the wrong place. Use `openclaw gateway status` to see the service’s resolved port + probe target (or pass `--url`).
-- `openclaw gateway status` and `openclaw doctor` surface the **last gateway error** from logs when the service looks running but the port is closed.
+- `gateway.mode` must be `local` for `zovsironclaw gateway` and the service.
+- If you set `gateway.mode=remote`, the **CLI defaults** to a remote URL. The service can still be running locally, but your CLI may be probing the wrong place. Use `zovsironclaw gateway status` to see the service’s resolved port + probe target (or pass `--url`).
+- `zovsironclaw gateway status` and `zovsironclaw doctor` surface the **last gateway error** from logs when the service looks running but the port is closed.
 - Non-loopback binds (`lan`/`tailnet`/`custom`, or `auto` when loopback is unavailable) require auth:
   `gateway.auth.token` (or `OPENCLAW_GATEWAY_TOKEN`).
 - `gateway.remote.token` is for remote CLI calls only; it does **not** enable local auth.
 - `gateway.token` is ignored; use `gateway.auth.token`.
 
-**If `openclaw gateway status` shows a config mismatch**
+**If `zovsironclaw gateway status` shows a config mismatch**
 
 - `Config (cli): ...` and `Config (service): ...` should normally match.
 - If they don’t, you’re almost certainly editing one config while the service is running another.
-- Fix: rerun `openclaw gateway install --force` from the same `--profile` / `OPENCLAW_STATE_DIR` you want the service to use.
+- Fix: rerun `zovsironclaw gateway install --force` from the same `--profile` / `OPENCLAW_STATE_DIR` you want the service to use.
 
-**If `openclaw gateway status` reports service config issues**
+**If `zovsironclaw gateway status` reports service config issues**
 
 - The supervisor config (launchd/systemd/schtasks) is missing current defaults.
-- Fix: run `openclaw doctor` to update it (or `openclaw gateway install --force` for a full rewrite).
+- Fix: run `zovsironclaw doctor` to update it (or `zovsironclaw gateway install --force` for a full rewrite).
 
 **If `Last gateway error:` mentions “refusing to bind … without auth”**
 
 - You set `gateway.bind` to a non-loopback mode (`lan`/`tailnet`/`custom`, or `auto` when loopback is unavailable) but didn’t configure auth.
 - Fix: set `gateway.auth.mode` + `gateway.auth.token` (or export `OPENCLAW_GATEWAY_TOKEN`) and restart the service.
 
-**If `openclaw gateway status` says `bind=tailnet` but no tailnet interface was found**
+**If `zovsironclaw gateway status` says `bind=tailnet` but no tailnet interface was found**
 
 - The gateway tried to bind to a Tailscale IP (100.64.0.0/10) but none were detected on the host.
 - Fix: bring up Tailscale on that machine (or change `gateway.bind` to `loopback`/`lan`).
@@ -256,7 +256,7 @@ This means something is already listening on the gateway port.
 **Check:**
 
 ```bash
-openclaw gateway status
+zovsironclaw gateway status
 ```
 
 It will show the listener(s) and likely causes (gateway already running, SSH tunnel).
@@ -273,7 +273,7 @@ only one workspace is active.
 
 ### Main chat running in a sandbox workspace
 
-Symptoms: `pwd` or file tools show `~/.openclaw/sandboxes/...` even though you
+Symptoms: `pwd` or file tools show `~/.zovsironclaw/sandboxes/...` even though you
 expected the host workspace.
 
 **Why:** `agents.defaults.sandbox.mode: "non-main"` keys off `session.mainKey` (default `"main"`).
@@ -328,7 +328,7 @@ Look for `AllowFrom: ...` in the output.
 # The message must match mentionPatterns or explicit mentions; defaults live in channel groups/guilds.
 # Multi-agent: `agents.list[].groupChat.mentionPatterns` overrides global patterns.
 grep -n "agents\\|groupChat\\|mentionPatterns\\|channels\\.whatsapp\\.groups\\|channels\\.telegram\\.groups\\|channels\\.imessage\\.groups\\|channels\\.discord\\.guilds" \
-  "${OPENCLAW_CONFIG_PATH:-$HOME/.openclaw/openclaw.json}"
+  "${OPENCLAW_CONFIG_PATH:-$HOME/.zovsironclaw/zovsironclaw.json}"
 ```
 
 **Check 3:** Check the logs
@@ -346,7 +346,7 @@ If `dmPolicy` is `pairing`, unknown senders should receive a code and their mess
 **Check 1:** Is a pending request already waiting?
 
 ```bash
-openclaw pairing list <channel>
+zovsironclaw pairing list <channel>
 ```
 
 Pending DM pairing requests are capped at **3 per channel** by default. If the list is full, new requests won’t generate a code until one is approved or expires.
@@ -373,7 +373,7 @@ Known issue: When you send an image with ONLY a mention (no other text), WhatsAp
 **Check 1:** Is the session file there?
 
 ```bash
-ls -la ~/.openclaw/agents/<agentId>/sessions/
+ls -la ~/.zovsironclaw/agents/<agentId>/sessions/
 ```
 
 **Check 2:** Is the reset window too short?
@@ -421,7 +421,7 @@ openclaw logs --limit 200 | grep "connection\\|disconnect\\|logout"
 **Fix:** Usually reconnects automatically once the Gateway is running. If you’re stuck, restart the Gateway process (however you supervise it), or run it manually with verbose output:
 
 ```bash
-openclaw gateway --verbose
+zovsironclaw gateway --verbose
 ```
 
 If you’re logged out / unlinked:
@@ -476,15 +476,15 @@ This is intentional for safety.
 Fix it with Doctor:
 
 ```bash
-openclaw doctor
-openclaw doctor --fix
+zovsironclaw doctor
+zovsironclaw doctor --fix
 ```
 
 Notes:
 
-- `openclaw doctor` reports every invalid entry.
-- `openclaw doctor --fix` applies migrations/repairs and rewrites the config.
-- Diagnostic commands like `openclaw logs`, `openclaw health`, `openclaw status`, `openclaw gateway status`, and `openclaw gateway probe` still run even if the config is invalid.
+- `zovsironclaw doctor` reports every invalid entry.
+- `zovsironclaw doctor --fix` applies migrations/repairs and rewrites the config.
+- Diagnostic commands like `openclaw logs`, `openclaw health`, `openclaw status`, `zovsironclaw gateway status`, and `zovsironclaw gateway probe` still run even if the config is invalid.
 
 ### “All models failed” — what should I check first?
 
@@ -522,7 +522,7 @@ openclaw channels login
 ### Build errors on `main` — what’s the standard fix path?
 
 1. `git pull origin main && pnpm install`
-2. `openclaw doctor`
+2. `zovsironclaw doctor`
 3. Check GitHub issues or Discord
 4. Temporary workaround: check out an older commit
 
@@ -537,8 +537,8 @@ Typical recovery:
 git status   # ensure you’re in the repo root
 pnpm install
 pnpm build
-openclaw doctor
-openclaw gateway restart
+zovsironclaw doctor
+zovsironclaw gateway restart
 ```
 
 Why: pnpm is the configured package manager for this repo.
@@ -566,8 +566,8 @@ Notes:
 - After switching, run:
 
   ```bash
-  openclaw doctor
-  openclaw gateway restart
+  zovsironclaw doctor
+  zovsironclaw gateway restart
   ```
 
 ### Telegram block streaming isn’t splitting text between tool calls. Why?
@@ -648,8 +648,8 @@ The app connects to a local gateway on port `18789`. If it stays stuck:
 If the gateway is supervised by launchd, killing the PID will just respawn it. Stop the supervisor first:
 
 ```bash
-openclaw gateway status
-openclaw gateway stop
+zovsironclaw gateway status
+zovsironclaw gateway stop
 # Or: launchctl bootout gui/$UID/bot.molt.gateway (replace with bot.molt.<profile>; legacy com.openclaw.* still works)
 ```
 
@@ -681,10 +681,10 @@ Get verbose logging:
 
 ```bash
 # Turn on trace logging in config:
-#   ${OPENCLAW_CONFIG_PATH:-$HOME/.openclaw/openclaw.json} -> { logging: { level: "trace" } }
+#   ${OPENCLAW_CONFIG_PATH:-$HOME/.zovsironclaw/zovsironclaw.json} -> { logging: { level: "trace" } }
 #
 # Then run verbose commands to mirror debug output to stdout:
-openclaw gateway --verbose
+zovsironclaw gateway --verbose
 openclaw channels login --verbose
 ```
 
@@ -693,7 +693,7 @@ openclaw channels login --verbose
 | Log                               | Location                                                                                                                                                                                                                                                                                                                    |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Gateway file logs (structured)    | `/tmp/openclaw/openclaw-YYYY-MM-DD.log` (or `logging.file`)                                                                                                                                                                                                                                                                 |
-| Gateway service logs (supervisor) | macOS: `$OPENCLAW_STATE_DIR/logs/gateway.log` + `gateway.err.log` (default: `~/.openclaw/logs/...`; profiles use `~/.openclaw-<profile>/logs/...`)<br />Linux: `journalctl --user -u openclaw-gateway[-<profile>].service -n 200 --no-pager`<br />Windows: `schtasks /Query /TN "OpenClaw Gateway (<profile>)" /V /FO LIST` |
+| Gateway service logs (supervisor) | macOS: `$OPENCLAW_STATE_DIR/logs/gateway.log` + `gateway.err.log` (default: `~/.zovsironclaw/logs/...`; profiles use `~/.openclaw-<profile>/logs/...`)<br />Linux: `journalctl --user -u openclaw-gateway[-<profile>].service -n 200 --no-pager`<br />Windows: `schtasks /Query /TN "OpenClaw Gateway (<profile>)" /V /FO LIST` |
 | Session files                     | `$OPENCLAW_STATE_DIR/agents/<agentId>/sessions/`                                                                                                                                                                                                                                                                            |
 | Media cache                       | `$OPENCLAW_STATE_DIR/media/`                                                                                                                                                                                                                                                                                                |
 | Credentials                       | `$OPENCLAW_STATE_DIR/credentials/`                                                                                                                                                                                                                                                                                          |
@@ -702,9 +702,9 @@ openclaw channels login --verbose
 
 ```bash
 # Supervisor + probe target + config paths
-openclaw gateway status
+zovsironclaw gateway status
 # Include system-level scans (legacy/extra services, port listeners)
-openclaw gateway status --deep
+zovsironclaw gateway status --deep
 
 # Is the gateway reachable?
 openclaw health --json
@@ -725,13 +725,13 @@ tail -20 /tmp/openclaw/openclaw-*.log
 Nuclear option:
 
 ```bash
-openclaw gateway stop
+zovsironclaw gateway stop
 # If you installed a service and want a clean install:
-# openclaw gateway uninstall
+# zovsironclaw gateway uninstall
 
 trash "${OPENCLAW_STATE_DIR:-$HOME/.openclaw}"
 openclaw channels login         # re-pair WhatsApp
-openclaw gateway restart           # or: openclaw gateway
+zovsironclaw gateway restart           # or: zovsironclaw gateway
 ```
 
 ⚠️ This loses all sessions and requires re-pairing WhatsApp.

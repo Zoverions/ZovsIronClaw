@@ -114,7 +114,7 @@ fly secrets set DISCORD_BOT_TOKEN=MTQ...
 
 - 非 loopback 绑定（`--bind lan`）出于安全需要 `OPENCLAW_GATEWAY_TOKEN`。
 - 像对待密码一样对待这些 token。
-- **优先使用环境变量而不是配置文件**来存储所有 API 密钥和 token。这可以避免密钥出现在 `openclaw.json` 中，防止意外暴露或记录。
+- **优先使用环境变量而不是配置文件**来存储所有 API 密钥和 token。这可以避免密钥出现在 `zovsironclaw.json` 中，防止意外暴露或记录。
 
 ## 4）部署
 
@@ -150,7 +150,7 @@ fly ssh console
 
 ```bash
 mkdir -p /data
-cat > /data/openclaw.json << 'EOF'
+cat > /data/zovsironclaw.json << 'EOF'
 {
   "agents": {
     "defaults": {
@@ -202,7 +202,7 @@ cat > /data/openclaw.json << 'EOF'
 EOF
 ```
 
-**注意：** 使用 `OPENCLAW_STATE_DIR=/data` 时，配置路径是 `/data/openclaw.json`。
+**注意：** 使用 `OPENCLAW_STATE_DIR=/data` 时，配置路径是 `/data/zovsironclaw.json`。
 
 **注意：** Discord token 可以来自：
 
@@ -295,12 +295,12 @@ fly machine restart <machine-id>
 
 ### 配置未被读取
 
-如果使用 `--allow-unconfigured`，Gateway 网关会创建最小配置。你在 `/data/openclaw.json` 的自定义配置应该在重启时被读取。
+如果使用 `--allow-unconfigured`，Gateway 网关会创建最小配置。你在 `/data/zovsironclaw.json` 的自定义配置应该在重启时被读取。
 
 验证配置是否存在：
 
 ```bash
-fly ssh console --command "cat /data/openclaw.json"
+fly ssh console --command "cat /data/zovsironclaw.json"
 ```
 
 ### 通过 SSH 写入配置
@@ -309,17 +309,17 @@ fly ssh console --command "cat /data/openclaw.json"
 
 ```bash
 # Use echo + tee (pipe from local to remote)
-echo '{"your":"config"}' | fly ssh console -C "tee /data/openclaw.json"
+echo '{"your":"config"}' | fly ssh console -C "tee /data/zovsironclaw.json"
 
 # Or use sftp
 fly sftp shell
-> put /local/path/config.json /data/openclaw.json
+> put /local/path/config.json /data/zovsironclaw.json
 ```
 
 **注意：** 如果文件已存在，`fly sftp` 可能会失败。先删除：
 
 ```bash
-fly ssh console --command "rm /data/openclaw.json"
+fly ssh console --command "rm /data/zovsironclaw.json"
 ```
 
 ### 状态未持久化

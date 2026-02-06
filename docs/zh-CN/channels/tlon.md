@@ -124,7 +124,7 @@ openclaw plugins install ./extensions/tlon
 
 ## 投递目标（CLI/cron）
 
-与 `openclaw message send` 或 cron 投递一起使用：
+与 `zovsironclaw message send` 或 cron 投递一起使用：
 
 - 私信：`~sampel-palnet` 或 `dm/~sampel-palnet`
 - 群组：`chat/~host-ship/channel` 或 `group:~host-ship/channel`

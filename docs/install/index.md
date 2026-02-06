@@ -1,5 +1,5 @@
 ---
-summary: "Install OpenClaw — installer script, npm/pnpm, from source, Docker, and more"
+summary: "Install ZovsIronClaw — from source (recommended for this fork)"
 read_when:
   - You need an install method other than the Getting Started quickstart
   - You want to deploy to a cloud platform
@@ -13,120 +13,54 @@ Already followed [Getting Started](/start/getting-started)? You're all set — t
 
 ## System requirements
 
-- **[Node 22+](/install/node)** (the [installer script](#install-methods) will install it if missing)
+- **[Node 22+](/install/node)**
 - macOS, Linux, or Windows
-- `pnpm` only if you build from source
+- `pnpm` (required for building from source)
+- Docker & Docker Compose (for the GCA service)
 
 <Note>
-On Windows, we strongly recommend running OpenClaw under [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install).
+On Windows, we strongly recommend running ZovsIronClaw under [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install).
 </Note>
 
 ## Install methods
 
 <Tip>
-The **installer script** is the recommended way to install OpenClaw. It handles Node detection, installation, and onboarding in one step.
+Since ZovsIronClaw is a specialized fork with the GCA service, installing from source is the primary supported method.
 </Tip>
 
 <AccordionGroup>
-  <Accordion title="Installer script" icon="rocket" defaultOpen>
-    Downloads the CLI, installs it globally via npm, and launches the onboarding wizard.
-
-    <Tabs>
-      <Tab title="macOS / Linux / WSL2">
-        ```bash
-        curl -fsSL https://openclaw.ai/install.sh | bash
-        ```
-      </Tab>
-      <Tab title="Windows (PowerShell)">
-        ```powershell
-        iwr -useb https://openclaw.ai/install.ps1 | iex
-        ```
-      </Tab>
-    </Tabs>
-
-    That's it — the script handles Node detection, installation, and onboarding.
-
-    To skip onboarding and just install the binary:
-
-    <Tabs>
-      <Tab title="macOS / Linux / WSL2">
-        ```bash
-        curl -fsSL https://openclaw.ai/install.sh | bash -s -- --no-onboard
-        ```
-      </Tab>
-      <Tab title="Windows (PowerShell)">
-        ```powershell
-        & ([scriptblock]::Create((iwr -useb https://openclaw.ai/install.ps1))) -NoOnboard
-        ```
-      </Tab>
-    </Tabs>
-
-    For all flags, env vars, and CI/automation options, see [Installer internals](/install/installer).
-
-  </Accordion>
-
-  <Accordion title="npm / pnpm" icon="package">
-    If you already have Node 22+ and prefer to manage the install yourself:
-
-    <Tabs>
-      <Tab title="npm">
-        ```bash
-        npm install -g openclaw@latest
-        openclaw onboard --install-daemon
-        ```
-
-        <Accordion title="sharp build errors?">
-          If you have libvips installed globally (common on macOS via Homebrew) and `sharp` fails, force prebuilt binaries:
-
-          ```bash
-          SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install -g openclaw@latest
-          ```
-
-          If you see `sharp: Please add node-gyp to your dependencies`, either install build tooling (macOS: Xcode CLT + `npm install -g node-gyp`) or use the env var above.
-        </Accordion>
-      </Tab>
-      <Tab title="pnpm">
-        ```bash
-        pnpm add -g openclaw@latest
-        pnpm approve-builds -g        # approve openclaw, node-llama-cpp, sharp, etc.
-        openclaw onboard --install-daemon
-        ```
-
-        <Note>
-        pnpm requires explicit approval for packages with build scripts. After the first install shows the "Ignored build scripts" warning, run `pnpm approve-builds -g` and select the listed packages.
-        </Note>
-      </Tab>
-    </Tabs>
-
-  </Accordion>
-
-  <Accordion title="From source" icon="github">
-    For contributors or anyone who wants to run from a local checkout.
+  <Accordion title="From source (Recommended)" icon="github" defaultOpen>
+    For contributors or anyone who wants to run ZovsIronClaw.
 
     <Steps>
       <Step title="Clone and build">
-        Clone the [OpenClaw repo](https://github.com/openclaw/openclaw) and build:
+        Clone the [ZovsIronClaw repo](https://github.com/Zoverions/ZovsIronClaw) and build:
 
         ```bash
-        git clone https://github.com/openclaw/openclaw.git
-        cd openclaw
+        git clone https://github.com/Zoverions/ZovsIronClaw.git
+        cd ZovsIronClaw
         pnpm install
         pnpm ui:build
         pnpm build
         ```
       </Step>
       <Step title="Link the CLI">
-        Make the `openclaw` command available globally:
+        Make the `zovsironclaw` command available globally:
 
         ```bash
         pnpm link --global
         ```
 
-        Alternatively, skip the link and run commands via `pnpm openclaw ...` from inside the repo.
+        Alternatively, skip the link and run commands via `./zovsironclaw.mjs ...` from inside the repo.
+      </Step>
+      <Step title="Start GCA Service">
+        ```bash
+        docker-compose up -d gca-service
+        ```
       </Step>
       <Step title="Run onboarding">
         ```bash
-        openclaw onboard --install-daemon
+        zovsironclaw onboard --install-daemon
         ```
       </Step>
     </Steps>
@@ -158,12 +92,12 @@ The **installer script** is the recommended way to install OpenClaw. It handles 
 Verify everything is working:
 
 ```bash
-openclaw doctor         # check for config issues
-openclaw status         # gateway status
-openclaw dashboard      # open the browser UI
+zovsironclaw doctor         # check for config issues
+zovsironclaw status         # gateway status
+zovsironclaw dashboard      # open the browser UI
 ```
 
-## Troubleshooting: `openclaw` not found
+## Troubleshooting: `zovsironclaw` not found
 
 <Accordion title="PATH diagnosis and fix">
   Quick diagnosis:
@@ -175,7 +109,7 @@ npm prefix -g
 echo "$PATH"
 ```
 
-If `$(npm prefix -g)/bin` (macOS/Linux) or `$(npm prefix -g)` (Windows) is **not** in your `$PATH`, your shell can't find global npm binaries (including `openclaw`).
+If `$(npm prefix -g)/bin` (macOS/Linux) or `$(npm prefix -g)` (Windows) is **not** in your `$PATH`, your shell can't find global npm binaries (including `zovsironclaw`).
 
 Fix — add it to your shell startup file (`~/.zshrc` or `~/.bashrc`):
 
@@ -192,12 +126,12 @@ Then open a new terminal (or `rehash` in zsh / `hash -r` in bash).
 
 <CardGroup cols={3}>
   <Card title="Updating" href="/install/updating" icon="refresh-cw">
-    Keep OpenClaw up to date.
+    Keep ZovsIronClaw up to date.
   </Card>
   <Card title="Migrating" href="/install/migrating" icon="arrow-right">
     Move to a new machine.
   </Card>
   <Card title="Uninstall" href="/install/uninstall" icon="trash-2">
-    Remove OpenClaw completely.
+    Remove ZovsIronClaw completely.
   </Card>
 </CardGroup>

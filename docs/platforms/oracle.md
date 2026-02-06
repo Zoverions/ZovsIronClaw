@@ -117,7 +117,7 @@ openclaw config set gateway.bind loopback
 
 # Require auth for the Gateway + Control UI
 openclaw config set gateway.auth.mode token
-openclaw doctor --generate-gateway-token
+zovsironclaw doctor --generate-gateway-token
 
 # Expose over Tailscale Serve (HTTPS + tailnet access)
 openclaw config set gateway.tailscale.mode serve
@@ -249,8 +249,8 @@ sudo tailscale up --ssh --hostname=openclaw --reset
 ### Gateway won't start
 
 ```bash
-openclaw gateway status
-openclaw doctor --non-interactive
+zovsironclaw gateway status
+zovsironclaw doctor --non-interactive
 journalctl --user -u openclaw-gateway -n 50
 ```
 
@@ -283,13 +283,13 @@ Most npm packages work fine. For binaries, look for `linux-arm64` or `aarch64` r
 
 All state lives in:
 
-- `~/.openclaw/` — config, credentials, session data
-- `~/.openclaw/workspace/` — workspace (SOUL.md, memory, artifacts)
+- `~/.zovsironclaw/` — config, credentials, session data
+- `~/.zovsironclaw/workspace/` — workspace (SOUL.md, memory, artifacts)
 
 Back up periodically:
 
 ```bash
-tar -czvf openclaw-backup.tar.gz ~/.openclaw ~/.openclaw/workspace
+tar -czvf openclaw-backup.tar.gz ~/.openclaw ~/.zovsironclaw/workspace
 ```
 
 ---

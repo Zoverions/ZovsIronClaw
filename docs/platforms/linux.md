@@ -17,7 +17,7 @@ Native Linux companion apps are planned. Contributions are welcome if you want t
 
 1. Install Node 22+
 2. `npm i -g openclaw@latest`
-3. `openclaw onboard --install-daemon`
+3. `zovsironclaw onboard --install-daemon`
 4. From your laptop: `ssh -N -L 18789:127.0.0.1:18789 <user>@<host>`
 5. Open `http://127.0.0.1:18789/` and paste your token
 
@@ -39,13 +39,13 @@ Step-by-step VPS guide: [exe.dev](/install/exe-dev)
 Use one of these:
 
 ```
-openclaw onboard --install-daemon
+zovsironclaw onboard --install-daemon
 ```
 
 Or:
 
 ```
-openclaw gateway install
+zovsironclaw gateway install
 ```
 
 Or:
@@ -59,7 +59,7 @@ Select **Gateway service** when prompted.
 Repair/migrate:
 
 ```
-openclaw doctor
+zovsironclaw doctor
 ```
 
 ## System control (systemd user unit)
@@ -79,7 +79,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=/usr/local/bin/openclaw gateway --port 18789
+ExecStart=/usr/local/bin/zovsironclaw gateway --port 18789
 Restart=always
 RestartSec=5
 

@@ -11,7 +11,7 @@ title: "Channel Troubleshooting"
 Start with:
 
 ```bash
-openclaw doctor
+zovsironclaw doctor
 openclaw channels status --probe
 ```
 

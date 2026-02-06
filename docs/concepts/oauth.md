@@ -40,12 +40,12 @@ To reduce that, OpenClaw treats `auth-profiles.json` as a **token sink**:
 
 Secrets are stored **per-agent**:
 
-- Auth profiles (OAuth + API keys): `~/.openclaw/agents/<agentId>/agent/auth-profiles.json`
-- Runtime cache (managed automatically; don’t edit): `~/.openclaw/agents/<agentId>/agent/auth.json`
+- Auth profiles (OAuth + API keys): `~/.zovsironclaw/agents/<agentId>/agent/auth-profiles.json`
+- Runtime cache (managed automatically; don’t edit): `~/.zovsironclaw/agents/<agentId>/agent/auth.json`
 
 Legacy import-only file (still supported, but not the main store):
 
-- `~/.openclaw/credentials/oauth.json` (imported into `auth-profiles.json` on first use)
+- `~/.zovsironclaw/credentials/oauth.json` (imported into `auth-profiles.json` on first use)
 
 All of the above also respect `$OPENCLAW_STATE_DIR` (state dir override). Full reference: [/gateway/configuration](/gateway/configuration#auth-storage-oauth--api-keys)
 
@@ -81,7 +81,7 @@ Flow shape:
 2. paste the token into OpenClaw
 3. store as a token auth profile (no refresh)
 
-The wizard path is `openclaw onboard` → auth choice `setup-token` (Anthropic).
+The wizard path is `zovsironclaw onboard` → auth choice `setup-token` (Anthropic).
 
 ### OpenAI Codex (ChatGPT OAuth)
 
@@ -94,7 +94,7 @@ Flow shape (PKCE):
 5. exchange at `https://auth.openai.com/oauth/token`
 6. extract `accountId` from the access token and store `{ access, refresh, expires, accountId }`
 
-Wizard path is `openclaw onboard` → auth choice `openai-codex`.
+Wizard path is `zovsironclaw onboard` → auth choice `openai-codex`.
 
 ## Refresh + expiry
 
@@ -116,8 +116,8 @@ Two patterns:
 If you want “personal” and “work” to never interact, use isolated agents (separate sessions + credentials + workspace):
 
 ```bash
-openclaw agents add work
-openclaw agents add personal
+zovsironclaw agents add work
+zovsironclaw agents add personal
 ```
 
 Then configure auth per-agent (wizard) and route chats to the right agent.
