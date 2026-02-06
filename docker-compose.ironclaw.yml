@@ -1,149 +1,54 @@
 version: '3.8'
 
-# ZovsIronClaw Docker Compose Configuration
-# Integrates OpenClaw with GCA (Geometric Conscience Architecture) service
-
 services:
-  # OpenClaw Gateway with GCA Integration
-  openclaw-gateway:
-    image: ${OPENCLAW_IMAGE:-openclaw:local}
-    container_name: ironclaw-gateway
-    environment:
-      HOME: /home/node
-      TERM: xterm-256color
-      
-      # OpenClaw configuration
-      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
-      CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY}
-      CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY}
-      CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE}
-      
-      # GCA Integration
-      GCA_SERVICE_URL: http://gca-service:8000
-      GCA_RISK_TOLERANCE: ${GCA_RISK_TOLERANCE:-0.3}
-      GCA_USE_QPT: ${GCA_USE_QPT:-true}
-      GCA_DEFAULT_SOUL: ${GCA_DEFAULT_SOUL:-architect}
-      
-      # API Keys
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      XAI_API_KEY: ${XAI_API_KEY}
-    volumes:
-      - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
-      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
-    ports:
-      - "${OPENCLAW_GATEWAY_PORT:-18789}:18789"
-      - "${OPENCLAW_BRIDGE_PORT:-18790}:18790"
-    init: true
-    restart: unless-stopped
-    depends_on:
-      gca-service:
-        condition: service_healthy
-    networks:
-      - ironclaw-network
-    command:
-      [
-        "node",
-        "dist/index.js",
-        "gateway",
-        "--bind",
-        "${OPENCLAW_GATEWAY_BIND:-lan}",
-        "--port",
-        "18789",
-      ]
-
-  # OpenClaw CLI with GCA Integration
-  openclaw-cli:
-    image: ${OPENCLAW_IMAGE:-openclaw:local}
-    container_name: ironclaw-cli
-    environment:
-      HOME: /home/node
-      TERM: xterm-256color
-      BROWSER: echo
-      
-      # OpenClaw configuration
-      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
-      CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY}
-      CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY}
-      CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE}
-      
-      # GCA Integration
-      GCA_SERVICE_URL: http://gca-service:8000
-      GCA_RISK_TOLERANCE: ${GCA_RISK_TOLERANCE:-0.3}
-      GCA_USE_QPT: ${GCA_USE_QPT:-true}
-      GCA_DEFAULT_SOUL: ${GCA_DEFAULT_SOUL:-companion}
-      
-      # API Keys
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      XAI_API_KEY: ${XAI_API_KEY}
-    volumes:
-      - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
-      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
-    stdin_open: true
-    tty: true
-    init: true
-    depends_on:
-      gca-service:
-        condition: service_healthy
-    networks:
-      - ironclaw-network
-    entrypoint: ["node", "dist/index.js"]
-
-  # GCA Service (Geometric Conscience Architecture)
+  # --- THE BRAIN (Python GCA) ---
   gca-service:
     build:
       context: ./gca-service
-      dockerfile: Dockerfile
-    container_name: ironclaw-gca
-    environment:
-      # API Keys
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
-      
-      # GCA Configuration
-      GCA_RISK_TOLERANCE: ${GCA_RISK_TOLERANCE:-0.3}
-      GCA_LOG_LEVEL: ${GCA_LOG_LEVEL:-INFO}
-      
-      # Python configuration
-      PYTHONUNBUFFERED: 1
-    ports:
-      - "${GCA_SERVICE_PORT:-8000}:8000"
-    volumes:
-      # Persistent storage for vectors, souls, and logs
-      - ./gca-service/gca_assets:/app/gca_assets
-      - gca-logs:/app/logs
-    healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+    image: openclaw-gca-brain
+    container_name: gca-brain
     restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./gca-service/gca_assets:/app/gca_assets
+    environment:
+      - PYTHONUNBUFFERED=1
+      # Local Qwen model doesn't strictly need API key but keeping structure
+      - GCA_LOG_LEVEL=INFO
     networks:
-      - ironclaw-network
+      - claw-net
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
 
-  # Optional: Arena Protocol Runner (for testing)
-  # Uncomment to run continuous adversarial testing
-  # arena-runner:
-  #   build:
-  #     context: ./gca-service
-  #     dockerfile: Dockerfile
-  #   container_name: ironclaw-arena
-  #   environment:
-  #     GEMINI_API_KEY: ${GEMINI_API_KEY}
-  #     GCA_SERVICE_URL: http://gca-service:8000
-  #   command: ["python", "-c", "import time; import requests; time.sleep(60); requests.get('http://gca-service:8000/v1/arena/run?rounds=10')"]
-  #   depends_on:
-  #     - gca-service
-  #   networks:
-  #     - ironclaw-network
-  #   restart: on-failure
+  # --- THE BODY (OpenClaw / Gateway) ---
+  gateway:
+    build: .  # Uses the root Dockerfile
+    image: openclaw-gateway
+    container_name: openclaw-gateway
+    restart: unless-stopped
+    depends_on:
+      - gca-service
+    environment:
+      - NODE_ENV=production
+      # This points the OpenClaw extension to the Docker container name
+      - GCA_API_URL=http://gca-brain:8000
+      - ENABLED_EXTENSIONS=gca-brain,voice-call
+      # OpenClaw required vars (from original ironclaw compose)
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./.agent:/app/.agent
+      - ./extensions:/app/extensions
+    networks:
+      - claw-net
 
 networks:
-  ironclaw-network:
+  claw-net:
     driver: bridge
-    name: ironclaw-network
-
-volumes:
-  gca-logs:
-    name: ironclaw-gca-logs

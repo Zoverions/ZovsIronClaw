@@ -15,6 +15,18 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY gca_core/ ./gca_core/
 COPY gca_assets/ ./gca_assets/
 COPY api_server.py .
+COPY config.yaml .
+COPY init_system.py .
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+
+# Run the Cartographer on build to ensure basis exists
+# We save to a build dir so it doesn't get masked by volume mount
+ENV GCA_ASSETS_DIR=/app/gca_assets_build
+RUN python init_system.py || echo "Warning: init_system.py failed. Basis vectors will need to be generated at runtime."
+
+# Reset ENV for runtime (though config.yaml defaults to /app/gca_assets)
+ENV GCA_ASSETS_DIR=/app/gca_assets
 
 # Expose port
 EXPOSE 8000
@@ -23,5 +35,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:8000/health')"
 
-# Run the API server
+# Run via entrypoint
+ENTRYPOINT ["./entrypoint.sh"]
 CMD ["python", "api_server.py"]

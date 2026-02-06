@@ -9,28 +9,35 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import logging
 import sys
+import yaml
+import os
 from pathlib import Path
 
 # Add gca_core to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from gca_core import (
-    GlassBox,
-    MoralKernel,
-    Action,
-    EntropyClass,
-    IsotropicMemory,
-    GCAOptimizer,
-    QuaternionArchitect,
-    ArenaProtocol
-)
+from gca_core.glassbox import GlassBox
+from gca_core.moral import MoralKernel, Action, EntropyClass
+from gca_core.optimizer import GCAOptimizer
+from gca_core.memory import IsotropicMemory
+from gca_core.resonance import ResonanceEngine
+from gca_core.qpt import QuaternionArchitect
+from gca_core.arena import ArenaProtocol
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-logger = logging.getLogger("GCA.API")
+logger = logging.getLogger("IronClaw")
+
+# Load Config
+config_path = "config.yaml"
+if os.path.exists(config_path):
+    with open(config_path) as f:
+        CFG = yaml.safe_load(f)
+else:
+    CFG = {}
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -39,290 +46,142 @@ app = FastAPI(
     version="4.5.0"
 )
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict to OpenClaw service
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Initialize GCA Stack
-glassbox = GlassBox(model_name="gemini-2.5-flash")
+# --- INIT CORE COMPONENTS ---
+logger.info("Booting IronClaw Core...")
+glassbox = GlassBox() # Uses config.yaml
 memory = IsotropicMemory(glassbox.device, storage_path="./gca_assets")
 optimizer = GCAOptimizer(glassbox, memory)
 moral_kernel = MoralKernel(risk_tolerance=0.3)
+resonance = ResonanceEngine(glassbox, memory)
 qpt = QuaternionArchitect()
 
 logger.info("GCA Service initialized successfully")
 
-
 # ============================================================================
-# Request/Response Models
+# Models
 # ============================================================================
 
-class PromptRequest(BaseModel):
-    """Request model for reasoning endpoint."""
-    user_id: str = Field(..., description="User identifier")
-    text: str = Field(..., description="User input text")
-    tools_available: List[str] = Field(default=[], description="Available tools")
-    context: Optional[str] = Field(None, description="Additional context")
-    soul_name: Optional[str] = Field(None, description="Soul template to use")
-    use_qpt: bool = Field(True, description="Use Quaternion Process Theory structuring")
-
+class ReasonRequest(BaseModel):
+    user_id: str
+    text: str
+    soul_config: Optional[str] = ""
+    input_modality: Optional[str] = "text" # 'text' or 'voice'
+    tools_available: List[str] = []
+    context: Optional[str] = None
 
 class ReasoningResponse(BaseModel):
-    """Response model for reasoning endpoint."""
-    status: str = Field(..., description="APPROVED or BLOCKED")
-    response: str = Field(..., description="Generated response")
-    tool_call: Optional[Dict[str, Any]] = Field(None, description="Tool call if approved")
-    moral_signature: Optional[str] = Field(None, description="Cryptographic signature for approved actions")
-    risk_score: float = Field(..., description="Overall risk score")
-    reasoning_path: List[str] = Field(default=[], description="Reasoning steps taken")
-
-
-class ActionModel(BaseModel):
-    """Model for action evaluation."""
-    type: str
-    description: str
-    magnitude: float = Field(ge=0.0, le=1.0)
-    prob_success: float = Field(ge=0.0, le=1.0)
-    prob_harm: float = Field(ge=0.0, le=1.0)
-    time_horizon_yrs: float = Field(gt=0.0)
-    entropy_class: str  # Will be converted to EntropyClass
-
+    status: str
+    content: str # The response text
+    tool_call: Optional[Dict[str, Any]] = None
+    moral_signature: Optional[str] = None
+    meta: Dict[str, Any] = {}
 
 class MoralEvaluationRequest(BaseModel):
-    """Request model for moral evaluation."""
-    actions: List[ActionModel]
-
-
-class MoralEvaluationResponse(BaseModel):
-    """Response model for moral evaluation."""
-    approved: bool
-    reason: str
-    risk_scores: List[float]
-
-
-class VectorRequest(BaseModel):
-    """Request for vector operations."""
-    text: str
-    operation: str = Field(..., description="get_activation, find_similar, etc.")
-    params: Optional[Dict[str, Any]] = None
-
+    actions: List[Dict[str, Any]]
 
 # ============================================================================
-# API Endpoints
+# Endpoints
 # ============================================================================
-
-@app.get("/")
-async def root():
-    """Health check endpoint."""
-    return {
-        "service": "GCA API",
-        "version": "4.5.0",
-        "status": "operational",
-        "components": {
-            "glassbox": "ready",
-            "moral_kernel": "ready",
-            "memory": f"{len(memory.list_vectors())} vectors loaded",
-            "optimizer": "ready"
-        }
-    }
-
 
 @app.get("/health")
 async def health():
-    """Detailed health check."""
     return {
         "status": "healthy",
-        "glassbox_model": glassbox.model_name,
-        "moral_tolerance": moral_kernel.risk_tolerance,
-        "vectors_loaded": len(memory.list_vectors()),
-        "action_history": len(moral_kernel.get_history())
+        "model": glassbox.model_name,
+        "device": glassbox.device,
+        "vectors_loaded": len(memory.list_vectors())
     }
 
-
 @app.post("/v1/reason", response_model=ReasoningResponse)
-async def reasoning_engine(req: PromptRequest):
-    """
-    Main reasoning endpoint - processes user input through the full GCA pipeline.
-    
-    Pipeline:
-    1. QPT Structuring (if enabled)
-    2. Intent Routing (Optimizer)
-    3. Geometric Steering (GlassBox)
-    4. Tool Extraction
-    5. Moral Evaluation (Kernel)
-    6. Response Generation
-    """
+async def reasoning_engine(req: ReasonRequest):
+    logger.info(f"Incoming from {req.user_id}: {req.text[:50]}...")
+
     try:
-        reasoning_path = []
+        # 1. PARSE SOUL CONFIG
+        steering_bias = _parse_vector_config(req.soul_config)
         
-        # Step 1: Load soul configuration if specified
-        soul_config = None
-        if req.soul_name:
-            # Load soul from YAML (implementation in next phase)
-            reasoning_path.append(f"Loaded soul: {req.soul_name}")
+        # 2. INGEST & RESONANCE
+        resonance.ingest(req.user_id, req.text)
+        user_vec = resonance.get_style_vector(req.user_id)
         
-        # Step 2: QPT Structuring
-        prompt = req.text
-        if req.use_qpt:
-            prompt = qpt.restructure(prompt, soul_config, req.context)
-            reasoning_path.append("Applied QPT structuring")
-        
-        # Step 3: Intent Routing
+        # 3. GEOMETRIC ROUTING
         intent = optimizer.route_intent(req.text)
-        reasoning_path.append(f"Routed intent: {intent}")
+        skill_vec = memory.get_vector(intent)
+
+        # 4. VECTOR COMPOSITION
+        # Final = Skill + UserResonance + SoulBias
+        final_vec = _compose_vectors(skill_vec, user_vec, steering_bias)
         
-        # Step 4: Get steering vector
-        steering_vec = memory.get_vector(intent)
-        if steering_vec is not None:
-            reasoning_path.append(f"Applied steering vector: {intent}")
+        # Auto-tune strength (mock logic for now)
+        strength = 1.5
         
-        # Step 5: Geometric Steering & Generation
-        thought_process = glassbox.generate_steered(
-            prompt=prompt,
-            steering_vec=steering_vec,
-            strength=1.5,
-            max_tokens=512
+        # 5. QPT STRUCTURING
+        structured_prompt = qpt.restructure(req.text, req.soul_config)
+
+        # 6. THINKING (Generation)
+        response_text = glassbox.generate_steered(
+            prompt=structured_prompt,
+            steering_vec=final_vec,
+            strength=strength
         )
-        reasoning_path.append("Generated steered response")
         
-        # Step 6: Tool Extraction & Moral Audit
-        detected_tool = _parse_tool_from_text(thought_process, req.tools_available)
+        # 7. TOOL EXTRACTION & MORAL AUDIT
+        detected_tool = _parse_tool_from_text(response_text, req.tools_available)
         
         if detected_tool:
-            reasoning_path.append(f"Detected tool call: {detected_tool['name']}")
-            
-            # Map tool to entropy and create Action
             action = _tool_to_action(detected_tool)
-            
-            # THE HARD GATE: Moral Kernel Evaluation
             approved, reason = moral_kernel.evaluate([action])
             risk_score = moral_kernel.calculate_risk_score(action)
             
-            reasoning_path.append(f"Moral evaluation: {reason}")
-            
             if not approved:
+                logger.warning(f"MORAL VETO: {reason}")
                 return ReasoningResponse(
                     status="BLOCKED",
-                    response=f"🛡️ I cannot execute that action. {reason}",
-                    tool_call=None,
-                    moral_signature=None,
-                    risk_score=risk_score,
-                    reasoning_path=reasoning_path
+                    content=f"🛡️ [ETHICAL INTERVENTION] Action blocked: {reason}",
+                    meta={"entropy_score": risk_score, "reason": reason}
                 )
             
-            # Generate moral signature for approved action
-            moral_signature = _generate_signature(detected_tool, req.user_id)
-            
+            # Approved
+            signature = _generate_signature(detected_tool, req.user_id)
             return ReasoningResponse(
-                status="APPROVED",
-                response=thought_process,
+                status="SUCCESS",
+                content=response_text,
                 tool_call=detected_tool,
-                moral_signature=moral_signature,
-                risk_score=risk_score,
-                reasoning_path=reasoning_path
+                moral_signature=signature,
+                meta={
+                    "intent": intent,
+                    "risk_score": risk_score
+                }
             )
-        
-        # No tool call - just return the response
+
         return ReasoningResponse(
-            status="APPROVED",
-            response=thought_process,
-            tool_call=None,
-            moral_signature=None,
-            risk_score=0.0,
-            reasoning_path=reasoning_path
+            status="SUCCESS",
+            content=response_text,
+            meta={
+                "intent": intent,
+                "resonance": "active"
+            }
         )
-        
+
     except Exception as e:
         logger.error(f"Reasoning error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/v1/moral/evaluate", response_model=MoralEvaluationResponse)
-async def evaluate_moral(req: MoralEvaluationRequest):
-    """
-    Standalone moral evaluation endpoint.
-    Evaluates actions without full reasoning pipeline.
-    """
-    try:
-        # Convert request models to Action objects
-        actions = []
-        for action_model in req.actions:
-            entropy_class = EntropyClass(action_model.entropy_class.lower())
-            action = Action(
-                type=action_model.type,
-                description=action_model.description,
-                magnitude=action_model.magnitude,
-                prob_success=action_model.prob_success,
-                prob_harm=action_model.prob_harm,
-                time_horizon_yrs=action_model.time_horizon_yrs,
-                entropy_class=entropy_class
-            )
-            actions.append(action)
-        
-        # Evaluate
-        approved, reason = moral_kernel.evaluate(actions)
-        risk_scores = [moral_kernel.calculate_risk_score(a) for a in actions]
-        
-        return MoralEvaluationResponse(
-            approved=approved,
-            reason=reason,
-            risk_scores=risk_scores
+        # Return error as content so the user sees it
+        return ReasoningResponse(
+             status="ERROR",
+             content=f"[SYSTEM ERROR] {str(e)}",
+             meta={}
         )
-        
-    except Exception as e:
-        logger.error(f"Moral evaluation error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/v1/vector/operation")
-async def vector_operation(req: VectorRequest):
-    """
-    Vector operations endpoint for geometric analysis.
-    """
-    try:
-        if req.operation == "get_activation":
-            activation = glassbox.get_activation(req.text)
-            return {
-                "operation": "get_activation",
-                "vector": activation.tolist(),
-                "dimension": activation.shape[0]
-            }
-        
-        elif req.operation == "find_similar":
-            activation = glassbox.get_activation(req.text)
-            top_k = req.params.get("top_k", 5) if req.params else 5
-            similar = memory.find_similar(activation, top_k=top_k)
-            return {
-                "operation": "find_similar",
-                "results": [{"name": name, "similarity": score} for name, score in similar]
-            }
-        
-        elif req.operation == "list_vectors":
-            vectors = memory.list_vectors()
-            return {
-                "operation": "list_vectors",
-                "vectors": vectors,
-                "count": len(vectors)
-            }
-        
-        else:
-            raise HTTPException(status_code=400, detail=f"Unknown operation: {req.operation}")
-            
-    except Exception as e:
-        logger.error(f"Vector operation error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.get("/v1/arena/run")
 async def run_arena(rounds: int = 10):
-    """
-    Run the Arena Protocol for adversarial testing.
-    """
     try:
         arena = ArenaProtocol()
         results = arena.run_bout(rounds=rounds)
@@ -331,77 +190,71 @@ async def run_arena(rounds: int = 10):
         logger.error(f"Arena error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-
 # ============================================================================
-# Helper Functions
+# Helpers
 # ============================================================================
 
-def _parse_tool_from_text(text: str, available_tools: List[str]) -> Optional[Dict[str, Any]]:
-    """
-    Parse tool calls from generated text.
-    This is a simplified version - production would use structured output.
-    """
-    text_lower = text.lower()
-    
-    # Check for tool mentions
-    for tool in available_tools:
-        if tool.lower() in text_lower:
-            return {
-                "name": tool,
-                "args": text,  # Simplified - would parse actual arguments
-                "confidence": 0.8
-            }
-    
+def _parse_vector_config(text):
+    # logic to parse [GCA_CONFIG] tags
+    # For now return None or a placeholder vector
     return None
 
+def _compose_vectors(skill, user, soul):
+    # Vector addition logic
+    # Ensure they are on same device and shape
+    # For now, just return skill or user if skill is None
+    if skill is not None:
+        return skill
+    if user is not None:
+        return user
+    return None
+
+def _parse_tool_from_text(text: str, available_tools: List[str]) -> Optional[Dict[str, Any]]:
+    text_lower = text.lower()
+    for tool in available_tools:
+        # Simple heuristic
+        if f"tool:{tool}" in text_lower or f"call {tool}" in text_lower:
+             return {"name": tool, "args": text}
+    return None
 
 def _tool_to_action(tool: Dict[str, Any]) -> Action:
-    """
-    Convert a tool call to an Action for moral evaluation.
-    """
     tool_name = tool["name"].lower()
-    
-    # Define entropy mappings for common tools
-    high_entropy_tools = ["delete", "remove", "drop", "send", "email", "transfer", "modify"]
-    medium_entropy_tools = ["write", "create", "update", "move"]
-    low_entropy_tools = ["read", "get", "list", "search", "query"]
-    
-    if any(het in tool_name for het in high_entropy_tools):
+    entropy_class = EntropyClass.REVERSIBLE
+    if "delete" in tool_name or "drop" in tool_name:
         entropy_class = EntropyClass.IRREVERSIBLE
-        magnitude = 0.8
-        prob_harm = 0.6
-    elif any(met in tool_name for met in medium_entropy_tools):
-        entropy_class = EntropyClass.CREATIVE
-        magnitude = 0.5
-        prob_harm = 0.2
-    else:
-        entropy_class = EntropyClass.REVERSIBLE
-        magnitude = 0.3
-        prob_harm = 0.1
     
     return Action(
         type=tool_name,
         description=tool.get("args", ""),
-        magnitude=magnitude,
+        magnitude=0.5,
         prob_success=0.9,
-        prob_harm=prob_harm,
+        prob_harm=0.5 if entropy_class == EntropyClass.IRREVERSIBLE else 0.1,
         time_horizon_yrs=1.0,
         entropy_class=entropy_class
     )
 
-
 def _generate_signature(tool: Dict[str, Any], user_id: str) -> str:
-    """
-    Generate a cryptographic signature for approved actions.
-    In production, this would use actual JWT or similar.
-    """
+    import hmac
     import hashlib
-    import time
+    import json
+    import base64
     
-    data = f"{tool['name']}:{user_id}:{time.time()}"
-    signature = hashlib.sha256(data.encode()).hexdigest()
-    return signature
+    secret = os.environ.get("GCA_HMAC_SECRET", "dev-secret-do-not-use-in-prod").encode()
 
+    # Create payload
+    payload = {
+        "tool": tool['name'],
+        "args": tool.get('args', ''),
+        "user": user_id
+    }
+    payload_str = json.dumps(payload, sort_keys=True)
+
+    # Sign
+    signature = hmac.new(secret, payload_str.encode(), hashlib.sha256).hexdigest()
+
+    # Return token as "payload_b64.signature"
+    payload_b64 = base64.b64encode(payload_str.encode()).decode()
+    return f"{payload_b64}.{signature}"
 
 if __name__ == "__main__":
     import uvicorn
