@@ -12,6 +12,9 @@ import sys
 import yaml
 import os
 from pathlib import Path
+import numpy as np
+from textblob import TextBlob
+from collections import Counter
 
 # Add gca_core to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -86,6 +89,16 @@ class ReasoningResponse(BaseModel):
 
 class MoralEvaluationRequest(BaseModel):
     actions: List[Dict[str, Any]]
+
+class EntropyRequest(BaseModel):
+    content: str
+    threshold: float = 0.5  # Default threshold for "high entropy"
+
+class EntropyResponse(BaseModel):
+    entropy_score: float
+    risk_level: str  # e.g., "low", "medium", "high"
+    sentiment_volatility: float
+    reason: str
 
 # ============================================================================
 # Endpoints
@@ -189,6 +202,42 @@ async def run_arena(rounds: int = 10):
     except Exception as e:
         logger.error(f"Arena error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/v1/entropy", response_model=EntropyResponse)
+async def calculate_entropy(request: EntropyRequest):
+    if not request.content:
+        raise HTTPException(status_code=400, detail="Content is required")
+
+    # Calculate Shannon entropy (text disorder proxy)
+    char_freq = Counter(request.content.lower())
+    probs = np.array(list(char_freq.values())) / len(request.content)
+    entropy = -np.sum(probs * np.log2(probs + 1e-10))  # Avoid log(0)
+
+    # Sentiment volatility (as a risk add-on)
+    blob = TextBlob(request.content)
+    sentiment = blob.sentiment.polarity  # -1 (negative) to 1 (positive)
+    volatility = abs(sentiment)  # Simple proxy; could expand to variance over sentences
+
+    # Combined score (normalize entropy to [0,1] assuming max ~8 for text)
+    normalized_entropy = entropy / 8.0
+    combined_score = (normalized_entropy + volatility) / 2
+
+    if combined_score > request.threshold:
+        risk_level = "high"
+        reason = "High disorder and potential volatility detected"
+    elif combined_score > request.threshold / 2:
+        risk_level = "medium"
+        reason = "Moderate disorder; review recommended"
+    else:
+        risk_level = "low"
+        reason = "Low risk"
+
+    return EntropyResponse(
+        entropy_score=combined_score,
+        risk_level=risk_level,
+        sentiment_volatility=volatility,
+        reason=reason
+    )
 
 # ============================================================================
 # Helpers

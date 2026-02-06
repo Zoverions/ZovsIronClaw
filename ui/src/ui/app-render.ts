@@ -68,6 +68,7 @@ import { renderChat } from "./views/chat.ts";
 import { renderConfig } from "./views/config.ts";
 import { renderCron } from "./views/cron.ts";
 import { renderDebug } from "./views/debug.ts";
+import { renderGlassBox } from "./views/glassbox.ts";
 import { renderExecApprovalPrompt } from "./views/exec-approval.ts";
 import { renderGatewayUrlConfirmation } from "./views/gateway-url-confirmation.ts";
 import { renderInstances } from "./views/instances.ts";
@@ -604,6 +605,8 @@ export function renderApp(state: AppViewState) {
               })
             : nothing
         }
+
+        ${state.tab === "glassbox" ? renderGlassBox() : nothing}
 
         ${
           state.tab === "agents"
