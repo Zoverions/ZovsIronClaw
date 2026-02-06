@@ -1,5 +1,7 @@
 # ZovsIronClaw
 
+![ZovsIronClaw](README-header.png)
+
 **A fork of OpenClaw with deep integration of the GCA (Geometric Conscience Architecture) framework.**
 
 ![Version](https://img.shields.io/badge/version-4.5.0-blue)
