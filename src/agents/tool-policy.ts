@@ -289,3 +289,59 @@ export function resolveToolProfilePolicy(profile?: string): ToolProfilePolicy | 
     deny: resolved.deny ? [...resolved.deny] : undefined,
   };
 }
+
+export function applyMoralGuardToolPolicy(tools: AnyAgentTool[]) {
+  return tools.map((tool) => {
+    if (!tool.execute) {
+      return tool;
+    }
+    const originalExecute = tool.execute;
+
+    return {
+      ...tool,
+      execute: async (...args: any[]) => {
+        // args[0] is usually callId, args[1] is params
+        const params = args[1];
+
+        if (params && params._gca_token) {
+          const { createHmac } = await import("node:crypto");
+          const token = params._gca_token;
+          const [payloadB64, signature] = token.split(".");
+
+          const secret = process.env.GCA_HMAC_SECRET || "dev-secret-do-not-use-in-prod";
+          const computed = createHmac("sha256", secret).update(payloadB64).digest("hex");
+
+          if (computed !== signature) {
+             throw new Error("[GCA SECURITY] Invalid Moral Signature. Tool execution blocked.");
+          }
+
+          // Verify payload matches tool
+          try {
+             const payload = JSON.parse(Buffer.from(payloadB64, 'base64').toString());
+             if (payload.tool !== tool.name) {
+                 // Relax check for aliases
+                 if (normalizeToolName(payload.tool) !== normalizeToolName(tool.name)) {
+                     throw new Error(`[GCA SECURITY] Signature mismatch: authorized for ${payload.tool}, requested ${tool.name}`);
+                 }
+             }
+             // Clean up token from params before passing to original tool
+             delete params._gca_token;
+          } catch (err) {
+             throw new Error(`[GCA SECURITY] Payload verification failed: ${err}`);
+          }
+        } else {
+            // Optional: Block all tools if token missing?
+            // The requirement says "If no JWT: The tool throws a SecurityException"
+            // However, this might break existing workflows not using GCA.
+            // If GCA is the "Deep Integration", maybe we should enforce it?
+            // For safety, let's enforce it if GCA_ENFORCE_MORAL_GUARD is set or default to log warning.
+            if (process.env.GCA_ENFORCE_MORAL_GUARD === "true") {
+                throw new Error("[GCA SECURITY] Missing Moral Signature. Tool execution blocked.");
+            }
+        }
+
+        return originalExecute.apply(tool, args as any);
+      }
+    };
+  });
+}

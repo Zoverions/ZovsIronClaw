@@ -1,0 +1,16 @@
+system:
+  # The Backbone. Qwen is recommended for speed/reasoning balance on local hardware.
+  model_id: "Qwen/Qwen2.5-0.5B"
+  device: "cpu"      # Using cpu for sandbox environment
+  dtype: "float32"    # Use "float32" for CPU
+  log_level: "INFO"
+
+geometry:
+  layer_idx: 12       # The specific layer where we inject steering vectors
+  basis_size: 32      # Dimensionality of the thought space
+  assets_dir: "/app/gca_assets" # Inside the container
+
+safety:
+  max_divergence: 5.0      # Hallucination threshold
+  repetition_penalty: 1.2  # Prevents mental loops
+  moral_threshold: -1.0    # Entropy score limit for actions

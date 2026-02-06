@@ -44,6 +44,7 @@ import {
 } from "./pi-tools.read.js";
 import { cleanToolSchemaForGemini, normalizeToolParameters } from "./pi-tools.schema.js";
 import {
+  applyMoralGuardToolPolicy,
   applyOwnerOnlyToolPolicy,
   buildPluginToolGroups,
   collectExplicitAllowlist,
@@ -362,7 +363,8 @@ export function createOpenClawCodingTools(options?: {
   ];
   // Security: treat unknown/undefined as unauthorized (opt-in, not opt-out)
   const senderIsOwner = options?.senderIsOwner === true;
-  const toolsByAuthorization = applyOwnerOnlyToolPolicy(tools, senderIsOwner);
+  const toolsByOwnerPolicy = applyOwnerOnlyToolPolicy(tools, senderIsOwner);
+  const toolsByAuthorization = applyMoralGuardToolPolicy(toolsByOwnerPolicy);
   const coreToolNames = new Set(
     toolsByAuthorization
       .filter((tool) => !getPluginToolMeta(tool))

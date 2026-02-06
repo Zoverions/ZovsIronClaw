@@ -1,0 +1,9 @@
+{
+  "name": "openclaw-gca-brain",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "openclaw": {
+    "type": "provider",
+    "capabilities": ["text-generation", "voice-handling"]
+  }
+}
