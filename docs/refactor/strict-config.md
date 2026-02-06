@@ -48,8 +48,8 @@ title: "Strict Config Validation"
 - Doctor runs **every time** config is loaded (dry-run by default).
 - If config invalid:
   - Print a summary + actionable errors.
-  - Instruct: `openclaw doctor --fix`.
-- `openclaw doctor --fix`:
+  - Instruct: `zovsironclaw doctor --fix`.
+- `zovsironclaw doctor --fix`:
   - Applies migrations.
   - Removes unknown keys.
   - Writes updated config.
@@ -58,14 +58,14 @@ title: "Strict Config Validation"
 
 Allowed (diagnostic-only):
 
-- `openclaw doctor`
+- `zovsironclaw doctor`
 - `openclaw logs`
 - `openclaw health`
 - `openclaw help`
 - `openclaw status`
-- `openclaw gateway status`
+- `zovsironclaw gateway status`
 
-Everything else must hard-fail with: “Config invalid. Run `openclaw doctor --fix`.”
+Everything else must hard-fail with: “Config invalid. Run `zovsironclaw doctor --fix`.”
 
 ## Error UX format
 

@@ -43,7 +43,7 @@ OpenClaw 按以下顺序选择模型：
 如果你不想手动编辑配置，请运行新手引导向导：
 
 ```bash
-openclaw onboard
+zovsironclaw onboard
 ```
 
 它可以为常见提供商设置模型 + 认证，包括 **OpenAI Code（Codex）订阅**（OAuth）和 **Anthropic**（推荐使用 API 密钥；也支持 `claude setup-token`）。
@@ -193,4 +193,4 @@ openclaw models status
 
 ## 模型注册表（`models.json`）
 
-`models.providers` 中的自定义提供商会写入智能体目录下的 `models.json`（默认 `~/.openclaw/agents/<agentId>/models.json`）。除非 `models.mode` 设置为 `replace`，否则此文件默认会被合并。
+`models.providers` 中的自定义提供商会写入智能体目录下的 `models.json`（默认 `~/.zovsironclaw/agents/<agentId>/models.json`）。除非 `models.mode` 设置为 `replace`，否则此文件默认会被合并。

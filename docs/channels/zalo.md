@@ -102,8 +102,8 @@ Multi-account support: use `channels.zalo.accounts` with per-account tokens and 
 
 - Default: `channels.zalo.dmPolicy = "pairing"`. Unknown senders receive a pairing code; messages are ignored until approved (codes expire after 1 hour).
 - Approve via:
-  - `openclaw pairing list zalo`
-  - `openclaw pairing approve zalo <CODE>`
+  - `zovsironclaw pairing list zalo`
+  - `zovsironclaw pairing approve zalo <CODE>`
 - Pairing is the default token exchange. Details: [Pairing](/start/pairing)
 - `channels.zalo.allowFrom` accepts numeric user IDs (no username lookup available).
 
@@ -141,7 +141,7 @@ Multi-account support: use `channels.zalo.accounts` with per-account tokens and 
 ## Delivery targets (CLI/cron)
 
 - Use a chat id as the target.
-- Example: `openclaw message send --channel zalo --target 123456789 --message "hi"`.
+- Example: `zovsironclaw message send --channel zalo --target 123456789 --message "hi"`.
 
 ## Troubleshooting
 

@@ -12,22 +12,22 @@ Last updated: 2025-12-09
 ## What it is
 
 - The always-on process that owns the single Baileys/Telegram connection and the control/event plane.
-- Replaces the legacy `gateway` command. CLI entry point: `openclaw gateway`.
+- Replaces the legacy `gateway` command. CLI entry point: `zovsironclaw gateway`.
 - Runs until stopped; exits non-zero on fatal errors so the supervisor restarts it.
 
 ## How to run (local)
 
 ```bash
-openclaw gateway --port 18789
+zovsironclaw gateway --port 18789
 # for full debug/trace logs in stdio:
-openclaw gateway --port 18789 --verbose
+zovsironclaw gateway --port 18789 --verbose
 # if the port is busy, terminate listeners then start:
-openclaw gateway --force
+zovsironclaw gateway --force
 # dev loop (auto-reload on TS changes):
 pnpm gateway:watch
 ```
 
-- Config hot reload watches `~/.openclaw/openclaw.json` (or `OPENCLAW_CONFIG_PATH`).
+- Config hot reload watches `~/.zovsironclaw/zovsironclaw.json` (or `OPENCLAW_CONFIG_PATH`).
   - Default mode: `gateway.reload.mode="hybrid"` (hot-apply safe changes, restart on critical).
   - Hot reload uses in-process restart via **SIGUSR1** when needed.
   - Disable with `gateway.reload.mode="off"`.
@@ -36,7 +36,7 @@ pnpm gateway:watch
   - OpenAI Chat Completions (HTTP): [`/v1/chat/completions`](/gateway/openai-http-api).
   - OpenResponses (HTTP): [`/v1/responses`](/gateway/openresponses-http-api).
   - Tools Invoke (HTTP): [`/tools/invoke`](/gateway/tools-invoke-http-api).
-- Starts a Canvas file server by default on `canvasHost.port` (default `18793`), serving `http://<gateway-host>:18793/__openclaw__/canvas/` from `~/.openclaw/workspace/canvas`. Disable with `canvasHost.enabled=false` or `OPENCLAW_SKIP_CANVAS_HOST=1`.
+- Starts a Canvas file server by default on `canvasHost.port` (default `18793`), serving `http://<gateway-host>:18793/__openclaw__/canvas/` from `~/.zovsironclaw/workspace/canvas`. Disable with `canvasHost.enabled=false` or `OPENCLAW_SKIP_CANVAS_HOST=1`.
 - Logs to stdout; use launchd/systemd to keep it alive and rotate logs.
 - Pass `--verbose` to mirror debug logging (handshakes, req/res, events) from the log file into stdio when troubleshooting.
 - `--force` uses `lsof` to find listeners on the chosen port, sends SIGTERM, logs what it killed, then starts the gateway (fails fast if `lsof` is missing).
@@ -92,11 +92,11 @@ openclaw --dev health
 Defaults (can be overridden via env/flags/config):
 
 - `OPENCLAW_STATE_DIR=~/.openclaw-dev`
-- `OPENCLAW_CONFIG_PATH=~/.openclaw-dev/openclaw.json`
+- `OPENCLAW_CONFIG_PATH=~/.openclaw-dev/zovsironclaw.json`
 - `OPENCLAW_GATEWAY_PORT=19001` (Gateway WS + HTTP)
 - browser control service port = `19003` (derived: `gateway.port+2`, loopback only)
 - `canvasHost.port=19005` (derived: `gateway.port+4`)
-- `agents.defaults.workspace` default becomes `~/.openclaw/workspace-dev` when you run `setup`/`onboard` under `--dev`.
+- `agents.defaults.workspace` default becomes `~/.zovsironclaw/workspace-dev` when you run `setup`/`onboard` under `--dev`.
 
 Derived ports (rules of thumb):
 
@@ -123,8 +123,8 @@ openclaw --profile rescue gateway install
 Example:
 
 ```bash
-OPENCLAW_CONFIG_PATH=~/.openclaw/a.json OPENCLAW_STATE_DIR=~/.openclaw-a openclaw gateway --port 19001
-OPENCLAW_CONFIG_PATH=~/.openclaw/b.json OPENCLAW_STATE_DIR=~/.openclaw-b openclaw gateway --port 19002
+OPENCLAW_CONFIG_PATH=~/.zovsironclaw/a.json OPENCLAW_STATE_DIR=~/.openclaw-a zovsironclaw gateway --port 19001
+OPENCLAW_CONFIG_PATH=~/.zovsironclaw/b.json OPENCLAW_STATE_DIR=~/.openclaw-b zovsironclaw gateway --port 19002
 ```
 
 ## Protocol (operator view)
@@ -206,19 +206,19 @@ See also: [Presence](/concepts/presence) for how presence is produced/deduped an
   - StandardOut/Err: file paths or `syslog`
 - On failure, launchd restarts; fatal misconfig should keep exiting so the operator notices.
 - LaunchAgents are per-user and require a logged-in session; for headless setups use a custom LaunchDaemon (not shipped).
-  - `openclaw gateway install` writes `~/Library/LaunchAgents/bot.molt.gateway.plist`
+  - `zovsironclaw gateway install` writes `~/Library/LaunchAgents/bot.molt.gateway.plist`
     (or `bot.molt.<profile>.plist`; legacy `com.openclaw.*` is cleaned up).
-  - `openclaw doctor` audits the LaunchAgent config and can update it to current defaults.
+  - `zovsironclaw doctor` audits the LaunchAgent config and can update it to current defaults.
 
 ## Gateway service management (CLI)
 
 Use the Gateway CLI for install/start/stop/restart/status:
 
 ```bash
-openclaw gateway status
-openclaw gateway install
-openclaw gateway stop
-openclaw gateway restart
+zovsironclaw gateway status
+zovsironclaw gateway install
+zovsironclaw gateway stop
+zovsironclaw gateway restart
 openclaw logs --follow
 ```
 
@@ -234,16 +234,16 @@ Notes:
 - `logs` tails the Gateway file log via RPC (no manual `tail`/`grep` needed).
 - If other gateway-like services are detected, the CLI warns unless they are OpenClaw profile services.
   We still recommend **one gateway per machine** for most setups; use isolated profiles/ports for redundancy or a rescue bot. See [Multiple gateways](/gateway/multiple-gateways).
-  - Cleanup: `openclaw gateway uninstall` (current service) and `openclaw doctor` (legacy migrations).
-- `gateway install` is a no-op when already installed; use `openclaw gateway install --force` to reinstall (profile/env/path changes).
+  - Cleanup: `zovsironclaw gateway uninstall` (current service) and `zovsironclaw doctor` (legacy migrations).
+- `gateway install` is a no-op when already installed; use `zovsironclaw gateway install --force` to reinstall (profile/env/path changes).
 
 Bundled mac app:
 
 - OpenClaw.app can bundle a Node-based gateway relay and install a per-user LaunchAgent labeled
   `bot.molt.gateway` (or `bot.molt.<profile>`; legacy `com.openclaw.*` labels still unload cleanly).
-- To stop it cleanly, use `openclaw gateway stop` (or `launchctl bootout gui/$UID/bot.molt.gateway`).
-- To restart, use `openclaw gateway restart` (or `launchctl kickstart -k gui/$UID/bot.molt.gateway`).
-  - `launchctl` only works if the LaunchAgent is installed; otherwise use `openclaw gateway install` first.
+- To stop it cleanly, use `zovsironclaw gateway stop` (or `launchctl bootout gui/$UID/bot.molt.gateway`).
+- To restart, use `zovsironclaw gateway restart` (or `launchctl kickstart -k gui/$UID/bot.molt.gateway`).
+  - `launchctl` only works if the LaunchAgent is installed; otherwise use `zovsironclaw gateway install` first.
   - Replace the label with `bot.molt.<profile>` when running a named profile.
 
 ## Supervision (systemd user unit)
@@ -253,7 +253,7 @@ recommend user services for single-user machines (simpler env, per-user config).
 Use a **system service** for multi-user or always-on servers (no lingering
 required, shared supervision).
 
-`openclaw gateway install` writes the user unit. `openclaw doctor` audits the
+`zovsironclaw gateway install` writes the user unit. `zovsironclaw doctor` audits the
 unit and can update it to match the current recommended defaults.
 
 Create `~/.config/systemd/user/openclaw-gateway[-<profile>].service`:
@@ -265,7 +265,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=/usr/local/bin/openclaw gateway --port 18789
+ExecStart=/usr/local/bin/zovsironclaw gateway --port 18789
 Restart=always
 RestartSec=5
 Environment=OPENCLAW_GATEWAY_TOKEN=
@@ -317,14 +317,14 @@ Windows installs should use **WSL2** and follow the Linux systemd section above.
 
 ## CLI helpers
 
-- `openclaw gateway health|status` — request health/status over the Gateway WS.
-- `openclaw message send --target <num> --message "hi" [--media ...]` — send via Gateway (idempotent for WhatsApp).
-- `openclaw agent --message "hi" --to <num>` — run an agent turn (waits for final by default).
-- `openclaw gateway call <method> --params '{"k":"v"}'` — raw method invoker for debugging.
-- `openclaw gateway stop|restart` — stop/restart the supervised gateway service (launchd/systemd).
+- `zovsironclaw gateway health|status` — request health/status over the Gateway WS.
+- `zovsironclaw message send --target <num> --message "hi" [--media ...]` — send via Gateway (idempotent for WhatsApp).
+- `zovsironclaw agent --message "hi" --to <num>` — run an agent turn (waits for final by default).
+- `zovsironclaw gateway call <method> --params '{"k":"v"}'` — raw method invoker for debugging.
+- `zovsironclaw gateway stop|restart` — stop/restart the supervised gateway service (launchd/systemd).
 - Gateway helper subcommands assume a running gateway on `--url`; they no longer auto-spawn one.
 
 ## Migration guidance
 
-- Retire uses of `openclaw gateway` and the legacy TCP control port.
+- Retire uses of `zovsironclaw gateway` and the legacy TCP control port.
 - Update clients to speak the WS protocol with mandatory connect and structured presence.

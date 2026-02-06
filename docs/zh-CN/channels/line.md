@@ -107,8 +107,8 @@ Token/secret 文件：
 私信默认使用配对模式。未知发送者会收到配对码，其消息在获得批准前会被忽略。
 
 ```bash
-openclaw pairing list line
-openclaw pairing approve line <CODE>
+zovsironclaw pairing list line
+zovsironclaw pairing approve line <CODE>
 ```
 
 允许列表和策略：

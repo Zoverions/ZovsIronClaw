@@ -354,8 +354,8 @@ Telegram 功能可以在两个级别配置（上面显示的对象形式；旧�
 
 - 默认：`channels.telegram.dmPolicy = "pairing"`。未知发送者收到配对码；在批准之前消息被忽略（配对码 1 小时后过期）。
 - 批准方式：
-  - `openclaw pairing list telegram`
-  - `openclaw pairing approve telegram <CODE>`
+  - `zovsironclaw pairing list telegram`
+  - `zovsironclaw pairing approve telegram <CODE>`
 - 配对是 Telegram 私信使用的默认 token 交换。详情：[配对](/start/pairing)
 - `channels.telegram.allowFrom` 接受数字用户 ID（推荐）或 `@username` 条目。这**不是**机器人用户名；使用人类发送者的 ID。向导接受 `@username` 并在可能时将其解析为数字 ID。
 
@@ -469,7 +469,7 @@ OpenClaw 支持接收和发送 Telegram 贴纸，并具有智能缓存功能。
 2. **缓存存储：** 描述与贴纸的文件 ID、表情符号和集合名称一起保存。
 3. **后续遇到：** 当再次看到相同贴纸时，直接使用缓存的描述。图像不会发送给 AI。
 
-**缓存位置：** `~/.openclaw/telegram/sticker-cache.json`
+**缓存位置：** `~/.zovsironclaw/telegram/sticker-cache.json`
 
 **缓存条目格式：**
 
@@ -661,7 +661,7 @@ Telegram 反应作为**单独的 `message_reaction` 事件**到达，而不是�
 ## 投递目标（CLI/cron）
 
 - 使用聊天 id（`123456789`）或用户名（`@name`）作为目标。
-- 示例：`openclaw message send --channel telegram --target 123456789 --message "hi"`。
+- 示例：`zovsironclaw message send --channel telegram --target 123456789 --message "hi"`。
 
 ## 故障排除
 

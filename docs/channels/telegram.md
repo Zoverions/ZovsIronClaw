@@ -349,8 +349,8 @@ Use the global setting when all Telegram bots/accounts should behave the same. U
 
 - Default: `channels.telegram.dmPolicy = "pairing"`. Unknown senders receive a pairing code; messages are ignored until approved (codes expire after 1 hour).
 - Approve via:
-  - `openclaw pairing list telegram`
-  - `openclaw pairing approve telegram <CODE>`
+  - `zovsironclaw pairing list telegram`
+  - `zovsironclaw pairing approve telegram <CODE>`
 - Pairing is the default token exchange used for Telegram DMs. Details: [Pairing](/start/pairing)
 - `channels.telegram.allowFrom` accepts numeric user IDs (recommended) or `@username` entries. It is **not** the bot username; use the human sender’s ID. The wizard accepts `@username` and resolves it to the numeric ID when possible.
 
@@ -483,7 +483,7 @@ Stickers are processed through the AI's vision capabilities to generate descript
 2. **Cache storage:** The description is saved along with the sticker's file ID, emoji, and set name.
 3. **Subsequent encounters:** When the same sticker is seen again, the cached description is used directly. The image is not sent to the AI.
 
-**Cache location:** `~/.openclaw/telegram/sticker-cache.json`
+**Cache location:** `~/.zovsironclaw/telegram/sticker-cache.json`
 
 **Cache entry format:**
 
@@ -678,7 +678,7 @@ The agent sees reactions as **system notifications** in the conversation history
 ## Delivery targets (CLI/cron)
 
 - Use a chat id (`123456789`) or a username (`@name`) as the target.
-- Example: `openclaw message send --channel telegram --target 123456789 --message "hi"`.
+- Example: `zovsironclaw message send --channel telegram --target 123456789 --message "hi"`.
 
 ## Troubleshooting
 

@@ -1,5 +1,5 @@
 ---
-summary: "All configuration options for ~/.openclaw/openclaw.json with examples"
+summary: "All configuration options for ~/.zovsironclaw/zovsironclaw.json with examples"
 read_when:
   - Adding or modifying config fields
 title: "Configuration"
@@ -7,9 +7,9 @@ title: "Configuration"
 
 # Configuration 🔧
 
-OpenClaw reads an optional **JSON5** config from `~/.openclaw/openclaw.json` (comments + trailing commas allowed).
+OpenClaw reads an optional **JSON5** config from `~/.zovsironclaw/zovsironclaw.json` (comments + trailing commas allowed).
 
-If the file is missing, OpenClaw uses safe-ish defaults (embedded Pi agent + per-sender sessions + workspace `~/.openclaw/workspace`). You usually only need a config to:
+If the file is missing, OpenClaw uses safe-ish defaults (embedded Pi agent + per-sender sessions + workspace `~/.zovsironclaw/workspace`). You usually only need a config to:
 
 - restrict who can trigger the bot (`channels.whatsapp.allowFrom`, `channels.telegram.allowFrom`, etc.)
 - control group allowlists + mention behavior (`channels.whatsapp.groups`, `channels.telegram.groups`, `channels.discord.guilds`, `agents.list[].groupChat`)
@@ -28,9 +28,9 @@ Unknown keys, malformed types, or invalid values cause the Gateway to **refuse t
 When validation fails:
 
 - The Gateway does not boot.
-- Only diagnostic commands are allowed (for example: `openclaw doctor`, `openclaw logs`, `openclaw health`, `openclaw status`, `openclaw service`, `openclaw help`).
-- Run `openclaw doctor` to see the exact issues.
-- Run `openclaw doctor --fix` (or `--yes`) to apply migrations/repairs.
+- Only diagnostic commands are allowed (for example: `zovsironclaw doctor`, `openclaw logs`, `openclaw health`, `openclaw status`, `openclaw service`, `openclaw help`).
+- Run `zovsironclaw doctor` to see the exact issues.
+- Run `zovsironclaw doctor --fix` (or `--yes`) to apply migrations/repairs.
 
 Doctor never writes changes unless you explicitly opt into `--fix`/`--yes`.
 
@@ -51,7 +51,7 @@ Use `config.apply` to validate + write the full config and restart the Gateway i
 It writes a restart sentinel and pings the last active session after the Gateway comes back.
 
 Warning: `config.apply` replaces the **entire config**. If you want to change only a few keys,
-use `config.patch` or `openclaw config set`. Keep a backup of `~/.openclaw/openclaw.json`.
+use `config.patch` or `openclaw config set`. Keep a backup of `~/.zovsironclaw/zovsironclaw.json`.
 
 Params:
 
@@ -64,9 +64,9 @@ Params:
 Example (via `gateway call`):
 
 ```bash
-openclaw gateway call config.get --params '{}' # capture payload.hash
-openclaw gateway call config.apply --params '{
-  "raw": "{\\n  agents: { defaults: { workspace: \\"~/.openclaw/workspace\\" } }\\n}\\n",
+zovsironclaw gateway call config.get --params '{}' # capture payload.hash
+zovsironclaw gateway call config.apply --params '{
+  "raw": "{\\n  agents: { defaults: { workspace: \\"~/.zovsironclaw/workspace\\" } }\\n}\\n",
   "baseHash": "<hash-from-config.get>",
   "sessionKey": "agent:main:whatsapp:dm:+15555550123",
   "restartDelayMs": 1000
@@ -95,8 +95,8 @@ Params:
 Example:
 
 ```bash
-openclaw gateway call config.get --params '{}' # capture payload.hash
-openclaw gateway call config.patch --params '{
+zovsironclaw gateway call config.get --params '{}' # capture payload.hash
+zovsironclaw gateway call config.patch --params '{
   "raw": "{\\n  channels: { telegram: { groups: { \\"*\\": { requireMention: false } } } }\\n}\\n",
   "baseHash": "<hash-from-config.get>",
   "sessionKey": "agent:main:whatsapp:dm:+15555550123",
@@ -108,7 +108,7 @@ openclaw gateway call config.patch --params '{
 
 ```json5
 {
-  agents: { defaults: { workspace: "~/.openclaw/workspace" } },
+  agents: { defaults: { workspace: "~/.zovsironclaw/workspace" } },
   channels: { whatsapp: { allowFrom: ["+15555550123"] } },
 }
 ```
@@ -126,7 +126,7 @@ To prevent the bot from responding to WhatsApp @-mentions in groups (only respon
 ```json5
 {
   agents: {
-    defaults: { workspace: "~/.openclaw/workspace" },
+    defaults: { workspace: "~/.zovsironclaw/workspace" },
     list: [
       {
         id: "main",
@@ -155,7 +155,7 @@ Split your config into multiple files using the `$include` directive. This is us
 ### Basic usage
 
 ```json5
-// ~/.openclaw/openclaw.json
+// ~/.zovsironclaw/zovsironclaw.json
 {
   gateway: { port: 18789 },
 
@@ -170,10 +170,10 @@ Split your config into multiple files using the `$include` directive. This is us
 ```
 
 ```json5
-// ~/.openclaw/agents.json5
+// ~/.zovsironclaw/agents.json5
 {
   defaults: { sandbox: { mode: "all", scope: "session" } },
-  list: [{ id: "main", workspace: "~/.openclaw/workspace" }],
+  list: [{ id: "main", workspace: "~/.zovsironclaw/workspace" }],
 }
 ```
 
@@ -225,7 +225,7 @@ Included files can themselves contain `$include` directives (up to 10 levels dee
 ### Example: Multi-client legal setup
 
 ```json5
-// ~/.openclaw/openclaw.json
+// ~/.zovsironclaw/zovsironclaw.json
 {
   gateway: { port: 18789, auth: { token: "secret" } },
 
@@ -248,7 +248,7 @@ Included files can themselves contain `$include` directives (up to 10 levels dee
 ```
 
 ```json5
-// ~/.openclaw/clients/mueller/agents.json5
+// ~/.zovsironclaw/clients/mueller/agents.json5
 [
   { id: "mueller-transcribe", workspace: "~/clients/mueller/transcribe" },
   { id: "mueller-docs", workspace: "~/clients/mueller/docs" },
@@ -256,7 +256,7 @@ Included files can themselves contain `$include` directives (up to 10 levels dee
 ```
 
 ```json5
-// ~/.openclaw/clients/mueller/broadcast.json5
+// ~/.zovsironclaw/clients/mueller/broadcast.json5
 {
   "120363403215116621@g.us": ["mueller-transcribe", "mueller-docs"],
 }
@@ -271,7 +271,7 @@ OpenClaw reads env vars from the parent process (shell, launchd/systemd, CI, etc
 Additionally, it loads:
 
 - `.env` from the current working directory (if present)
-- a global fallback `.env` from `~/.openclaw/.env` (aka `$OPENCLAW_STATE_DIR/.env`)
+- a global fallback `.env` from `~/.zovsironclaw/.env` (aka `$OPENCLAW_STATE_DIR/.env`)
 
 Neither `.env` file overrides existing env vars.
 
@@ -359,13 +359,13 @@ You can reference environment variables directly in any config string value usin
 
 OpenClaw stores **per-agent** auth profiles (OAuth + API keys) in:
 
-- `<agentDir>/auth-profiles.json` (default: `~/.openclaw/agents/<agentId>/agent/auth-profiles.json`)
+- `<agentDir>/auth-profiles.json` (default: `~/.zovsironclaw/agents/<agentId>/agent/auth-profiles.json`)
 
 See also: [/concepts/oauth](/concepts/oauth)
 
 Legacy OAuth imports:
 
-- `~/.openclaw/credentials/oauth.json` (or `$OPENCLAW_STATE_DIR/credentials/oauth.json`)
+- `~/.zovsironclaw/credentials/oauth.json` (or `$OPENCLAW_STATE_DIR/credentials/oauth.json`)
 
 The embedded Pi agent maintains a runtime cache at:
 
@@ -373,7 +373,7 @@ The embedded Pi agent maintains a runtime cache at:
 
 Legacy agent dir (pre multi-agent):
 
-- `~/.openclaw/agent/*` (migrated by `openclaw doctor` into `~/.openclaw/agents/<defaultAgentId>/agent/*`)
+- `~/.zovsironclaw/agent/*` (migrated by `zovsironclaw doctor` into `~/.zovsironclaw/agents/<defaultAgentId>/agent/*`)
 
 Overrides:
 
@@ -493,8 +493,8 @@ Pairing codes expire after 1 hour; the bot only sends a pairing code when a new 
 
 Pairing approvals:
 
-- `openclaw pairing list whatsapp`
-- `openclaw pairing approve whatsapp <code>`
+- `zovsironclaw pairing list whatsapp`
+- `zovsironclaw pairing approve whatsapp <code>`
 
 ### `channels.whatsapp.allowFrom`
 
@@ -544,8 +544,8 @@ Run multiple WhatsApp accounts in one gateway:
         default: {}, // optional; keeps the default id stable
         personal: {},
         biz: {
-          // Optional override. Default: ~/.openclaw/credentials/whatsapp/biz
-          // authDir: "~/.openclaw/credentials/whatsapp/biz",
+          // Optional override. Default: ~/.zovsironclaw/credentials/whatsapp/biz
+          // authDir: "~/.zovsironclaw/credentials/whatsapp/biz",
         },
       },
     },
@@ -556,7 +556,7 @@ Run multiple WhatsApp accounts in one gateway:
 Notes:
 
 - Outbound commands default to account `default` if present; otherwise the first configured account id (sorted).
-- The legacy single-account Baileys auth dir is migrated by `openclaw doctor` into `whatsapp/default`.
+- The legacy single-account Baileys auth dir is migrated by `zovsironclaw doctor` into `whatsapp/default`.
 
 ### `channels.telegram.accounts` / `channels.discord.accounts` / `channels.googlechat.accounts` / `channels.slack.accounts` / `channels.mattermost.accounts` / `channels.signal.accounts` / `channels.imessage.accounts`
 
@@ -740,8 +740,8 @@ Inbound messages are routed to an agent via bindings.
   - `default`: optional; when multiple are set, the first wins and a warning is logged.
     If none are set, the **first entry** in the list is the default agent.
   - `name`: display name for the agent.
-  - `workspace`: default `~/.openclaw/workspace-<agentId>` (for `main`, falls back to `agents.defaults.workspace`).
-  - `agentDir`: default `~/.openclaw/agents/<agentId>/agent`.
+  - `workspace`: default `~/.zovsironclaw/workspace-<agentId>` (for `main`, falls back to `agents.defaults.workspace`).
+  - `agentDir`: default `~/.zovsironclaw/agents/<agentId>/agent`.
   - `model`: per-agent default model, overrides `agents.defaults.model` for that agent.
     - string form: `"provider/model"`, overrides only `agents.defaults.model.primary`
     - object form: `{ primary, fallbacks }` (fallbacks override `agents.defaults.model.fallbacks`; `[]` disables global fallbacks for that agent)
@@ -799,7 +799,7 @@ Full access (no sandbox):
     list: [
       {
         id: "personal",
-        workspace: "~/.openclaw/workspace-personal",
+        workspace: "~/.zovsironclaw/workspace-personal",
         sandbox: { mode: "off" },
       },
     ],
@@ -815,7 +815,7 @@ Read-only tools + read-only workspace:
     list: [
       {
         id: "family",
-        workspace: "~/.openclaw/workspace-family",
+        workspace: "~/.zovsironclaw/workspace-family",
         sandbox: {
           mode: "all",
           scope: "agent",
@@ -846,7 +846,7 @@ No filesystem access (messaging/session tools enabled):
     list: [
       {
         id: "public",
-        workspace: "~/.openclaw/workspace-public",
+        workspace: "~/.zovsironclaw/workspace-public",
         sandbox: {
           mode: "all",
           scope: "agent",
@@ -892,8 +892,8 @@ Example: two WhatsApp accounts → two agents:
 {
   agents: {
     list: [
-      { id: "home", default: true, workspace: "~/.openclaw/workspace-home" },
-      { id: "work", workspace: "~/.openclaw/workspace-work" },
+      { id: "home", default: true, workspace: "~/.zovsironclaw/workspace-home" },
+      { id: "work", workspace: "~/.zovsironclaw/workspace-work" },
     ],
   },
   bindings: [
@@ -1004,7 +1004,7 @@ Notes:
 - `channels.telegram.customCommands` adds extra Telegram bot menu entries. Names are normalized; conflicts with native commands are ignored.
 - `commands.bash: true` enables `! <cmd>` to run host shell commands (`/bash <cmd>` also works as an alias). Requires `tools.elevated.enabled` and allowlisting the sender in `tools.elevated.allowFrom.<channel>`.
 - `commands.bashForegroundMs` controls how long bash waits before backgrounding. While a bash job is running, new `! <cmd>` requests are rejected (one at a time).
-- `commands.config: true` enables `/config` (reads/writes `openclaw.json`).
+- `commands.config: true` enables `/config` (reads/writes `zovsironclaw.json`).
 - `channels.<provider>.configWrites` gates config mutations initiated by that channel (default: true). This applies to `/config set|unset` plus provider-specific auto-migrations (Telegram supergroup ID changes, Slack channel ID changes).
 - `commands.debug: true` enables `/debug` (runtime-only overrides).
 - `commands.restart: true` enables `/restart` and the gateway tool restart action.
@@ -1428,11 +1428,11 @@ exec ssh -T gateway-host imsg "$@"
 
 Sets the **single global workspace directory** used by the agent for file operations.
 
-Default: `~/.openclaw/workspace`.
+Default: `~/.zovsironclaw/workspace`.
 
 ```json5
 {
-  agents: { defaults: { workspace: "~/.openclaw/workspace" } },
+  agents: { defaults: { workspace: "~/.zovsironclaw/workspace" } },
 }
 ```
 
@@ -1606,7 +1606,7 @@ voice notes; other channels send MP3 audio.
       },
       maxTextLength: 4000,
       timeoutMs: 30000,
-      prefsPath: "~/.openclaw/settings/tts.json",
+      prefsPath: "~/.zovsironclaw/settings/tts.json",
       elevenlabs: {
         apiKey: "elevenlabs_api_key",
         baseUrl: "https://api.elevenlabs.io",
@@ -2057,7 +2057,7 @@ of `every`, keep `HEARTBEAT.md` tiny, and/or choose a cheaper `model`.
 `tools.web` configures web search + fetch tools:
 
 - `tools.web.search.enabled` (default: true when key is present)
-- `tools.web.search.apiKey` (recommended: set via `openclaw configure --section web`, or use `BRAVE_API_KEY` env var)
+- `tools.web.search.apiKey` (recommended: set via `zovsironclaw configure --section web`, or use `BRAVE_API_KEY` env var)
 - `tools.web.search.maxResults` (1–10, default 5)
 - `tools.web.search.timeoutSeconds` (default 30)
 - `tools.web.search.cacheTtlMinutes` (default 15)
@@ -2295,7 +2295,7 @@ Defaults (if enabled):
 - scope: `"agent"` (one container + workspace per agent)
 - Debian bookworm-slim based image
 - agent workspace access: `workspaceAccess: "none"` (default)
-  - `"none"`: use a per-scope sandbox workspace under `~/.openclaw/sandboxes`
+  - `"none"`: use a per-scope sandbox workspace under `~/.zovsironclaw/sandboxes`
 - `"ro"`: keep the sandbox workspace at `/workspace`, and mount the agent workspace read-only at `/agent` (disables `write`/`edit`/`apply_patch`)
   - `"rw"`: mount the agent workspace read/write at `/workspace`
 - auto-prune: idle > 24h OR age > 7d
@@ -2322,7 +2322,7 @@ For package installs, ensure network egress, a writable root FS, and a root user
         mode: "non-main", // off | non-main | all
         scope: "agent", // session | agent | shared (agent is default)
         workspaceAccess: "none", // none | ro | rw
-        workspaceRoot: "~/.openclaw/sandboxes",
+        workspaceRoot: "~/.zovsironclaw/sandboxes",
         docker: {
           image: "openclaw-sandbox:bookworm-slim",
           containerPrefix: "openclaw-sbx-",
@@ -2436,12 +2436,12 @@ Allowlists for remote control:
 
 OpenClaw uses the **pi-coding-agent** model catalog. You can add custom providers
 (LiteLLM, local OpenAI-compatible servers, Anthropic proxies, etc.) by writing
-`~/.openclaw/agents/<agentId>/agent/models.json` or by defining the same schema inside your
+`~/.zovsironclaw/agents/<agentId>/agent/models.json` or by defining the same schema inside your
 OpenClaw config under `models.providers`.
 Provider-by-provider overview + examples: [/concepts/model-providers](/concepts/model-providers).
 
 When `models.providers` is present, OpenClaw writes/merges a `models.json` into
-`~/.openclaw/agents/<agentId>/agent/` on startup:
+`~/.zovsironclaw/agents/<agentId>/agent/` on startup:
 
 - default behavior: **merge** (keeps existing providers, overrides on name)
 - set `models.mode: "replace"` to overwrite the file contents
@@ -2492,7 +2492,7 @@ Notes:
 
 - Model refs use `opencode/<modelId>` (example: `opencode/claude-opus-4-6`).
 - If you enable an allowlist via `agents.defaults.models`, add each model you plan to use.
-- Shortcut: `openclaw onboard --auth-choice opencode-zen`.
+- Shortcut: `zovsironclaw onboard --auth-choice opencode-zen`.
 
 ```json5
 {
@@ -2510,7 +2510,7 @@ Notes:
 Z.AI models are available via the built-in `zai` provider. Set `ZAI_API_KEY`
 in your environment and reference the model by provider/model.
 
-Shortcut: `openclaw onboard --auth-choice zai-api-key`.
+Shortcut: `zovsironclaw onboard --auth-choice zai-api-key`.
 
 ```json5
 {
@@ -2574,10 +2574,10 @@ Use Moonshot's OpenAI-compatible endpoint:
 
 Notes:
 
-- Set `MOONSHOT_API_KEY` in the environment or use `openclaw onboard --auth-choice moonshot-api-key`.
+- Set `MOONSHOT_API_KEY` in the environment or use `zovsironclaw onboard --auth-choice moonshot-api-key`.
 - Model ref: `moonshot/kimi-k2.5`.
 - For the China endpoint, either:
-  - Run `openclaw onboard --auth-choice moonshot-api-key-cn` (wizard will set `https://api.moonshot.cn/v1`), or
+  - Run `zovsironclaw onboard --auth-choice moonshot-api-key-cn` (wizard will set `https://api.moonshot.cn/v1`), or
   - Manually set `baseUrl: "https://api.moonshot.cn/v1"` in `models.providers.moonshot`.
 
 ### Kimi Coding
@@ -2598,7 +2598,7 @@ Use Moonshot AI's Kimi Coding endpoint (Anthropic-compatible, built-in provider)
 
 Notes:
 
-- Set `KIMI_API_KEY` in the environment or use `openclaw onboard --auth-choice kimi-code-api-key`.
+- Set `KIMI_API_KEY` in the environment or use `zovsironclaw onboard --auth-choice kimi-code-api-key`.
 - Model ref: `kimi-coding/k2p5`.
 
 ### Synthetic (Anthropic-compatible)
@@ -2640,7 +2640,7 @@ Use Synthetic's Anthropic-compatible endpoint:
 
 Notes:
 
-- Set `SYNTHETIC_API_KEY` or use `openclaw onboard --auth-choice synthetic-api-key`.
+- Set `SYNTHETIC_API_KEY` or use `zovsironclaw onboard --auth-choice synthetic-api-key`.
 - Model ref: `synthetic/hf:MiniMaxAI/MiniMax-M2.1`.
 - Base URL should omit `/v1` because the Anthropic client appends it.
 
@@ -2688,7 +2688,7 @@ Use MiniMax M2.1 directly without LM Studio:
 
 Notes:
 
-- Set `MINIMAX_API_KEY` environment variable or use `openclaw onboard --auth-choice minimax-api`.
+- Set `MINIMAX_API_KEY` environment variable or use `zovsironclaw onboard --auth-choice minimax-api`.
 - Available model: `MiniMax-M2.1` (default).
 - Update pricing in `models.json` if you need exact cost tracking.
 
@@ -2739,7 +2739,7 @@ Notes:
   `google-generative-ai`
 - Use `authHeader: true` + `headers` for custom auth needs.
 - Override the agent config root with `OPENCLAW_AGENT_DIR` (or `PI_CODING_AGENT_DIR`)
-  if you want `models.json` stored elsewhere (default: `~/.openclaw/agents/main/agent`).
+  if you want `models.json` stored elsewhere (default: `~/.zovsironclaw/agents/main/agent`).
 
 ### `session`
 
@@ -2764,9 +2764,9 @@ Controls session scoping, reset policy, reset triggers, and where the session st
       group: { mode: "idle", idleMinutes: 120 },
     },
     resetTriggers: ["/new", "/reset"],
-    // Default is already per-agent under ~/.openclaw/agents/<agentId>/sessions/sessions.json
+    // Default is already per-agent under ~/.zovsironclaw/agents/<agentId>/sessions/sessions.json
     // You can override with {agentId} templating:
-    store: "~/.openclaw/agents/{agentId}/sessions/sessions.json",
+    store: "~/.zovsironclaw/agents/{agentId}/sessions/sessions.json",
     // Direct chats collapse to agent:<agentId>:<mainKey> (default: "main").
     mainKey: "main",
     agentToAgent: {
@@ -2807,7 +2807,7 @@ Fields:
 ### `skills` (skills config)
 
 Controls bundled allowlist, install preferences, extra skill folders, and per-skill
-overrides. Applies to **bundled** skills and `~/.openclaw/skills` (workspace skills
+overrides. Applies to **bundled** skills and `~/.zovsironclaw/skills` (workspace skills
 still win on name conflicts).
 
 Fields:
@@ -2855,7 +2855,7 @@ Example:
 ### `plugins` (extensions)
 
 Controls plugin discovery, allow/deny, and per-plugin config. Plugins are loaded
-from `~/.openclaw/extensions`, `<workspace>/.openclaw/extensions`, plus any
+from `~/.zovsironclaw/extensions`, `<workspace>/.zovsironclaw/extensions`, plus any
 `plugins.load.paths` entries. **Config changes require a gateway restart.**
 See [/plugin](/plugin) for full usage.
 
@@ -2907,7 +2907,7 @@ Defaults:
 - control service: loopback only (port derived from `gateway.port`, default `18791`)
 - CDP URL: `http://127.0.0.1:18792` (control service + 1, legacy single-profile)
 - profile color: `#FF4500` (lobster-orange)
-- Note: the control server is started by the running gateway (OpenClaw.app menubar, or `openclaw gateway`).
+- Note: the control server is started by the running gateway (OpenClaw.app menubar, or `zovsironclaw gateway`).
 - Auto-detect order: default browser if Chromium-based; otherwise Chrome → Brave → Edge → Chromium → Chrome Canary.
 
 ```json5
@@ -3002,7 +3002,7 @@ Trusted proxies:
 
 Notes:
 
-- `openclaw gateway` refuses to start unless `gateway.mode` is set to `local` (or you pass the override flag).
+- `zovsironclaw gateway` refuses to start unless `gateway.mode` is set to `local` (or you pass the override flag).
 - `gateway.port` controls the single multiplexed port used for WebSocket + HTTP (control UI, hooks, A2UI).
 - OpenAI Chat Completions endpoint: **disabled by default**; enable with `gateway.http.endpoints.chatCompletions.enabled: true`.
 - Precedence: `--port` > `OPENCLAW_GATEWAY_PORT` > `gateway.port` > default `18789`.
@@ -3036,7 +3036,7 @@ Remote client defaults (CLI):
 
 macOS app behavior:
 
-- OpenClaw.app watches `~/.openclaw/openclaw.json` and switches modes live when `gateway.mode` or `gateway.remote.url` changes.
+- OpenClaw.app watches `~/.zovsironclaw/zovsironclaw.json` and switches modes live when `gateway.mode` or `gateway.remote.url` changes.
 - If `gateway.mode` is unset but `gateway.remote.url` is set, the macOS app treats it as remote mode.
 - When you change connection mode in the macOS app, it writes `gateway.mode` (and `gateway.remote.url` + `gateway.remote.transport` in remote mode) back to the config file.
 
@@ -3070,7 +3070,7 @@ Direct transport example (macOS app):
 
 ### `gateway.reload` (Config hot reload)
 
-The Gateway watches `~/.openclaw/openclaw.json` (or `OPENCLAW_CONFIG_PATH`) and applies changes automatically.
+The Gateway watches `~/.zovsironclaw/zovsironclaw.json` (or `OPENCLAW_CONFIG_PATH`) and applies changes automatically.
 
 Modes:
 
@@ -3094,7 +3094,7 @@ Modes:
 
 Files watched:
 
-- `~/.openclaw/openclaw.json` (or `OPENCLAW_CONFIG_PATH`)
+- `~/.zovsironclaw/zovsironclaw.json` (or `OPENCLAW_CONFIG_PATH`)
 
 Hot-applied (no full gateway restart):
 
@@ -3126,8 +3126,8 @@ To run multiple gateways on one host (for redundancy or a rescue bot), isolate p
 
 Convenience flags (CLI):
 
-- `openclaw --dev …` → uses `~/.openclaw-dev` + shifts ports from base `19001`
-- `openclaw --profile <name> …` → uses `~/.openclaw-<name>` (port via config/env/flags)
+- `openclaw --dev …` → uses `~/.zovsironclaw-dev` + shifts ports from base `19001`
+- `openclaw --profile <name> …` → uses `~/.zovsironclaw-<name>` (port via config/env/flags)
 
 See [Gateway runbook](/gateway) for the derived port mapping (gateway/browser/canvas).
 See [Multiple gateways](/gateway/multiple-gateways) for browser/CDP port isolation details.
@@ -3135,9 +3135,9 @@ See [Multiple gateways](/gateway/multiple-gateways) for browser/CDP port isolati
 Example:
 
 ```bash
-OPENCLAW_CONFIG_PATH=~/.openclaw/a.json \
-OPENCLAW_STATE_DIR=~/.openclaw-a \
-openclaw gateway --port 19001
+OPENCLAW_CONFIG_PATH=~/.zovsironclaw/a.json \
+OPENCLAW_STATE_DIR=~/.zovsironclaw-a \
+zovsironclaw gateway --port 19001
 ```
 
 ### `hooks` (Gateway webhooks)
@@ -3157,7 +3157,7 @@ Defaults:
     token: "shared-secret",
     path: "/hooks",
     presets: ["gmail"],
-    transformsDir: "~/.openclaw/hooks",
+    transformsDir: "~/.zovsironclaw/hooks",
     mappings: [
       {
         match: { path: "gmail" },
@@ -3251,7 +3251,7 @@ If you need the backend to receive the prefixed path, set
 
 The Gateway serves a directory of HTML/CSS/JS over HTTP so iOS/Android nodes can simply `canvas.navigate` to it.
 
-Default root: `~/.openclaw/workspace/canvas`  
+Default root: `~/.zovsironclaw/workspace/canvas`
 Default port: `18793` (chosen to avoid the openclaw browser CDP port `18792`)  
 The server listens on the **gateway bind host** (LAN or Tailnet) so nodes can reach it.
 
@@ -3271,7 +3271,7 @@ Disable live reload (and file watching) if the directory is large or you hit `EM
 ```json5
 {
   canvasHost: {
-    root: "~/.openclaw/workspace/canvas",
+    root: "~/.zovsironclaw/workspace/canvas",
     port: 18793,
     liveReload: true,
   },
@@ -3327,9 +3327,9 @@ Auto-generated certs require `openssl` on PATH; if generation fails, the bridge 
     bind: "tailnet",
     tls: {
       enabled: true,
-      // Uses ~/.openclaw/bridge/tls/bridge-{cert,key}.pem when omitted.
-      // certPath: "~/.openclaw/bridge/tls/bridge-cert.pem",
-      // keyPath: "~/.openclaw/bridge/tls/bridge-key.pem"
+      // Uses ~/.zovsironclaw/bridge/tls/bridge-{cert,key}.pem when omitted.
+      // certPath: "~/.zovsironclaw/bridge/tls/bridge-cert.pem",
+      // keyPath: "~/.zovsironclaw/bridge/tls/bridge-key.pem"
     },
   },
 }
@@ -3352,7 +3352,7 @@ Controls LAN mDNS discovery broadcasts (`_openclaw-gw._tcp`).
 
 ### `discovery.wideArea` (Wide-Area Bonjour / unicast DNS‑SD)
 
-When enabled, the Gateway writes a unicast DNS-SD zone for `_openclaw-gw._tcp` under `~/.openclaw/dns/` using the configured discovery domain (example: `openclaw.internal.`).
+When enabled, the Gateway writes a unicast DNS-SD zone for `_openclaw-gw._tcp` under `~/.zovsironclaw/dns/` using the configured discovery domain (example: `openclaw.internal.`).
 
 To make iOS/Android discover across networks (Vienna ⇄ London), pair this with:
 

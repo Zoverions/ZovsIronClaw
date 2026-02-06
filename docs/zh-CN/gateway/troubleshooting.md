@@ -29,9 +29,9 @@ x-i18n:
 | `openclaw status`                  | 本地摘要：操作系统 + 更新、Gateway 网关可达性/模式、服务、智能体/会话、提供商配置状态 | 首次检查，快速概览                    |
 | `openclaw status --all`            | 完整本地诊断（只读、可粘贴、相对安全）包括日志尾部                                    | 当你需要分享调试报告时                |
 | `openclaw status --deep`           | 运行 Gateway 网关健康检查（包括提供商探测；需要可达的 Gateway 网关）                  | 当"已配置"不意味着"正常工作"时        |
-| `openclaw gateway probe`           | Gateway 网关发现 + 可达性（本地 + 远程目标）                                          | 当你怀疑正在探测错误的 Gateway 网关时 |
+| `zovsironclaw gateway probe`           | Gateway 网关发现 + 可达性（本地 + 远程目标）                                          | 当你怀疑正在探测错误的 Gateway 网关时 |
 | `openclaw channels status --probe` | 向运行中的 Gateway 网关查询渠道状态（并可选探测）                                     | 当 Gateway 网关可达但渠道异常时       |
-| `openclaw gateway status`          | 监管程序状态（launchd/systemd/schtasks）、运行时 PID/退出、最后的 Gateway 网关错误    | 当服务"看起来已加载"但没有运行时      |
+| `zovsironclaw gateway status`          | 监管程序状态（launchd/systemd/schtasks）、运行时 PID/退出、最后的 Gateway 网关错误    | 当服务"看起来已加载"但没有运行时      |
 | `openclaw logs --follow`           | 实时日志（运行时问题的最佳信号）                                                      | 当你需要实际的故障原因时              |
 
 **分享输出：** 优先使用 `openclaw status --all`（它会隐藏令牌）。如果你粘贴 `openclaw status`，考虑先设置 `OPENCLAW_SHOW_SECRETS=0`（令牌预览）。
@@ -110,8 +110,8 @@ openclaw models status
 **检查：**
 
 ```bash
-openclaw gateway status
-openclaw doctor
+zovsironclaw gateway status
+zovsironclaw doctor
 ```
 
 Doctor/service 将显示运行时状态（PID/最后退出）和日志提示。
@@ -177,13 +177,13 @@ Gateway 网关服务使用**最小 PATH** 运行以避免 shell/管理器的干�
 
 这有意排除版本管理器（nvm/fnm/volta/asdf）和包
 管理器（pnpm/npm），因为服务不加载你的 shell 初始化。运行时
-变量如 `DISPLAY` 应该放在 `~/.openclaw/.env` 中（由 Gateway 网关早期加载）。
+变量如 `DISPLAY` 应该放在 `~/.zovsironclaw/.env` 中（由 Gateway 网关早期加载）。
 在 `host=gateway` 上的 Exec 运行会将你的登录 shell `PATH` 合并到 exec 环境中，
 所以缺少的工具通常意味着你的 shell 初始化没有导出它们（或设置
 `tools.exec.pathPrepend`）。参见 [/tools/exec](/tools/exec)。
 
 WhatsApp + Telegram 渠道需要 **Node**；不支持 Bun。如果你的
-服务是用 Bun 或版本管理的 Node 路径安装的，运行 `openclaw doctor`
+服务是用 Bun 或版本管理的 Node 路径安装的，运行 `zovsironclaw doctor`
 迁移到系统 Node 安装。
 
 ### 沙箱中 Skill 缺少 API 密钥
@@ -211,31 +211,31 @@ Gateway 网关可能拒绝绑定。
 
 **检查：**
 
-- `gateway.mode` 必须为 `local` 才能运行 `openclaw gateway` 和服务。
-- 如果你设置了 `gateway.mode=remote`，**CLI 默认**使用远程 URL。服务可能仍在本地运行，但你的 CLI 可能在探测错误的位置。使用 `openclaw gateway status` 查看服务解析的端口 + 探测目标（或传递 `--url`）。
-- `openclaw gateway status` 和 `openclaw doctor` 在服务看起来正在运行但端口关闭时会显示日志中的**最后 Gateway 网关错误**。
+- `gateway.mode` 必须为 `local` 才能运行 `zovsironclaw gateway` 和服务。
+- 如果你设置了 `gateway.mode=remote`，**CLI 默认**使用远程 URL。服务可能仍在本地运行，但你的 CLI 可能在探测错误的位置。使用 `zovsironclaw gateway status` 查看服务解析的端口 + 探测目标（或传递 `--url`）。
+- `zovsironclaw gateway status` 和 `zovsironclaw doctor` 在服务看起来正在运行但端口关闭时会显示日志中的**最后 Gateway 网关错误**。
 - 非本地回环绑定（`lan`/`tailnet`/`custom`，或本地回环不可用时的 `auto`）需要认证：
   `gateway.auth.token`（或 `OPENCLAW_GATEWAY_TOKEN`）。
 - `gateway.remote.token` 仅用于远程 CLI 调用；它**不**启用本地认证。
 - `gateway.token` 被忽略；使用 `gateway.auth.token`。
 
-**如果 `openclaw gateway status` 显示配置不匹配**
+**如果 `zovsironclaw gateway status` 显示配置不匹配**
 
 - `Config (cli): ...` 和 `Config (service): ...` 通常应该匹配。
 - 如果不匹配，你几乎肯定是在编辑一个配置而服务运行的是另一个。
-- 修复：从你希望服务使用的相同 `--profile` / `OPENCLAW_STATE_DIR` 重新运行 `openclaw gateway install --force`。
+- 修复：从你希望服务使用的相同 `--profile` / `OPENCLAW_STATE_DIR` 重新运行 `zovsironclaw gateway install --force`。
 
-**如果 `openclaw gateway status` 报告服务配置问题**
+**如果 `zovsironclaw gateway status` 报告服务配置问题**
 
 - 监管程序配置（launchd/systemd/schtasks）缺少当前默认值。
-- 修复：运行 `openclaw doctor` 更新它（或 `openclaw gateway install --force` 完全重写）。
+- 修复：运行 `zovsironclaw doctor` 更新它（或 `zovsironclaw gateway install --force` 完全重写）。
 
 **如果 `Last gateway error:` 提到"refusing to bind … without auth"**
 
 - 你将 `gateway.bind` 设置为非本地回环模式（`lan`/`tailnet`/`custom`，或本地回环不可用时的 `auto`）但没有配置认证。
 - 修复：设置 `gateway.auth.mode` + `gateway.auth.token`（或导出 `OPENCLAW_GATEWAY_TOKEN`）并重启服务。
 
-**如果 `openclaw gateway status` 显示 `bind=tailnet` 但未找到 tailnet 接口**
+**如果 `zovsironclaw gateway status` 显示 `bind=tailnet` 但未找到 tailnet 接口**
 
 - Gateway 网关尝试绑定到 Tailscale IP（100.64.0.0/10）但在主机上未检测到。
 - 修复：在该机器上启动 Tailscale（或将 `gateway.bind` 改为 `loopback`/`lan`）。
@@ -252,7 +252,7 @@ Gateway 网关可能拒绝绑定。
 **检查：**
 
 ```bash
-openclaw gateway status
+zovsironclaw gateway status
 ```
 
 它将显示监听器和可能的原因（Gateway 网关已在运行、SSH 隧道）。
@@ -269,7 +269,7 @@ openclaw gateway status
 
 ### 主聊天在沙箱工作区中运行
 
-症状：`pwd` 或文件工具显示 `~/.openclaw/sandboxes/...` 即使你
+症状：`pwd` 或文件工具显示 `~/.zovsironclaw/sandboxes/...` 即使你
 期望的是主机工作区。
 
 **原因：** `agents.defaults.sandbox.mode: "non-main"` 基于 `session.mainKey`（默认 `"main"`）判断。
@@ -322,7 +322,7 @@ openclaw status
 # 消息必须匹配 mentionPatterns 或显式提及；默认值在渠道 groups/guilds 中。
 # 多智能体：`agents.list[].groupChat.mentionPatterns` 覆盖全局模式。
 grep -n "agents\\|groupChat\\|mentionPatterns\\|channels\\.whatsapp\\.groups\\|channels\\.telegram\\.groups\\|channels\\.imessage\\.groups\\|channels\\.discord\\.guilds" \
-  "${OPENCLAW_CONFIG_PATH:-$HOME/.openclaw/openclaw.json}"
+  "${OPENCLAW_CONFIG_PATH:-$HOME/.zovsironclaw/zovsironclaw.json}"
 ```
 
 **检查 3：** 检查日志
@@ -340,7 +340,7 @@ tail -f "$(ls -t /tmp/openclaw/openclaw-*.log | head -1)" | grep "blocked\\|skip
 **检查 1：** 是否已有待处理的请求在等待？
 
 ```bash
-openclaw pairing list <channel>
+zovsironclaw pairing list <channel>
 ```
 
 待处理的私信配对请求默认每个渠道上限为 **3 个**。如果列表已满，新请求将不会生成代码，直到一个被批准或过期。
@@ -367,7 +367,7 @@ openclaw logs --follow | grep "pairing request"
 **检查 1：** 会话文件是否存在？
 
 ```bash
-ls -la ~/.openclaw/agents/<agentId>/sessions/
+ls -la ~/.zovsironclaw/agents/<agentId>/sessions/
 ```
 
 **检查 2：** 重置窗口是否太短？
@@ -415,7 +415,7 @@ openclaw logs --limit 200 | grep "connection\\|disconnect\\|logout"
 **修复：** 通常在 Gateway 网关运行后会自动重连。如果卡住，重启 Gateway 网关进程（无论你如何监管它），或使用详细输出手动运行：
 
 ```bash
-openclaw gateway --verbose
+zovsironclaw gateway --verbose
 ```
 
 如果你已登出/取消关联：
@@ -470,15 +470,15 @@ OpenClaw 在内存中保留对话历史。
 用 Doctor 修复：
 
 ```bash
-openclaw doctor
-openclaw doctor --fix
+zovsironclaw doctor
+zovsironclaw doctor --fix
 ```
 
 注意事项：
 
-- `openclaw doctor` 报告每个无效条目。
-- `openclaw doctor --fix` 应用迁移/修复并重写配置。
-- 诊断命令如 `openclaw logs`、`openclaw health`、`openclaw status`、`openclaw gateway status` 和 `openclaw gateway probe` 即使配置无效也能运行。
+- `zovsironclaw doctor` 报告每个无效条目。
+- `zovsironclaw doctor --fix` 应用迁移/修复并重写配置。
+- 诊断命令如 `openclaw logs`、`openclaw health`、`openclaw status`、`zovsironclaw gateway status` 和 `zovsironclaw gateway probe` 即使配置无效也能运行。
 
 ### "All models failed" — 我应该首先检查什么？
 
@@ -516,7 +516,7 @@ openclaw channels login
 ### `main` 上的构建错误 — 标准修复路径是什么？
 
 1. `git pull origin main && pnpm install`
-2. `openclaw doctor`
+2. `zovsironclaw doctor`
 3. 检查 GitHub issues 或 Discord
 4. 临时变通方法：检出较旧的提交
 
@@ -531,8 +531,8 @@ openclaw channels login
 git status   # 确保你在仓库根目录
 pnpm install
 pnpm build
-openclaw doctor
-openclaw gateway restart
+zovsironclaw doctor
+zovsironclaw gateway restart
 ```
 
 原因：pnpm 是此仓库配置的包管理器。
@@ -559,8 +559,8 @@ curl -fsSL https://openclaw.ai/install.sh | bash
 - git 流程仅在仓库干净时才 rebase。先提交或 stash 更改。
 - 切换后，运行：
   ```bash
-  openclaw doctor
-  openclaw gateway restart
+  zovsironclaw doctor
+  zovsironclaw gateway restart
   ```
 
 ### Telegram 分块流式传输没有在工具调用之间分割文本。为什么？
@@ -641,8 +641,8 @@ tccutil reset All bot.molt.mac.debug
 如果 Gateway 网关由 launchd 监管，杀死 PID 只会重新生成它。先停止监管程序：
 
 ```bash
-openclaw gateway status
-openclaw gateway stop
+zovsironclaw gateway status
+zovsironclaw gateway stop
 # 或：launchctl bootout gui/$UID/bot.molt.gateway（用 bot.molt.<profile> 替换；旧版 com.openclaw.* 仍然有效）
 ```
 
@@ -674,10 +674,10 @@ npm install -g openclaw@<version>
 
 ```bash
 # 在配置中打开跟踪日志：
-#   ${OPENCLAW_CONFIG_PATH:-$HOME/.openclaw/openclaw.json} -> { logging: { level: "trace" } }
+#   ${OPENCLAW_CONFIG_PATH:-$HOME/.zovsironclaw/zovsironclaw.json} -> { logging: { level: "trace" } }
 #
 # 然后运行详细命令将调试输出镜像到标准输出：
-openclaw gateway --verbose
+zovsironclaw gateway --verbose
 openclaw channels login --verbose
 ```
 
@@ -686,7 +686,7 @@ openclaw channels login --verbose
 | 日志                             | 位置                                                                                                                                                                                                                                                                                                                      |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Gateway 网关文件日志（结构化）   | `/tmp/openclaw/openclaw-YYYY-MM-DD.log`（或 `logging.file`）                                                                                                                                                                                                                                                              |
-| Gateway 网关服务日志（监管程序） | macOS：`$OPENCLAW_STATE_DIR/logs/gateway.log` + `gateway.err.log`（默认：`~/.openclaw/logs/...`；配置文件使用 `~/.openclaw-<profile>/logs/...`）<br />Linux：`journalctl --user -u openclaw-gateway[-<profile>].service -n 200 --no-pager`<br />Windows：`schtasks /Query /TN "OpenClaw Gateway (<profile>)" /V /FO LIST` |
+| Gateway 网关服务日志（监管程序） | macOS：`$OPENCLAW_STATE_DIR/logs/gateway.log` + `gateway.err.log`（默认：`~/.zovsironclaw/logs/...`；配置文件使用 `~/.openclaw-<profile>/logs/...`）<br />Linux：`journalctl --user -u openclaw-gateway[-<profile>].service -n 200 --no-pager`<br />Windows：`schtasks /Query /TN "OpenClaw Gateway (<profile>)" /V /FO LIST` |
 | 会话文件                         | `$OPENCLAW_STATE_DIR/agents/<agentId>/sessions/`                                                                                                                                                                                                                                                                          |
 | 媒体缓存                         | `$OPENCLAW_STATE_DIR/media/`                                                                                                                                                                                                                                                                                              |
 | 凭证                             | `$OPENCLAW_STATE_DIR/credentials/`                                                                                                                                                                                                                                                                                        |
@@ -695,9 +695,9 @@ openclaw channels login --verbose
 
 ```bash
 # 监管程序 + 探测目标 + 配置路径
-openclaw gateway status
+zovsironclaw gateway status
 # 包括系统级扫描（旧版/额外服务、端口监听器）
-openclaw gateway status --deep
+zovsironclaw gateway status --deep
 
 # Gateway 网关是否可达？
 openclaw health --json
@@ -718,13 +718,13 @@ tail -20 /tmp/openclaw/openclaw-*.log
 核选项：
 
 ```bash
-openclaw gateway stop
+zovsironclaw gateway stop
 # 如果你安装了服务并想要干净安装：
-# openclaw gateway uninstall
+# zovsironclaw gateway uninstall
 
 trash "${OPENCLAW_STATE_DIR:-$HOME/.openclaw}"
 openclaw channels login         # 重新配对 WhatsApp
-openclaw gateway restart           # 或：openclaw gateway
+zovsironclaw gateway restart           # 或：zovsironclaw gateway
 ```
 
 ⚠️ 这会丢失所有会话并需要重新配对 WhatsApp。

@@ -27,14 +27,14 @@ x-i18n:
 
 ## 深度诊断
 
-- 磁盘上的凭证：`ls -l ~/.openclaw/credentials/whatsapp/<accountId>/creds.json`（mtime 应该是最近的）。
-- 会话存储：`ls -l ~/.openclaw/agents/<agentId>/sessions/sessions.json`（路径可在配置中覆盖）。计数和最近收件人通过 `status` 显示。
+- 磁盘上的凭证：`ls -l ~/.zovsironclaw/credentials/whatsapp/<accountId>/creds.json`（mtime 应该是最近的）。
+- 会话存储：`ls -l ~/.zovsironclaw/agents/<agentId>/sessions/sessions.json`（路径可在配置中覆盖）。计数和最近收件人通过 `status` 显示。
 - 重新链接流程：当日志中出现状态码 409–515 或 `loggedOut` 时，执行 `openclaw channels logout && openclaw channels login --verbose`。（注意：配对后状态 515 时 QR 登录流程会自动重启一次。）
 
 ## 当出现故障时
 
 - `logged out` 或状态 409–515 → 使用 `openclaw channels logout` 然后 `openclaw channels login` 重新链接。
-- Gateway 网关不可达 → 启动它：`openclaw gateway --port 18789`（如果端口被占用则使用 `--force`）。
+- Gateway 网关不可达 → 启动它：`zovsironclaw gateway --port 18789`（如果端口被占用则使用 `--force`）。
 - 没有入站消息 → 确认已链接的手机在线且发送者被允许（`channels.whatsapp.allowFrom`）；对于群聊，确保允许列表 + 提及规则匹配（`channels.whatsapp.groups`、`agents.list[].groupChat.mentionPatterns`）。
 
 ## 专用"health"命令

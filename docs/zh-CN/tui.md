@@ -20,7 +20,7 @@ x-i18n:
 1. 启动 Gateway 网关。
 
 ```bash
-openclaw gateway
+zovsironclaw gateway
 ```
 
 2. 打开 TUI。
@@ -162,5 +162,5 @@ openclaw tui --url ws://<host>:<port> --token <gateway-token>
 ## 故障排除
 
 - `disconnected`：确保 Gateway 网关正在运行且你的 `--url/--token/--password` 正确。
-- 选择器中没有智能体：检查 `openclaw agents list` 和你的路由配置。
+- 选择器中没有智能体：检查 `zovsironclaw agents list` 和你的路由配置。
 - 会话选择器为空：你可能处于全局范围或还没有会话。

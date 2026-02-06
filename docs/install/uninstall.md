@@ -33,13 +33,13 @@ Manual steps (same result):
 1. Stop the gateway service:
 
 ```bash
-openclaw gateway stop
+zovsironclaw gateway stop
 ```
 
 2. Uninstall the gateway service (launchd/systemd/schtasks):
 
 ```bash
-openclaw gateway uninstall
+zovsironclaw gateway uninstall
 ```
 
 3. Delete state + config:
@@ -53,7 +53,7 @@ If you set `OPENCLAW_CONFIG_PATH` to a custom location outside the state dir, de
 4. Delete your workspace (optional, removes agent files):
 
 ```bash
-rm -rf ~/.openclaw/workspace
+rm -rf ~/.zovsironclaw/workspace
 ```
 
 5. Remove the CLI install (pick the one you used):

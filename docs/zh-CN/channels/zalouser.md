@@ -88,8 +88,8 @@ openclaw directory groups list --channel zalouser --query "work"
 
 通过以下方式批准：
 
-- `openclaw pairing list zalouser`
-- `openclaw pairing approve zalouser <code>`
+- `zovsironclaw pairing list zalouser`
+- `zovsironclaw pairing approve zalouser <code>`
 
 ## 群组访问（可选）
 

@@ -25,19 +25,19 @@ x-i18n:
 
 ```bash
 # WhatsApp
-openclaw message poll --target +15555550123 \
+zovsironclaw message poll --target +15555550123 \
   --poll-question "Lunch today?" --poll-option "Yes" --poll-option "No" --poll-option "Maybe"
-openclaw message poll --target 123456789@g.us \
+zovsironclaw message poll --target 123456789@g.us \
   --poll-question "Meeting time?" --poll-option "10am" --poll-option "2pm" --poll-option "4pm" --poll-multi
 
 # Discord
-openclaw message poll --channel discord --target channel:123456789 \
+zovsironclaw message poll --channel discord --target channel:123456789 \
   --poll-question "Snack?" --poll-option "Pizza" --poll-option "Sushi"
-openclaw message poll --channel discord --target channel:123456789 \
+zovsironclaw message poll --channel discord --target channel:123456789 \
   --poll-question "Plan?" --poll-option "A" --poll-option "B" --poll-duration-hours 48
 
 # MS Teams
-openclaw message poll --channel msteams --target conversation:19:abc@thread.tacv2 \
+zovsironclaw message poll --channel msteams --target conversation:19:abc@thread.tacv2 \
   --poll-question "Lunch?" --poll-option "Pizza" --poll-option "Sushi"
 ```
 
@@ -73,4 +73,4 @@ openclaw message poll --channel msteams --target conversation:19:abc@thread.tacv
 
 注意：Discord 没有"恰好选择 N 个"模式；`pollMulti` 映射为多选。
 Teams 投票以 Adaptive Cards 形式渲染，需要 Gateway 网关保持在线
-以将投票记录到 `~/.openclaw/msteams-polls.json`。
+以将投票记录到 `~/.zovsironclaw/msteams-polls.json`。

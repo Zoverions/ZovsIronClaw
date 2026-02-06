@@ -16,7 +16,7 @@
 
 ```
 ┌─────────────────────────────────────────┐
-│         OpenClaw (TypeScript)           │
+│         ZovsIronClaw (TypeScript)           │
 │  ┌───────────────────────────────────┐  │
 │  │    GCA Bridge Provider            │  │
 │  │  (src/providers/gca-bridge.ts)    │  │
@@ -39,14 +39,14 @@
 
 ### The Flow
 
-1. **Inbound**: User message arrives via OpenClaw (WhatsApp, Telegram, etc.)
+1. **Inbound**: User message arrives via ZovsIronClaw (WhatsApp, Telegram, etc.)
 2. **Intercept**: GCA Bridge Provider captures the request
 3. **GCA Processing**:
    - QPT structures the input into w,x,y,z quaternion format
    - Optimizer routes intent to appropriate skill vectors
    - GlassBox applies geometric steering
    - Moral Kernel evaluates any tool calls
-4. **Execution**: If approved, OpenClaw executes the tool with moral signature
+4. **Execution**: If approved, ZovsIronClaw executes the tool with moral signature
 5. **Response**: User receives the response
 
 ## Components

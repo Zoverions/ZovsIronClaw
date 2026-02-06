@@ -160,8 +160,8 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
   - [OAuth vs API key: what's the difference?](#oauth-vs-api-key-whats-the-difference)
 - [Gateway: ports, "already running", and remote mode](#gateway-ports-already-running-and-remote-mode)
   - [What port does the Gateway use?](#what-port-does-the-gateway-use)
-  - [Why does `openclaw gateway status` say `Runtime: running` but `RPC probe: failed`?](#why-does-openclaw-gateway-status-say-runtime-running-but-rpc-probe-failed)
-  - [Why does `openclaw gateway status` show `Config (cli)` and `Config (service)` different?](#why-does-openclaw-gateway-status-show-config-cli-and-config-service-different)
+  - [Why does `zovsironclaw gateway status` say `Runtime: running` but `RPC probe: failed`?](#why-does-openclaw-gateway-status-say-runtime-running-but-rpc-probe-failed)
+  - [Why does `zovsironclaw gateway status` show `Config (cli)` and `Config (service)` different?](#why-does-openclaw-gateway-status-show-config-cli-and-config-service-different)
   - [What does "another gateway instance is already listening" mean?](#what-does-another-gateway-instance-is-already-listening-mean)
   - [How do I run OpenClaw in remote mode (client connects to a Gateway elsewhere)?](#how-do-i-run-openclaw-in-remote-mode-client-connects-to-a-gateway-elsewhere)
   - [The Control UI says "unauthorized" (or keeps reconnecting). What now?](#the-control-ui-says-unauthorized-or-keeps-reconnecting-what-now)
@@ -177,7 +177,7 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
   - [Telegram setMyCommands fails with network errors. What should I check?](#telegram-setmycommands-fails-with-network-errors-what-should-i-check)
   - [TUI shows no output. What should I check?](#tui-shows-no-output-what-should-i-check)
   - [How do I completely stop then start the Gateway?](#how-do-i-completely-stop-then-start-the-gateway)
-  - [ELI5: `openclaw gateway restart` vs `openclaw gateway`](#eli5-openclaw-gateway-restart-vs-openclaw-gateway)
+  - [ELI5: `zovsironclaw gateway restart` vs `zovsironclaw gateway`](#eli5-openclaw-gateway-restart-vs-openclaw-gateway)
   - [What's the fastest way to get more details when something fails?](#whats-the-fastest-way-to-get-more-details-when-something-fails)
 - [Media and attachments](#media-and-attachments)
   - [My skill generated an image/PDF, but nothing was sent](#my-skill-generated-an-imagepdf-but-nothing-was-sent)
@@ -216,7 +216,7 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
 3. **Daemon + port state**
 
    ```bash
-   openclaw gateway status
+   zovsironclaw gateway status
    ```
 
    Shows supervisor runtime vs RPC reachability, the probe target URL, and which config the service likely used.
@@ -246,7 +246,7 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
 6. **Run the doctor (repairs)**
 
    ```bash
-   openclaw doctor
+   zovsironclaw doctor
    ```
 
    Repairs/migrates config/state + runs health checks. See [Doctor](/gateway/doctor).
@@ -295,17 +295,17 @@ Start with these commands (share outputs when asking for help):
 ```bash
 openclaw status
 openclaw models status
-openclaw doctor
+zovsironclaw doctor
 ```
 
 What they do:
 
 - `openclaw status`: quick snapshot of gateway/agent health + basic config.
 - `openclaw models status`: checks provider auth + model availability.
-- `openclaw doctor`: validates and repairs common config/state issues.
+- `zovsironclaw doctor`: validates and repairs common config/state issues.
 
 Other useful CLI checks: `openclaw status --all`, `openclaw logs --follow`,
-`openclaw gateway status`, `openclaw health --verbose`.
+`zovsironclaw gateway status`, `openclaw health --verbose`.
 
 Quick debug loop: [First 60 seconds if something's broken](#first-60-seconds-if-somethings-broken).
 Install docs: [Install](/install), [Installer flags](/install/installer), [Updating](/install/updating).
@@ -316,7 +316,7 @@ The repo recommends running from source and using the onboarding wizard:
 
 ```bash
 curl -fsSL https://openclaw.ai/install.sh | bash
-openclaw onboard --install-daemon
+zovsironclaw onboard --install-daemon
 ```
 
 The wizard can also build UI assets automatically. After onboarding, you typically run the Gateway on port **18789**.
@@ -329,10 +329,10 @@ cd openclaw
 pnpm install
 pnpm build
 pnpm ui:build # auto-installs UI deps on first run
-openclaw onboard
+zovsironclaw onboard
 ```
 
-If you don't have a global install yet, run it via `pnpm openclaw onboard`.
+If you don't have a global install yet, run it via `pnpm zovsironclaw onboard`.
 
 ### How do I open the dashboard after onboarding
 
@@ -344,12 +344,12 @@ The wizard opens your browser with a clean (non-tokenized) dashboard URL right a
 
 - Open `http://127.0.0.1:18789/`.
 - If it asks for auth, paste the token from `gateway.auth.token` (or `OPENCLAW_GATEWAY_TOKEN`) into Control UI settings.
-- Retrieve it from the gateway host: `openclaw config get gateway.auth.token` (or generate one: `openclaw doctor --generate-gateway-token`).
+- Retrieve it from the gateway host: `openclaw config get gateway.auth.token` (or generate one: `zovsironclaw doctor --generate-gateway-token`).
 
 **Not on localhost:**
 
-- **Tailscale Serve** (recommended): keep bind loopback, run `openclaw gateway --tailscale serve`, open `https://<magicdns>/`. If `gateway.auth.allowTailscale` is `true`, identity headers satisfy auth (no token).
-- **Tailnet bind**: run `openclaw gateway --bind tailnet --token "<token>"`, open `http://<tailscale-ip>:18789/`, paste token in dashboard settings.
+- **Tailscale Serve** (recommended): keep bind loopback, run `zovsironclaw gateway --tailscale serve`, open `https://<magicdns>/`. If `gateway.auth.allowTailscale` is `true`, identity headers satisfy auth (no token).
+- **Tailnet bind**: run `zovsironclaw gateway --bind tailnet --token "<token>"`, open `http://<tailscale-ip>:18789/`, paste token in dashboard settings.
 - **SSH tunnel**: `ssh -N -L 18789:127.0.0.1:18789 user@host` then open `http://127.0.0.1:18789/` and paste the token in Control UI settings.
 
 See [Dashboard](/web/dashboard) and [Web surfaces](/web) for bind modes and auth details.
@@ -389,7 +389,7 @@ and tokens stay at 0, the agent never ran.
 1. Restart the Gateway:
 
 ```bash
-openclaw gateway restart
+zovsironclaw gateway restart
 ```
 
 2. Check status + auth:
@@ -403,7 +403,7 @@ openclaw logs --follow
 3. If it still hangs, run:
 
 ```bash
-openclaw doctor
+zovsironclaw doctor
 ```
 
 If the Gateway is remote, ensure the tunnel/Tailscale connection is up and that the UI
@@ -417,15 +417,15 @@ state) as long as you copy **both** locations:
 
 1. Install OpenClaw on the new machine.
 2. Copy `$OPENCLAW_STATE_DIR` (default: `~/.openclaw`) from the old machine.
-3. Copy your workspace (default: `~/.openclaw/workspace`).
-4. Run `openclaw doctor` and restart the Gateway service.
+3. Copy your workspace (default: `~/.zovsironclaw/workspace`).
+4. Run `zovsironclaw doctor` and restart the Gateway service.
 
 That preserves config, auth profiles, WhatsApp creds, sessions, and memory. If you're in
 remote mode, remember the gateway host owns the session store and workspace.
 
 **Important:** if you only commit/push your workspace to GitHub, you're backing
 up **memory + bootstrap files**, but **not** session history or auth. Those live
-under `~/.openclaw/` (for example `~/.openclaw/agents/<agentId>/sessions/`).
+under `~/.zovsironclaw/` (for example `~/.zovsironclaw/agents/<agentId>/sessions/`).
 
 Related: [Migrating](/install/migrating), [Where things live on disk](/help/faq#where-does-openclaw-store-its-data),
 [Agent workspace](/concepts/agent-workspace), [Doctor](/gateway/doctor),
@@ -638,14 +638,14 @@ If you must automate from an agent:
 
 ```bash
 openclaw update --yes --no-restart
-openclaw gateway restart
+zovsironclaw gateway restart
 ```
 
 Docs: [Update](/cli/update), [Updating](/install/updating).
 
 ### What does the onboarding wizard actually do
 
-`openclaw onboard` is the recommended setup path. In **local mode** it walks you through:
+`zovsironclaw onboard` is the recommended setup path. In **local mode** it walks you through:
 
 - **Model/auth setup** (Anthropic **setup-token** recommended for Claude subscriptions, OpenAI Codex OAuth supported, API keys optional, LM Studio local models supported)
 - **Workspace** location + bootstrap files
@@ -722,7 +722,7 @@ See [OAuth](/concepts/oauth), [Model providers](/concepts/model-providers), and 
 
 ### How do I set up Gemini CLI OAuth
 
-Gemini CLI uses a **plugin auth flow**, not a client id or secret in `openclaw.json`.
+Gemini CLI uses a **plugin auth flow**, not a client id or secret in `zovsironclaw.json`.
 
 Steps:
 
@@ -836,7 +836,7 @@ Docs: [Getting started](/start/getting-started), [Updating](/install/updating).
 
 Yes. Install the other flavor, then run Doctor so the gateway service points at the new entrypoint.
 This **does not delete your data** - it only changes the OpenClaw code install. Your state
-(`~/.openclaw`) and workspace (`~/.openclaw/workspace`) stay untouched.
+(`~/.openclaw`) and workspace (`~/.zovsironclaw/workspace`) stay untouched.
 
 From npm → git:
 
@@ -845,16 +845,16 @@ git clone https://github.com/openclaw/openclaw.git
 cd openclaw
 pnpm install
 pnpm build
-openclaw doctor
-openclaw gateway restart
+zovsironclaw doctor
+zovsironclaw gateway restart
 ```
 
 From git → npm:
 
 ```bash
 npm install -g openclaw@latest
-openclaw doctor
-openclaw gateway restart
+zovsironclaw doctor
+zovsironclaw gateway restart
 ```
 
 Doctor detects a gateway service entrypoint mismatch and offers to rewrite the service config to match the current install (use `--repair` in automation).
@@ -998,11 +998,11 @@ Showcase: [https://openclaw.ai/showcase](https://openclaw.ai/showcase)
 
 ### How do I customize skills without keeping the repo dirty
 
-Use managed overrides instead of editing the repo copy. Put your changes in `~/.openclaw/skills/<name>/SKILL.md` (or add a folder via `skills.load.extraDirs` in `~/.openclaw/openclaw.json`). Precedence is `<workspace>/skills` > `~/.openclaw/skills` > bundled, so managed overrides win without touching git. Only upstream-worthy edits should live in the repo and go out as PRs.
+Use managed overrides instead of editing the repo copy. Put your changes in `~/.zovsironclaw/skills/<name>/SKILL.md` (or add a folder via `skills.load.extraDirs` in `~/.zovsironclaw/zovsironclaw.json`). Precedence is `<workspace>/skills` > `~/.zovsironclaw/skills` > bundled, so managed overrides win without touching git. Only upstream-worthy edits should live in the repo and go out as PRs.
 
 ### Can I load skills from a custom folder
 
-Yes. Add extra directories via `skills.load.extraDirs` in `~/.openclaw/openclaw.json` (lowest precedence). Default precedence remains: `<workspace>/skills` → `~/.openclaw/skills` → bundled → `skills.load.extraDirs`. `clawhub` installs into `./skills` by default, which OpenClaw treats as `<workspace>/skills`.
+Yes. Add extra directories via `skills.load.extraDirs` in `~/.zovsironclaw/zovsironclaw.json` (lowest precedence). Default precedence remains: `<workspace>/skills` → `~/.zovsironclaw/skills` → bundled → `skills.load.extraDirs`. `clawhub` installs into `./skills` by default, which OpenClaw treats as `<workspace>/skills`.
 
 ### How can I use different models for different tasks
 
@@ -1097,7 +1097,7 @@ Keep the Gateway on Linux, but make the required CLI binaries resolve to SSH wra
    ```
 
 2. Put the wrapper on `PATH` on the Linux host (for example `~/bin/memo`).
-3. Override the skill metadata (workspace or `~/.openclaw/skills`) to allow Linux:
+3. Override the skill metadata (workspace or `~/.zovsironclaw/skills`) to allow Linux:
 
    ```markdown
    ---
@@ -1133,7 +1133,7 @@ clawhub install <skill-slug>
 clawhub update --all
 ```
 
-ClawHub installs into `./skills` under your current directory (or falls back to your configured OpenClaw workspace); OpenClaw treats that as `<workspace>/skills` on the next session. For shared skills across agents, place them in `~/.openclaw/skills/<name>/SKILL.md`. Some skills expect binaries installed via Homebrew; on Linux that means Linuxbrew (see the Homebrew Linux FAQ entry above). See [Skills](/tools/skills) and [ClawHub](/tools/clawhub).
+ClawHub installs into `./skills` under your current directory (or falls back to your configured OpenClaw workspace); OpenClaw treats that as `<workspace>/skills` on the next session. For shared skills across agents, place them in `~/.zovsironclaw/skills/<name>/SKILL.md`. Some skills expect binaries installed via Homebrew; on Linux that means Linuxbrew (see the Homebrew Linux FAQ entry above). See [Skills](/tools/skills) and [ClawHub](/tools/clawhub).
 
 ### How do I install the Chrome extension for browser takeover
 
@@ -1258,7 +1258,7 @@ Everything lives under `$OPENCLAW_STATE_DIR` (default: `~/.openclaw`):
 
 | Path                                                            | Purpose                                                      |
 | --------------------------------------------------------------- | ------------------------------------------------------------ |
-| `$OPENCLAW_STATE_DIR/openclaw.json`                             | Main config (JSON5)                                          |
+| `$OPENCLAW_STATE_DIR/zovsironclaw.json`                             | Main config (JSON5)                                          |
 | `$OPENCLAW_STATE_DIR/credentials/oauth.json`                    | Legacy OAuth import (copied into auth profiles on first use) |
 | `$OPENCLAW_STATE_DIR/agents/<agentId>/agent/auth-profiles.json` | Auth profiles (OAuth + API keys)                             |
 | `$OPENCLAW_STATE_DIR/agents/<agentId>/agent/auth.json`          | Runtime auth cache (managed automatically)                   |
@@ -1267,9 +1267,9 @@ Everything lives under `$OPENCLAW_STATE_DIR` (default: `~/.openclaw`):
 | `$OPENCLAW_STATE_DIR/agents/<agentId>/sessions/`                | Conversation history & state (per agent)                     |
 | `$OPENCLAW_STATE_DIR/agents/<agentId>/sessions/sessions.json`   | Session metadata (per agent)                                 |
 
-Legacy single-agent path: `~/.openclaw/agent/*` (migrated by `openclaw doctor`).
+Legacy single-agent path: `~/.zovsironclaw/agent/*` (migrated by `zovsironclaw doctor`).
 
-Your **workspace** (AGENTS.md, memory files, skills, etc.) is separate and configured via `agents.defaults.workspace` (default: `~/.openclaw/workspace`).
+Your **workspace** (AGENTS.md, memory files, skills, etc.) is separate and configured via `agents.defaults.workspace` (default: `~/.zovsironclaw/workspace`).
 
 ### Where should AGENTSmd SOULmd USERmd MEMORYmd live
 
@@ -1278,13 +1278,13 @@ These files live in the **agent workspace**, not `~/.openclaw`.
 - **Workspace (per agent)**: `AGENTS.md`, `SOUL.md`, `IDENTITY.md`, `USER.md`,
   `MEMORY.md` (or `memory.md`), `memory/YYYY-MM-DD.md`, optional `HEARTBEAT.md`.
 - **State dir (`~/.openclaw`)**: config, credentials, auth profiles, sessions, logs,
-  and shared skills (`~/.openclaw/skills`).
+  and shared skills (`~/.zovsironclaw/skills`).
 
-Default workspace is `~/.openclaw/workspace`, configurable via:
+Default workspace is `~/.zovsironclaw/workspace`, configurable via:
 
 ```json5
 {
-  agents: { defaults: { workspace: "~/.openclaw/workspace" } },
+  agents: { defaults: { workspace: "~/.zovsironclaw/workspace" } },
 }
 ```
 
@@ -1343,13 +1343,13 @@ Session state is owned by the **gateway host**. If you're in remote mode, the se
 
 ### What format is the config Where is it
 
-OpenClaw reads an optional **JSON5** config from `$OPENCLAW_CONFIG_PATH` (default: `~/.openclaw/openclaw.json`):
+OpenClaw reads an optional **JSON5** config from `$OPENCLAW_CONFIG_PATH` (default: `~/.zovsironclaw/zovsironclaw.json`):
 
 ```
 $OPENCLAW_CONFIG_PATH
 ```
 
-If the file is missing, it uses safe-ish defaults (including a default workspace of `~/.openclaw/workspace`).
+If the file is missing, it uses safe-ish defaults (including a default workspace of `~/.zovsironclaw/workspace`).
 
 ### I set gatewaybind lan or tailnet and now nothing listens the UI says unauthorized
 
@@ -1376,7 +1376,7 @@ Notes:
 
 The wizard generates a gateway token by default (even on loopback) so **local WS clients must authenticate**. This blocks other local processes from calling the Gateway. Paste the token into the Control UI settings (or your client config) to connect.
 
-If you **really** want open loopback, remove `gateway.auth` from your config. Doctor can generate a token for you any time: `openclaw doctor --generate-gateway-token`.
+If you **really** want open loopback, remove `gateway.auth` from your config. Doctor can generate a token for you any time: `zovsironclaw doctor --generate-gateway-token`.
 
 ### Do I have to restart after changing config
 
@@ -1413,7 +1413,7 @@ Notes:
 
 - If you use allowlists, add `web_search`/`web_fetch` or `group:web`.
 - `web_fetch` is enabled by default (unless explicitly disabled).
-- Daemons read env vars from `~/.openclaw/.env` (or the service environment).
+- Daemons read env vars from `~/.zovsironclaw/.env` (or the service environment).
 
 Docs: [Web tools](/tools/web).
 
@@ -1498,7 +1498,7 @@ Docs: [Nodes](/nodes), [Gateway protocol](/gateway/protocol), [macOS remote mode
 
 Check the basics:
 
-- Gateway is running: `openclaw gateway status`
+- Gateway is running: `zovsironclaw gateway status`
 - Gateway health: `openclaw status`
 - Channel health: `openclaw channels status`
 
@@ -1519,14 +1519,14 @@ reliable ways:
 Have Bot A send a message to Bot B, then let Bot B reply as usual.
 
 **CLI bridge (generic):** run a script that calls the other Gateway with
-`openclaw agent --message ... --deliver`, targeting a chat where the other bot
+`zovsironclaw agent --message ... --deliver`, targeting a chat where the other bot
 listens. If one bot is on a remote VPS, point your CLI at that remote Gateway
 via SSH/Tailscale (see [Remote access](/gateway/remote)).
 
 Example pattern (run from a machine that can reach the target Gateway):
 
 ```bash
-openclaw agent --message "Hello from local bot" --deliver --channel telegram --reply-to <chat-id>
+zovsironclaw agent --message "Hello from local bot" --deliver --channel telegram --reply-to <chat-id>
 ```
 
 Tip: add a guardrail so the two bots do not loop endlessly (mention-only, channel
@@ -1591,8 +1591,8 @@ else is removed.
 
 Recover:
 
-- Restore from backup (git or a copied `~/.openclaw/openclaw.json`).
-- If you have no backup, re-run `openclaw doctor` and reconfigure channels/models.
+- Restore from backup (git or a copied `~/.zovsironclaw/zovsironclaw.json`).
+- If you have no backup, re-run `zovsironclaw doctor` and reconfigure channels/models.
 - If this was unexpected, file a bug and include your last known config or any backup.
 - A local coding agent can often reconstruct a working config from logs or history.
 
@@ -1607,7 +1607,7 @@ Docs: [Config](/cli/config), [Configure](/cli/configure), [Doctor](/gateway/doct
 
 ```json5
 {
-  agents: { defaults: { workspace: "~/.openclaw/workspace" } },
+  agents: { defaults: { workspace: "~/.zovsironclaw/workspace" } },
   channels: { whatsapp: { allowFrom: ["+15555550123"] } },
 }
 ```
@@ -1636,7 +1636,7 @@ Minimal steps:
 If you want the Control UI without SSH, use Tailscale Serve on the VPS:
 
 ```bash
-openclaw gateway --tailscale serve
+zovsironclaw gateway --tailscale serve
 ```
 
 This keeps the gateway bound to loopback and exposes HTTPS via Tailscale. See [Tailscale](/gateway/tailscale).
@@ -1666,7 +1666,7 @@ Docs: [Gateway protocol](/gateway/protocol), [Discovery](/gateway/discovery), [m
 OpenClaw reads env vars from the parent process (shell, launchd/systemd, CI, etc.) and additionally loads:
 
 - `.env` from the current working directory
-- a global fallback `.env` from `~/.openclaw/.env` (aka `$OPENCLAW_STATE_DIR/.env`)
+- a global fallback `.env` from `~/.zovsironclaw/.env` (aka `$OPENCLAW_STATE_DIR/.env`)
 
 Neither `.env` file overrides existing env vars.
 
@@ -1687,7 +1687,7 @@ See [/environment](/environment) for full precedence and sources.
 
 Two common fixes:
 
-1. Put the missing keys in `~/.openclaw/.env` so they're picked up even when the service doesn't inherit your shell env.
+1. Put the missing keys in `~/.zovsironclaw/.env` so they're picked up even when the service doesn't inherit your shell env.
 2. Enable shell import (opt-in convenience):
 
 ```json5
@@ -1713,7 +1713,7 @@ your login shell automatically.
 If the Gateway runs as a service (launchd/systemd), it won't inherit your shell
 environment. Fix by doing one of these:
 
-1. Put the token in `~/.openclaw/.env`:
+1. Put the token in `~/.zovsironclaw/.env`:
 
    ```
    COPILOT_GITHUB_TOKEN=...
@@ -1793,14 +1793,14 @@ openclaw reset --scope full --yes --non-interactive
 Then re-run onboarding:
 
 ```bash
-openclaw onboard --install-daemon
+zovsironclaw onboard --install-daemon
 ```
 
 Notes:
 
 - The onboarding wizard also offers **Reset** if it sees an existing config. See [Wizard](/start/wizard).
 - If you used profiles (`--profile` / `OPENCLAW_PROFILE`), reset each state dir (defaults are `~/.openclaw-<profile>`).
-- Dev reset: `openclaw gateway --dev --reset` (dev-only; wipes dev config + credentials + sessions + workspace).
+- Dev reset: `zovsironclaw gateway --dev --reset` (dev-only; wipes dev config + credentials + sessions + workspace).
 
 ### Im getting context too large errors how do I reset or compact
 
@@ -1912,7 +1912,7 @@ Direct chats collapse to the main session by default. Groups/channels have their
 
 No hard limits. Dozens (even hundreds) are fine, but watch for:
 
-- **Disk growth:** sessions + transcripts live under `~/.openclaw/agents/<agentId>/sessions/`.
+- **Disk growth:** sessions + transcripts live under `~/.zovsironclaw/agents/<agentId>/sessions/`.
 - **Token cost:** more agents means more concurrent model usage.
 - **Ops overhead:** per-agent auth profiles, workspaces, and channel routing.
 
@@ -1920,7 +1920,7 @@ Tips:
 
 - Keep one **active** workspace per agent (`agents.defaults.workspace`).
 - Prune old sessions (delete JSONL or store entries) if disk grows.
-- Use `openclaw doctor` to spot stray workspaces and profile mismatches.
+- Use `zovsironclaw doctor` to spot stray workspaces and profile mismatches.
 
 ### Can I run multiple bots or chats at the same time Slack and how should I set that up
 
@@ -1995,10 +1995,10 @@ Safe options:
 - `/model` in chat (quick, per-session)
 - `openclaw models set ...` (updates just model config)
 - `openclaw configure --section models` (interactive)
-- edit `agents.defaults.model` in `~/.openclaw/openclaw.json`
+- edit `agents.defaults.model` in `~/.zovsironclaw/zovsironclaw.json`
 
 Avoid `config.apply` with a partial object unless you intend to replace the whole config.
-If you did overwrite config, restore from backup or re-run `openclaw doctor` to repair.
+If you did overwrite config, restore from backup or re-run `zovsironclaw doctor` to repair.
 
 Docs: [Models](/concepts/models), [Configure](/cli/configure), [Config](/cli/config), [Doctor](/gateway/doctor).
 
@@ -2203,12 +2203,12 @@ This usually means the **new agent** has an empty auth store. Auth is per-agent 
 stored in:
 
 ```
-~/.openclaw/agents/<agentId>/agent/auth-profiles.json
+~/.zovsironclaw/agents/<agentId>/agent/auth-profiles.json
 ```
 
 Fix options:
 
-- Run `openclaw agents add <id>` and configure auth during the wizard.
+- Run `zovsironclaw agents add <id>` and configure auth during the wizard.
 - Or copy `auth-profiles.json` from the main agent's `agentDir` into the new agent's `agentDir`.
 
 Do **not** reuse `agentDir` across agents; it causes auth/session collisions.
@@ -2235,10 +2235,10 @@ It means the system attempted to use the auth profile ID `anthropic:default`, bu
 ### Fix checklist for No credentials found for profile anthropicdefault
 
 - **Confirm where auth profiles live** (new vs legacy paths)
-  - Current: `~/.openclaw/agents/<agentId>/agent/auth-profiles.json`
-  - Legacy: `~/.openclaw/agent/*` (migrated by `openclaw doctor`)
+  - Current: `~/.zovsironclaw/agents/<agentId>/agent/auth-profiles.json`
+  - Legacy: `~/.zovsironclaw/agent/*` (migrated by `zovsironclaw doctor`)
 - **Confirm your env var is loaded by the Gateway**
-  - If you set `ANTHROPIC_API_KEY` in your shell but run the Gateway via systemd/launchd, it may not inherit it. Put it in `~/.openclaw/.env` or enable `env.shellEnv`.
+  - If you set `ANTHROPIC_API_KEY` in your shell but run the Gateway via systemd/launchd, it may not inherit it. Put it in `~/.zovsironclaw/.env` or enable `env.shellEnv`.
 - **Make sure you're editing the correct agent**
   - Multi-agent setups mean there can be multiple `auth-profiles.json` files.
 - **Sanity-check model/auth status**
@@ -2253,7 +2253,7 @@ can't find it in its auth store.
   - Run `claude setup-token`, then paste it with `openclaw models auth setup-token --provider anthropic`.
   - If the token was created on another machine, use `openclaw models auth paste-token --provider anthropic`.
 - **If you want to use an API key instead**
-  - Put `ANTHROPIC_API_KEY` in `~/.openclaw/.env` on the **gateway host**.
+  - Put `ANTHROPIC_API_KEY` in `~/.zovsironclaw/.env` on the **gateway host**.
   - Clear any pinned order that forces a missing profile:
 
     ```bash
@@ -2285,7 +2285,7 @@ Related: [/concepts/oauth](/concepts/oauth) (OAuth flows, token storage, multi-a
 An auth profile is a named credential record (OAuth or API key) tied to a provider. Profiles live in:
 
 ```
-~/.openclaw/agents/<agentId>/agent/auth-profiles.json
+~/.zovsironclaw/agents/<agentId>/agent/auth-profiles.json
 ```
 
 ### What are typical profile IDs
@@ -2345,24 +2345,24 @@ Precedence:
 --port > OPENCLAW_GATEWAY_PORT > gateway.port > default 18789
 ```
 
-### Why does openclaw gateway status say Runtime running but RPC probe failed
+### Why does zovsironclaw gateway status say Runtime running but RPC probe failed
 
 Because "running" is the **supervisor's** view (launchd/systemd/schtasks). The RPC probe is the CLI actually connecting to the gateway WebSocket and calling `status`.
 
-Use `openclaw gateway status` and trust these lines:
+Use `zovsironclaw gateway status` and trust these lines:
 
 - `Probe target:` (the URL the probe actually used)
 - `Listening:` (what's actually bound on the port)
 - `Last gateway error:` (common root cause when the process is alive but the port isn't listening)
 
-### Why does openclaw gateway status show Config cli and Config service different
+### Why does zovsironclaw gateway status show Config cli and Config service different
 
 You're editing one config file while the service is running another (often a `--profile` / `OPENCLAW_STATE_DIR` mismatch).
 
 Fix:
 
 ```bash
-openclaw gateway install --force
+zovsironclaw gateway install --force
 ```
 
 Run that from the same `--profile` / environment you want the service to use.
@@ -2371,7 +2371,7 @@ Run that from the same `--profile` / environment you want the service to use.
 
 OpenClaw enforces a runtime lock by binding the WebSocket listener immediately on startup (default `ws://127.0.0.1:18789`). If the bind fails with `EADDRINUSE`, it throws `GatewayLockError` indicating another instance is already listening.
 
-Fix: stop the other instance, free the port, or run with `openclaw gateway --port <port>`.
+Fix: stop the other instance, free the port, or run with `zovsironclaw gateway --port <port>`.
 
 ### How do I run OpenClaw in remote mode client connects to a Gateway elsewhere
 
@@ -2392,7 +2392,7 @@ Set `gateway.mode: "remote"` and point to a remote WebSocket URL, optionally wit
 
 Notes:
 
-- `openclaw gateway` only starts when `gateway.mode` is `local` (or you pass the override flag).
+- `zovsironclaw gateway` only starts when `gateway.mode` is `local` (or you pass the override flag).
 - The macOS app watches the config file and switches modes live when these values change.
 
 ### The Control UI says unauthorized or keeps reconnecting What now
@@ -2405,8 +2405,8 @@ Facts (from code):
 
 Fix:
 
-- Fastest: `openclaw dashboard` (prints + copies the dashboard URL, tries to open; shows SSH hint if headless).
-- If you don't have a token yet: `openclaw doctor --generate-gateway-token`.
+- Fastest: `zovsironclaw dashboard` (prints + copies the dashboard URL, tries to open; shows SSH hint if headless).
+- If you don't have a token yet: `zovsironclaw doctor --generate-gateway-token`.
 - If remote, tunnel first: `ssh -N -L 18789:127.0.0.1:18789 user@host` then open `http://127.0.0.1:18789/`.
 - Set `gateway.auth.token` (or `OPENCLAW_GATEWAY_TOKEN`) on the gateway host.
 - In the Control UI settings, paste the same token.
@@ -2489,7 +2489,7 @@ openclaw logs --follow
 
 Service/supervisor logs (when the gateway runs via launchd/systemd):
 
-- macOS: `$OPENCLAW_STATE_DIR/logs/gateway.log` and `gateway.err.log` (default: `~/.openclaw/logs/...`; profiles use `~/.openclaw-<profile>/logs/...`)
+- macOS: `$OPENCLAW_STATE_DIR/logs/gateway.log` and `gateway.err.log` (default: `~/.zovsironclaw/logs/...`; profiles use `~/.openclaw-<profile>/logs/...`)
 - Linux: `journalctl --user -u openclaw-gateway[-<profile>].service -n 200 --no-pager`
 - Windows: `schtasks /Query /TN "OpenClaw Gateway (<profile>)" /V /FO LIST`
 
@@ -2500,11 +2500,11 @@ See [Troubleshooting](/gateway/troubleshooting#log-locations) for more.
 Use the gateway helpers:
 
 ```bash
-openclaw gateway status
-openclaw gateway restart
+zovsironclaw gateway status
+zovsironclaw gateway restart
 ```
 
-If you run the gateway manually, `openclaw gateway --force` can reclaim the port. See [Gateway](/gateway).
+If you run the gateway manually, `zovsironclaw gateway --force` can reclaim the port. See [Gateway](/gateway).
 
 ### I closed my terminal on Windows how do I restart OpenClaw
 
@@ -2516,14 +2516,14 @@ Open PowerShell, enter WSL, then restart:
 
 ```powershell
 wsl
-openclaw gateway status
-openclaw gateway restart
+zovsironclaw gateway status
+zovsironclaw gateway restart
 ```
 
 If you never installed the service, start it in the foreground:
 
 ```bash
-openclaw gateway run
+zovsironclaw gateway run
 ```
 
 **2) Native Windows (not recommended):** the Gateway runs directly in Windows.
@@ -2531,14 +2531,14 @@ openclaw gateway run
 Open PowerShell and run:
 
 ```powershell
-openclaw gateway status
-openclaw gateway restart
+zovsironclaw gateway status
+zovsironclaw gateway restart
 ```
 
 If you run it manually (no service), use:
 
 ```powershell
-openclaw gateway run
+zovsironclaw gateway run
 ```
 
 Docs: [Windows (WSL2)](/platforms/windows), [Gateway service runbook](/gateway).
@@ -2569,9 +2569,9 @@ Docs: [Channels](/channels), [Troubleshooting](/gateway/troubleshooting), [Remot
 
 This usually means the UI lost the WebSocket connection. Check:
 
-1. Is the Gateway running? `openclaw gateway status`
+1. Is the Gateway running? `zovsironclaw gateway status`
 2. Is the Gateway healthy? `openclaw status`
-3. Does the UI have the right token? `openclaw dashboard`
+3. Does the UI have the right token? `zovsironclaw dashboard`
 4. If remote, is the tunnel/Tailscale link up?
 
 Then tail logs:
@@ -2616,8 +2616,8 @@ Docs: [TUI](/tui), [Slash commands](/tools/slash-commands).
 If you installed the service:
 
 ```bash
-openclaw gateway stop
-openclaw gateway start
+zovsironclaw gateway stop
+zovsironclaw gateway start
 ```
 
 This stops/starts the **supervised service** (launchd on macOS, systemd on Linux).
@@ -2626,17 +2626,17 @@ Use this when the Gateway runs in the background as a daemon.
 If you're running in the foreground, stop with Ctrl-C, then:
 
 ```bash
-openclaw gateway run
+zovsironclaw gateway run
 ```
 
 Docs: [Gateway service runbook](/gateway).
 
-### ELI5 openclaw gateway restart vs openclaw gateway
+### ELI5 zovsironclaw gateway restart vs zovsironclaw gateway
 
-- `openclaw gateway restart`: restarts the **background service** (launchd/systemd).
-- `openclaw gateway`: runs the gateway **in the foreground** for this terminal session.
+- `zovsironclaw gateway restart`: restarts the **background service** (launchd/systemd).
+- `zovsironclaw gateway`: runs the gateway **in the foreground** for this terminal session.
 
-If you installed the service, use the gateway commands. Use `openclaw gateway` when
+If you installed the service, use the gateway commands. Use `zovsironclaw gateway` when
 you want a one-off, foreground run.
 
 ### What's the fastest way to get more details when something fails
@@ -2652,7 +2652,7 @@ Outbound attachments from the agent must include a `MEDIA:<path-or-url>` line (o
 CLI sending:
 
 ```bash
-openclaw message send --target +15555550123 --message "Here you go" --media /path/to/file.png
+zovsironclaw message send --target +15555550123 --message "Here you go" --media /path/to/file.png
 ```
 
 Also check:
@@ -2670,11 +2670,11 @@ Treat inbound DMs as untrusted input. Defaults are designed to reduce risk:
 
 - Default behavior on DM-capable channels is **pairing**:
   - Unknown senders receive a pairing code; the bot does not process their message.
-  - Approve with: `openclaw pairing approve <channel> <code>`
-  - Pending requests are capped at **3 per channel**; check `openclaw pairing list <channel>` if a code didn't arrive.
+  - Approve with: `zovsironclaw pairing approve <channel> <code>`
+  - Pending requests are capped at **3 per channel**; check `zovsironclaw pairing list <channel>` if a code didn't arrive.
 - Opening DMs publicly requires explicit opt-in (`dmPolicy: "open"` and allowlist `"*"`).
 
-Run `openclaw doctor` to surface risky DM policies.
+Run `zovsironclaw doctor` to surface risky DM policies.
 
 ### Is prompt injection only a concern for public bots
 
@@ -2729,7 +2729,7 @@ Pairing codes are sent **only** when an unknown sender messages the bot and
 Check pending requests:
 
 ```bash
-openclaw pairing list telegram
+zovsironclaw pairing list telegram
 ```
 
 If you want immediate access, allowlist your sender id or set `dmPolicy: "open"`
@@ -2742,13 +2742,13 @@ No. Default WhatsApp DM policy is **pairing**. Unknown senders only get a pairin
 Approve pairing with:
 
 ```bash
-openclaw pairing approve whatsapp <code>
+zovsironclaw pairing approve whatsapp <code>
 ```
 
 List pending requests:
 
 ```bash
-openclaw pairing list whatsapp
+zovsironclaw pairing list whatsapp
 ```
 
 Wizard phone number prompt: it's used to set your **allowlist/owner** so your own DMs are permitted. It's not used for auto-sending. If you run on your personal WhatsApp number, use that number and enable `channels.whatsapp.selfChatMode`.

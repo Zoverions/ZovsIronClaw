@@ -100,8 +100,8 @@ Mattermost 自动响应私信。频道行为由 `chatmode` 控制：
 
 - 默认：`channels.mattermost.dmPolicy = "pairing"`（未知发送者会收到配对码）。
 - 通过以下方式批准：
-  - `openclaw pairing list mattermost`
-  - `openclaw pairing approve mattermost <CODE>`
+  - `zovsironclaw pairing list mattermost`
+  - `zovsironclaw pairing approve mattermost <CODE>`
 - 公开私信：`channels.mattermost.dmPolicy="open"` 加上 `channels.mattermost.allowFrom=["*"]`。
 
 ## 频道（群组）
@@ -112,7 +112,7 @@ Mattermost 自动响应私信。频道行为由 `chatmode` 控制：
 
 ## 出站投递目标
 
-在 `openclaw message send` 或 cron/webhooks 中使用这些目标格式：
+在 `zovsironclaw message send` 或 cron/webhooks 中使用这些目标格式：
 
 - `channel:<id>` 用于频道
 - `user:<id>` 用于私信

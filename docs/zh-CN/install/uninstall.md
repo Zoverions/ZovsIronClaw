@@ -40,13 +40,13 @@ npx -y openclaw uninstall --all --yes --non-interactive
 1. 停止 Gateway 网关服务：
 
 ```bash
-openclaw gateway stop
+zovsironclaw gateway stop
 ```
 
 2. 卸载 Gateway 网关服务（launchd/systemd/schtasks）：
 
 ```bash
-openclaw gateway uninstall
+zovsironclaw gateway uninstall
 ```
 
 3. 删除状态 + 配置：
@@ -60,7 +60,7 @@ rm -rf "${OPENCLAW_STATE_DIR:-$HOME/.openclaw}"
 4. 删除你的工作区（可选，移除智能体文件）：
 
 ```bash
-rm -rf ~/.openclaw/workspace
+rm -rf ~/.zovsironclaw/workspace
 ```
 
 5. 移除 CLI 安装（选择你使用的那个）：

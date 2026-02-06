@@ -251,7 +251,7 @@ By default, `requireMention` is `true`. To disable and respond to all messages:
 First, run diagnostic commands:
 
 ```bash
-openclaw doctor
+zovsironclaw doctor
 openclaw channels status --probe
 ```
 

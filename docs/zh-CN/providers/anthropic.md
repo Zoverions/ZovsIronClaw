@@ -26,11 +26,11 @@ Anthropic 构建了 **Claude** 模型系列，并通过 API 提供访问。
 ### CLI 设置
 
 ```bash
-openclaw onboard
+zovsironclaw onboard
 # 选择：Anthropic API key
 
 # 或非交互式
-openclaw onboard --anthropic-api-key "$ANTHROPIC_API_KEY"
+zovsironclaw onboard --anthropic-api-key "$ANTHROPIC_API_KEY"
 ```
 
 ### 配置片段
@@ -114,7 +114,7 @@ openclaw models auth paste-token --provider anthropic
 
 ```bash
 # 在新手引导期间粘贴 setup-token
-openclaw onboard --auth-choice setup-token
+zovsironclaw onboard --auth-choice setup-token
 ```
 
 ### 配置片段

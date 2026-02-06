@@ -83,7 +83,7 @@ openclaw --version
 ## 4) 运行新手引导
 
 ```bash
-openclaw onboard --install-daemon
+zovsironclaw onboard --install-daemon
 ```
 
 向导将引导你完成：
@@ -128,7 +128,7 @@ tailscale up
 
 # Configure Gateway to use Tailscale Serve
 openclaw config set gateway.tailscale.mode serve
-openclaw gateway restart
+zovsironclaw gateway restart
 ```
 
 打开：`https://<magicdns>/`
@@ -142,7 +142,7 @@ openclaw gateway restart
 
 ```bash
 openclaw config set gateway.bind tailnet
-openclaw gateway restart
+zovsironclaw gateway restart
 ```
 
 打开：`http://<tailscale-ip>:18789`（需要令牌）。
@@ -152,8 +152,8 @@ openclaw gateway restart
 ### Telegram
 
 ```bash
-openclaw pairing list telegram
-openclaw pairing approve telegram <CODE>
+zovsironclaw pairing list telegram
+zovsironclaw pairing approve telegram <CODE>
 ```
 
 ### WhatsApp
@@ -201,13 +201,13 @@ htop
 
 所有状态存储在：
 
-- `~/.openclaw/` — 配置、凭证、会话数据
-- `~/.openclaw/workspace/` — 工作区（SOUL.md、记忆等）
+- `~/.zovsironclaw/` — 配置、凭证、会话数据
+- `~/.zovsironclaw/workspace/` — 工作区（SOUL.md、记忆等）
 
 这些在重启后保留。定期备份：
 
 ```bash
-tar -czvf openclaw-backup.tar.gz ~/.openclaw ~/.openclaw/workspace
+tar -czvf openclaw-backup.tar.gz ~/.openclaw ~/.zovsironclaw/workspace
 ```
 
 ---
@@ -237,8 +237,8 @@ Oracle Cloud 提供 **Always Free** ARM 实例，比这里任何付费选项都�
 ### Gateway 网关无法启动
 
 ```bash
-openclaw gateway status
-openclaw doctor --non-interactive
+zovsironclaw gateway status
+zovsironclaw doctor --non-interactive
 journalctl -u openclaw --no-pager -n 50
 ```
 

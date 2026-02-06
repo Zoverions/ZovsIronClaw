@@ -1,5 +1,5 @@
 ---
-summary: "Get OpenClaw installed and run your first chat in minutes."
+summary: "Get ZovsIronClaw installed and run your first chat in minutes."
 read_when:
   - First time setup from zero
   - You want the fastest path to a working chat
@@ -11,15 +11,16 @@ title: "Getting Started"
 Goal: go from zero to a first working chat with minimal setup.
 
 <Info>
-Fastest chat: open the Control UI (no channel setup needed). Run `openclaw dashboard`
+Fastest chat: open the Control UI (no channel setup needed). Run `zovsironclaw dashboard`
 and chat in the browser, or open `http://127.0.0.1:18789/` on the
-<Tooltip headline="Gateway host" tip="The machine running the OpenClaw gateway service.">gateway host</Tooltip>.
+<Tooltip headline="Gateway host" tip="The machine running the ZovsIronClaw gateway service.">gateway host</Tooltip>.
 Docs: [Dashboard](/web/dashboard) and [Control UI](/web/control-ui).
 </Info>
 
 ## Prereqs
 
 - Node 22 or newer
+- Docker & Docker Compose (for the GCA service)
 
 <Tip>
 Check your Node version with `node --version` if you are unsure.
@@ -28,28 +29,29 @@ Check your Node version with `node --version` if you are unsure.
 ## Quick setup (CLI)
 
 <Steps>
-  <Step title="Install OpenClaw (recommended)">
-    <Tabs>
-      <Tab title="macOS/Linux">
-        ```bash
-        curl -fsSL https://openclaw.ai/install.sh | bash
-        ```
-      </Tab>
-      <Tab title="Windows (PowerShell)">
-        ```powershell
-        iwr -useb https://openclaw.ai/install.ps1 | iex
-        ```
-      </Tab>
-    </Tabs>
+  <Step title="Install ZovsIronClaw">
+    Since this is a custom fork, we recommend installing from source:
 
-    <Note>
-    Other install methods and requirements: [Install](/install).
-    </Note>
+    ```bash
+    git clone https://github.com/Zoverions/ZovsIronClaw.git
+    cd ZovsIronClaw
+    pnpm install
+    pnpm build
+    npm link
+    ```
 
+    This makes the `zovsironclaw` command available globally.
+  </Step>
+  <Step title="Start the GCA Service">
+    ZovsIronClaw requires the Python GCA service to be running.
+
+    ```bash
+    docker-compose up -d gca-service
+    ```
   </Step>
   <Step title="Run the onboarding wizard">
     ```bash
-    openclaw onboard --install-daemon
+    zovsironclaw onboard --install-daemon
     ```
 
     The wizard configures auth, gateway settings, and optional channels.
@@ -60,13 +62,13 @@ Check your Node version with `node --version` if you are unsure.
     If you installed the service, it should already be running:
 
     ```bash
-    openclaw gateway status
+    zovsironclaw gateway status
     ```
 
   </Step>
   <Step title="Open the Control UI">
     ```bash
-    openclaw dashboard
+    zovsironclaw dashboard
     ```
   </Step>
 </Steps>
@@ -82,7 +84,7 @@ If the Control UI loads, your Gateway is ready for use.
     Useful for quick tests or troubleshooting.
 
     ```bash
-    openclaw gateway --port 18789
+    zovsironclaw gateway --port 18789
     ```
 
   </Accordion>
@@ -90,7 +92,7 @@ If the Control UI loads, your Gateway is ready for use.
     Requires a configured channel.
 
     ```bash
-    openclaw message send --target +15555550123 --message "Hello from OpenClaw"
+    zovsironclaw message send --target +15555550123 --message "Hello from ZovsIronClaw"
     ```
 
   </Accordion>
@@ -99,17 +101,18 @@ If the Control UI loads, your Gateway is ready for use.
 ## Go deeper
 
 <Columns>
+  <Card title="GCA Integration" href="/docs/gca-integration">
+    Learn about the ethical reasoning engine.
+  </Card>
   <Card title="Onboarding Wizard (details)" href="/start/wizard">
     Full CLI wizard reference and advanced options.
-  </Card>
-  <Card title="macOS app onboarding" href="/start/onboarding">
-    First run flow for the macOS app.
   </Card>
 </Columns>
 
 ## What you will have
 
 - A running Gateway
+- A running GCA Service (the Conscience)
 - Auth configured
 - Control UI access or a connected channel
 

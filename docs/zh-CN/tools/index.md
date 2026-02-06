@@ -21,7 +21,7 @@ OpenClaw 为 browser、canvas、nodes 和 cron 暴露**一流的智能体工具*
 
 ## 禁用工具
 
-你可以通过 `openclaw.json` 中的 `tools.allow` / `tools.deny` 全局允许/拒绝工具
+你可以通过 `zovsironclaw.json` 中的 `tools.allow` / `tools.deny` 全局允许/拒绝工具
 （deny 优先）。这会阻止不允许的工具被发送到模型提供商。
 
 ```json5
@@ -420,7 +420,7 @@ OpenClaw 为 browser、canvas、nodes 和 cron 暴露**一流的智能体工具*
 
 核心操作：
 
-- `restart`（授权 + 发送 `SIGUSR1` 进行进程内重启；`openclaw gateway` 就地重启）
+- `restart`（授权 + 发送 `SIGUSR1` 进行进程内重启；`zovsironclaw gateway` 就地重启）
 - `config.get` / `config.schema`
 - `config.apply`（验证 + 写入配置 + 重启 + 唤醒）
 - `config.patch`（合并部分更新 + 重启 + 唤醒）

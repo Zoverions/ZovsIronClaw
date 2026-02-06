@@ -46,12 +46,12 @@ OAuth 提供商通常在登录/刷新流程中发放**新的刷新令牌**。某
 
 密钥按**智能体**存储：
 
-- 认证配置文件（OAuth + API 密钥）：`~/.openclaw/agents/<agentId>/agent/auth-profiles.json`
-- 运行时缓存（自动管理；请勿编辑）：`~/.openclaw/agents/<agentId>/agent/auth.json`
+- 认证配置文件（OAuth + API 密钥）：`~/.zovsironclaw/agents/<agentId>/agent/auth-profiles.json`
+- 运行时缓存（自动管理；请勿编辑）：`~/.zovsironclaw/agents/<agentId>/agent/auth.json`
 
 仅用于导入的旧版文件（仍然支持，但不是主存储）：
 
-- `~/.openclaw/credentials/oauth.json`（首次使用时导入到 `auth-profiles.json`）
+- `~/.zovsironclaw/credentials/oauth.json`（首次使用时导入到 `auth-profiles.json`）
 
 以上所有路径也遵循 `$OPENCLAW_STATE_DIR`（状态目录覆盖）。完整参考：[/gateway/configuration](/gateway/configuration#auth-storage-oauth--api-keys)
 
@@ -87,7 +87,7 @@ OpenClaw 的交互式登录流程在 `@mariozechner/pi-ai` 中实现，并集成
 2. 将令牌粘贴到 OpenClaw
 3. 作为令牌认证配置文件存储（无刷新）
 
-向导路径为 `openclaw onboard` → 认证选择 `setup-token`（Anthropic）。
+向导路径为 `zovsironclaw onboard` → 认证选择 `setup-token`（Anthropic）。
 
 ### OpenAI Codex（ChatGPT OAuth）
 
@@ -100,7 +100,7 @@ OpenClaw 的交互式登录流程在 `@mariozechner/pi-ai` 中实现，并集成
 5. 在 `https://auth.openai.com/oauth/token` 进行交换
 6. 从访问令牌中提取 `accountId` 并存储 `{ access, refresh, expires, accountId }`
 
-向导路径为 `openclaw onboard` → 认证选择 `openai-codex`。
+向导路径为 `zovsironclaw onboard` → 认证选择 `openai-codex`。
 
 ## 刷新 + 过期
 
@@ -122,8 +122,8 @@ OpenClaw 的交互式登录流程在 `@mariozechner/pi-ai` 中实现，并集成
 如果你希望"个人"和"工作"永远不交叉，请使用隔离的智能体（独立的会话 + 凭据 + 工作区）：
 
 ```bash
-openclaw agents add work
-openclaw agents add personal
+zovsironclaw agents add work
+zovsironclaw agents add personal
 ```
 
 然后按智能体配置认证（向导），并将聊天路由到正确的智能体。

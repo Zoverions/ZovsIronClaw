@@ -32,13 +32,13 @@ Native Windows companion apps are planned.
 Inside WSL2:
 
 ```
-openclaw onboard --install-daemon
+zovsironclaw onboard --install-daemon
 ```
 
 Or:
 
 ```
-openclaw gateway install
+zovsironclaw gateway install
 ```
 
 Or:
@@ -52,7 +52,7 @@ Select **Gateway service** when prompted.
 Repair/migrate:
 
 ```
-openclaw doctor
+zovsironclaw doctor
 ```
 
 ## Advanced: expose WSL services over LAN (portproxy)
@@ -148,7 +148,7 @@ cd openclaw
 pnpm install
 pnpm ui:build # auto-installs UI deps on first run
 pnpm build
-openclaw onboard
+zovsironclaw onboard
 ```
 
 Full guide: [Getting Started](/start/getting-started)

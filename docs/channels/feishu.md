@@ -37,7 +37,7 @@ There are two ways to add the Feishu channel:
 If you just installed OpenClaw, run the wizard:
 
 ```bash
-openclaw onboard
+zovsironclaw onboard
 ```
 
 The wizard guides you through:
@@ -48,7 +48,7 @@ The wizard guides you through:
 
 ✅ **After configuration**, check gateway status:
 
-- `openclaw gateway status`
+- `zovsironclaw gateway status`
 - `openclaw logs --follow`
 
 ### Method 2: CLI setup
@@ -63,8 +63,8 @@ Choose **Feishu**, then enter the App ID and App Secret.
 
 ✅ **After configuration**, manage the gateway:
 
-- `openclaw gateway status`
-- `openclaw gateway restart`
+- `zovsironclaw gateway status`
+- `zovsironclaw gateway restart`
 - `openclaw logs --follow`
 
 ---
@@ -142,7 +142,7 @@ In **App Capability** > **Bot**:
 ⚠️ **Important:** before setting event subscription, make sure:
 
 1. You already ran `openclaw channels add` for Feishu
-2. The gateway is running (`openclaw gateway status`)
+2. The gateway is running (`zovsironclaw gateway status`)
 
 In **Event Subscription**:
 
@@ -173,7 +173,7 @@ Choose **Feishu** and paste your App ID + App Secret.
 
 ### Configure via config file
 
-Edit `~/.openclaw/openclaw.json`:
+Edit `~/.zovsironclaw/zovsironclaw.json`:
 
 ```json5
 {
@@ -227,7 +227,7 @@ If your tenant is on Lark (international), set the domain to `lark` (or a full d
 ### 1. Start the gateway
 
 ```bash
-openclaw gateway
+zovsironclaw gateway
 ```
 
 ### 2. Send a test message
@@ -239,7 +239,7 @@ In Feishu, find your bot and send a message.
 By default, the bot replies with a pairing code. Approve it:
 
 ```bash
-openclaw pairing approve feishu <CODE>
+zovsironclaw pairing approve feishu <CODE>
 ```
 
 After approval, you can chat normally.
@@ -263,8 +263,8 @@ After approval, you can chat normally.
 - **Approve pairing**:
 
   ```bash
-  openclaw pairing list feishu
-  openclaw pairing approve feishu <CODE>
+  zovsironclaw pairing list feishu
+  zovsironclaw pairing approve feishu <CODE>
   ```
 
 - **Allowlist mode**: set `channels.feishu.allowFrom` with allowed Open IDs
@@ -357,7 +357,7 @@ User IDs look like `ou_xxx`.
 Check pairing requests for user Open IDs:
 
 ```bash
-openclaw pairing list feishu
+zovsironclaw pairing list feishu
 ```
 
 ---
@@ -376,10 +376,10 @@ openclaw pairing list feishu
 
 | Command                    | Description                   |
 | -------------------------- | ----------------------------- |
-| `openclaw gateway status`  | Show gateway status           |
-| `openclaw gateway install` | Install/start gateway service |
-| `openclaw gateway stop`    | Stop gateway service          |
-| `openclaw gateway restart` | Restart gateway service       |
+| `zovsironclaw gateway status`  | Show gateway status           |
+| `zovsironclaw gateway install` | Install/start gateway service |
+| `zovsironclaw gateway stop`    | Stop gateway service          |
+| `zovsironclaw gateway restart` | Restart gateway service       |
 | `openclaw logs --follow`   | Tail gateway logs             |
 
 ---
@@ -399,7 +399,7 @@ openclaw pairing list feishu
 2. Ensure event subscription includes `im.message.receive_v1`
 3. Ensure **long connection** is enabled
 4. Ensure app permissions are complete
-5. Ensure the gateway is running: `openclaw gateway status`
+5. Ensure the gateway is running: `zovsironclaw gateway status`
 6. Check logs: `openclaw logs --follow`
 
 ### App Secret leak
@@ -476,12 +476,12 @@ Use `bindings` to route Feishu DMs or groups to different agents.
       {
         id: "clawd-fan",
         workspace: "/home/user/clawd-fan",
-        agentDir: "/home/user/.openclaw/agents/clawd-fan/agent",
+        agentDir: "/home/user/.zovsironclaw/agents/clawd-fan/agent",
       },
       {
         id: "clawd-xi",
         workspace: "/home/user/clawd-xi",
-        agentDir: "/home/user/.openclaw/agents/clawd-xi/agent",
+        agentDir: "/home/user/.zovsironclaw/agents/clawd-xi/agent",
       },
     ],
   },

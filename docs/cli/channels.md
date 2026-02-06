@@ -45,7 +45,7 @@ openclaw channels logout --channel whatsapp
 ## Troubleshooting
 
 - Run `openclaw status --deep` for a broad probe.
-- Use `openclaw doctor` for guided fixes.
+- Use `zovsironclaw doctor` for guided fixes.
 - `openclaw channels list` prints `Claude: HTTP 403 ... user:profile` → usage snapshot needs the `user:profile` scope. Use `--no-usage`, or provide a claude.ai session key (`CLAUDE_WEB_SESSION_KEY` / `CLAUDE_WEB_COOKIE`), or re-auth via Claude Code CLI.
 
 ## Capabilities probe

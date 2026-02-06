@@ -20,7 +20,7 @@ layout.
 If you’re using Anthropic directly, use an API key.
 
 1. Create an API key in the Anthropic Console.
-2. Put it on the **gateway host** (the machine running `openclaw gateway`).
+2. Put it on the **gateway host** (the machine running `zovsironclaw gateway`).
 
 ```bash
 export ANTHROPIC_API_KEY="..."
@@ -28,10 +28,10 @@ openclaw models status
 ```
 
 3. If the Gateway runs under systemd/launchd, prefer putting the key in
-   `~/.openclaw/.env` so the daemon can read it:
+   `~/.zovsironclaw/.env` so the daemon can read it:
 
 ```bash
-cat >> ~/.openclaw/.env <<'EOF'
+cat >> ~/.zovsironclaw/.env <<'EOF'
 ANTHROPIC_API_KEY=...
 EOF
 ```
@@ -40,14 +40,14 @@ Then restart the daemon (or restart your Gateway process) and re-check:
 
 ```bash
 openclaw models status
-openclaw doctor
+zovsironclaw doctor
 ```
 
 If you’d rather not manage env vars yourself, the onboarding wizard can store
-API keys for daemon use: `openclaw onboard`.
+API keys for daemon use: `zovsironclaw onboard`.
 
 See [Help](/help) for details on env inheritance (`env.shellEnv`,
-`~/.openclaw/.env`, systemd/launchd).
+`~/.zovsironclaw/.env`, systemd/launchd).
 
 ## Anthropic: setup-token (subscription auth)
 
@@ -100,7 +100,7 @@ Optional ops scripts (systemd/Termux) are documented here:
 
 ```bash
 openclaw models status
-openclaw doctor
+zovsironclaw doctor
 ```
 
 ## Controlling which credential is used

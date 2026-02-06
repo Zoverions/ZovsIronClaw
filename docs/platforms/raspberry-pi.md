@@ -130,7 +130,7 @@ The hackable install gives you direct access to logs and code — useful for deb
 ## 7) Run Onboarding
 
 ```bash
-openclaw onboard --install-daemon
+zovsironclaw onboard --install-daemon
 ```
 
 Follow the wizard:

@@ -63,7 +63,7 @@ Details: [Plugins](/plugin)
 
    - Replace `matrix.example.org` with your homeserver URL.
    - Or set `channels.matrix.userId` + `channels.matrix.password`: OpenClaw calls the same
-     login endpoint, stores the access token in `~/.openclaw/credentials/matrix/credentials.json`,
+     login endpoint, stores the access token in `~/.zovsironclaw/credentials/matrix/credentials.json`,
      and reuses it on next start.
 
 4. Configure credentials:
@@ -126,7 +126,7 @@ Enable with `channels.matrix.encryption: true`:
   `node node_modules/@matrix-org/matrix-sdk-crypto-nodejs/download-lib.js`.
 
 Crypto state is stored per account + access token in
-`~/.openclaw/matrix/accounts/<account>/<homeserver>__<user>/<token-hash>/crypto/`
+`~/.zovsironclaw/matrix/accounts/<account>/<homeserver>__<user>/<token-hash>/crypto/`
 (SQLite database). Sync state lives alongside it in `bot-storage.json`.
 If the access token (device) changes, a new store is created and the bot must be
 re-verified for encrypted rooms.
@@ -145,8 +145,8 @@ Once verified, the bot can decrypt messages in encrypted rooms.
 
 - Default: `channels.matrix.dm.policy = "pairing"`. Unknown senders get a pairing code.
 - Approve via:
-  - `openclaw pairing list matrix`
-  - `openclaw pairing approve matrix <CODE>`
+  - `zovsironclaw pairing list matrix`
+  - `zovsironclaw pairing approve matrix <CODE>`
 - Public DMs: `channels.matrix.dm.policy="open"` plus `channels.matrix.dm.allowFrom=["*"]`.
 - `channels.matrix.dm.allowFrom` accepts full Matrix user IDs (example: `@user:server`). The wizard resolves display names to user IDs when directory search finds a single exact match.
 

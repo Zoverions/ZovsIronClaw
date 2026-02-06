@@ -23,7 +23,7 @@ Nostr 是一个去中心化的社交网络协议。此渠道使 OpenClaw 能够�
 
 ### 新手引导（推荐）
 
-- 新手引导向导（`openclaw onboard`）和 `openclaw channels add` 会列出可选的渠道插件。
+- 新手引导向导（`zovsironclaw onboard`）和 `openclaw channels add` 会列出可选的渠道插件。
 - 选择 Nostr 会提示你按需安装插件。
 
 安装默认值：

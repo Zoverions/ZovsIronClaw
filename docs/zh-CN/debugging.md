@@ -22,7 +22,7 @@ x-i18n:
 
 在聊天中使用 `/debug` 设置**仅运行时**配置覆盖（内存中，不写入磁盘）。
 `/debug` 默认禁用；通过 `commands.debug: true` 启用。
-当你需要切换不常用的设置而不编辑 `openclaw.json` 时，这非常方便。
+当你需要切换不常用的设置而不编辑 `zovsironclaw.json` 时，这非常方便。
 
 示例：
 
@@ -72,7 +72,7 @@ OPENCLAW_PROFILE=dev openclaw tui
 1. **配置文件隔离**（全局 `--dev`）
    - `OPENCLAW_PROFILE=dev`
    - `OPENCLAW_STATE_DIR=~/.openclaw-dev`
-   - `OPENCLAW_CONFIG_PATH=~/.openclaw-dev/openclaw.json`
+   - `OPENCLAW_CONFIG_PATH=~/.openclaw-dev/zovsironclaw.json`
    - `OPENCLAW_GATEWAY_PORT=19001`（浏览器/画布相应移动）
 
 2. **Dev 引导**（`gateway --dev`）
@@ -94,7 +94,7 @@ pnpm gateway:dev:reset
 如果你需要明确拼写，请使用环境变量形式：
 
 ```bash
-OPENCLAW_PROFILE=dev openclaw gateway --dev --reset
+OPENCLAW_PROFILE=dev zovsironclaw gateway --dev --reset
 ```
 
 `--reset` 清除配置、凭证、会话和 dev 工作区（使用 `trash`，而非 `rm`），然后重新创建默认的 dev 设置。
@@ -102,7 +102,7 @@ OPENCLAW_PROFILE=dev openclaw gateway --dev --reset
 提示：如果非 dev Gateway 网关已在运行（launchd/systemd），请先停止它：
 
 ```bash
-openclaw gateway stop
+zovsironclaw gateway stop
 ```
 
 ## 原始流日志（OpenClaw）
@@ -119,19 +119,19 @@ pnpm gateway:watch --force --raw-stream
 可选路径覆盖：
 
 ```bash
-pnpm gateway:watch --force --raw-stream --raw-stream-path ~/.openclaw/logs/raw-stream.jsonl
+pnpm gateway:watch --force --raw-stream --raw-stream-path ~/.zovsironclaw/logs/raw-stream.jsonl
 ```
 
 等效环境变量：
 
 ```bash
 OPENCLAW_RAW_STREAM=1
-OPENCLAW_RAW_STREAM_PATH=~/.openclaw/logs/raw-stream.jsonl
+OPENCLAW_RAW_STREAM_PATH=~/.zovsironclaw/logs/raw-stream.jsonl
 ```
 
 默认文件：
 
-`~/.openclaw/logs/raw-stream.jsonl`
+`~/.zovsironclaw/logs/raw-stream.jsonl`
 
 ## 原始块日志（pi-mono）
 

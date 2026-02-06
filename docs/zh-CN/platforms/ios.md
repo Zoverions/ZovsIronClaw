@@ -37,7 +37,7 @@ x-i18n:
 1. 启动 Gateway 网关：
 
 ```bash
-openclaw gateway --port 18789
+zovsironclaw gateway --port 18789
 ```
 
 2. 在 iOS 应用中，打开设置并选择一个已发现的 Gateway 网关（或启用手动主机并输入主机/端口）。
@@ -53,7 +53,7 @@ openclaw nodes approve <requestId>
 
 ```bash
 openclaw nodes status
-openclaw gateway call node.list --params "{}"
+zovsironclaw gateway call node.list --params "{}"
 ```
 
 ## 发现路径

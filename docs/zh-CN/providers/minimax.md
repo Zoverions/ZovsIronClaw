@@ -46,8 +46,8 @@ MiniMax 强调 M2.1 的以下改进：
 
 ```bash
 openclaw plugins enable minimax-portal-auth  # 如果已加载则跳过
-openclaw gateway restart  # 如果 Gateway 网关已在运行则重启
-openclaw onboard --auth-choice minimax-portal
+zovsironclaw gateway restart  # 如果 Gateway 网关已在运行则重启
+zovsironclaw onboard --auth-choice minimax-portal
 ```
 
 系统会提示你选择端点：
@@ -122,7 +122,7 @@ openclaw onboard --auth-choice minimax-portal
 **适用于：** 使用 LM Studio 进行本地推理。
 我们在强大硬件（例如台式机/服务器）上使用 LM Studio 的本地服务器运行 MiniMax M2.1 时看到了出色的效果。
 
-通过 `openclaw.json` 手动配置：
+通过 `zovsironclaw.json` 手动配置：
 
 ```json5
 {

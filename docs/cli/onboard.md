@@ -1,11 +1,11 @@
 ---
-summary: "CLI reference for `openclaw onboard` (interactive onboarding wizard)"
+summary: "CLI reference for `zovsironclaw onboard` (interactive onboarding wizard)"
 read_when:
   - You want guided setup for gateway, workspace, auth, channels, and skills
 title: "onboard"
 ---
 
-# `openclaw onboard`
+# `zovsironclaw onboard`
 
 Interactive onboarding wizard (local or remote Gateway setup).
 
@@ -19,23 +19,23 @@ Interactive onboarding wizard (local or remote Gateway setup).
 ## Examples
 
 ```bash
-openclaw onboard
-openclaw onboard --flow quickstart
-openclaw onboard --flow manual
-openclaw onboard --mode remote --remote-url ws://gateway-host:18789
+zovsironclaw onboard
+zovsironclaw onboard --flow quickstart
+zovsironclaw onboard --flow manual
+zovsironclaw onboard --mode remote --remote-url ws://gateway-host:18789
 ```
 
 Flow notes:
 
 - `quickstart`: minimal prompts, auto-generates a gateway token.
 - `manual`: full prompts for port/bind/auth (alias of `advanced`).
-- Fastest first chat: `openclaw dashboard` (Control UI, no channel setup).
+- Fastest first chat: `zovsironclaw dashboard` (Control UI, no channel setup).
 
 ## Common follow-up commands
 
 ```bash
 openclaw configure
-openclaw agents add <name>
+zovsironclaw agents add <name>
 ```
 
 <Note>

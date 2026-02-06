@@ -124,7 +124,7 @@ openclaw config set gateway.bind loopback
 
 # 要求 Gateway 网关 + 控制 UI 的认证
 openclaw config set gateway.auth.mode token
-openclaw doctor --generate-gateway-token
+zovsironclaw doctor --generate-gateway-token
 
 # 通过 Tailscale Serve 暴露（HTTPS + tailnet 访问）
 openclaw config set gateway.tailscale.mode serve
@@ -256,8 +256,8 @@ sudo tailscale up --ssh --hostname=openclaw --reset
 ### Gateway 网关无法启动
 
 ```bash
-openclaw gateway status
-openclaw doctor --non-interactive
+zovsironclaw gateway status
+zovsironclaw doctor --non-interactive
 journalctl --user -u openclaw-gateway -n 50
 ```
 
@@ -290,13 +290,13 @@ uname -m  # 应该显示 aarch64
 
 所有状态存储在：
 
-- `~/.openclaw/` — 配置、凭证、会话数据
-- `~/.openclaw/workspace/` — 工作区（SOUL.md、记忆、产物）
+- `~/.zovsironclaw/` — 配置、凭证、会话数据
+- `~/.zovsironclaw/workspace/` — 工作区（SOUL.md、记忆、产物）
 
 定期备份：
 
 ```bash
-tar -czvf openclaw-backup.tar.gz ~/.openclaw ~/.openclaw/workspace
+tar -czvf openclaw-backup.tar.gz ~/.openclaw ~/.zovsironclaw/workspace
 ```
 
 ---

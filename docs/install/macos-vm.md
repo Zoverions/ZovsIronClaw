@@ -138,7 +138,7 @@ Inside the VM:
 
 ```bash
 npm install -g openclaw@latest
-openclaw onboard --install-daemon
+zovsironclaw onboard --install-daemon
 ```
 
 Follow the onboarding prompts to set up your model provider (Anthropic, OpenAI, etc.).
@@ -150,7 +150,7 @@ Follow the onboarding prompts to set up your model provider (Anthropic, OpenAI, 
 Edit the config file:
 
 ```bash
-nano ~/.openclaw/openclaw.json
+nano ~/.zovsironclaw/zovsironclaw.json
 ```
 
 Add your channels:

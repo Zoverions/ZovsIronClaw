@@ -35,13 +35,13 @@ Windows 上的 OpenClaw 推荐**通过 WSL2**（推荐 Ubuntu）。CLI + Gateway
 在 WSL2 内：
 
 ```
-openclaw onboard --install-daemon
+zovsironclaw onboard --install-daemon
 ```
 
 或：
 
 ```
-openclaw gateway install
+zovsironclaw gateway install
 ```
 
 或：
@@ -55,7 +55,7 @@ openclaw configure
 修复/迁移：
 
 ```
-openclaw doctor
+zovsironclaw doctor
 ```
 
 ## 高级：通过 LAN 暴露 WSL 服务（portproxy）
@@ -146,7 +146,7 @@ cd openclaw
 pnpm install
 pnpm ui:build # auto-installs UI deps on first run
 pnpm build
-openclaw onboard
+zovsironclaw onboard
 ```
 
 完整指南：[入门指南](/start/getting-started)

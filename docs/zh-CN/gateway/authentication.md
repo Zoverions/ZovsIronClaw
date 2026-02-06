@@ -24,17 +24,17 @@ OpenClaw 支持模型提供商的 OAuth 和 API 密钥。对于 Anthropic 账户
 如果你直接使用 Anthropic，请使用 API 密钥。
 
 1. 在 Anthropic 控制台创建 API 密钥。
-2. 将其放在 **Gateway 网关主机**（运行 `openclaw gateway` 的机器）上。
+2. 将其放在 **Gateway 网关主机**（运行 `zovsironclaw gateway` 的机器）上。
 
 ```bash
 export ANTHROPIC_API_KEY="..."
 openclaw models status
 ```
 
-3. 如果 Gateway 网关在 systemd/launchd 下运行，最好将密钥放在 `~/.openclaw/.env` 中以便守护进程可以读取：
+3. 如果 Gateway 网关在 systemd/launchd 下运行，最好将密钥放在 `~/.zovsironclaw/.env` 中以便守护进程可以读取：
 
 ```bash
-cat >> ~/.openclaw/.env <<'EOF'
+cat >> ~/.zovsironclaw/.env <<'EOF'
 ANTHROPIC_API_KEY=...
 EOF
 ```
@@ -43,12 +43,12 @@ EOF
 
 ```bash
 openclaw models status
-openclaw doctor
+zovsironclaw doctor
 ```
 
-如果你不想自己管理环境变量，新手引导向导可以为守护进程使用存储 API 密钥：`openclaw onboard`。
+如果你不想自己管理环境变量，新手引导向导可以为守护进程使用存储 API 密钥：`zovsironclaw onboard`。
 
-参阅[帮助](/help)了解环境变量继承的详情（`env.shellEnv`、`~/.openclaw/.env`、systemd/launchd）。
+参阅[帮助](/help)了解环境变量继承的详情（`env.shellEnv`、`~/.zovsironclaw/.env`、systemd/launchd）。
 
 ## Anthropic：setup-token（订阅认证）
 
@@ -99,7 +99,7 @@ openclaw models status --check
 
 ```bash
 openclaw models status
-openclaw doctor
+zovsironclaw doctor
 ```
 
 ## 控制使用哪个凭证

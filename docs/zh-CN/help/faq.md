@@ -167,8 +167,8 @@ x-i18n:
   - [OAuth 与 API 密钥：有什么区别？](#oauth-vs-api-key-whats-the-difference)
 - [Gateway 网关：端口、“已在运行”和远程模式](#gateway-ports-already-running-and-remote-mode)
   - [Gateway 网关使用什么端口？](#what-port-does-the-gateway-use)
-  - [为什么 `openclaw gateway status` 显示 `Runtime: running` 但 `RPC probe: failed`？](#why-does-openclaw-gateway-status-say-runtime-running-but-rpc-probe-failed)
-  - [为什么 `openclaw gateway status` 显示 `Config (cli)` 和 `Config (service)` 不同？](#why-does-openclaw-gateway-status-show-config-cli-and-config-service-different)
+  - [为什么 `zovsironclaw gateway status` 显示 `Runtime: running` 但 `RPC probe: failed`？](#why-does-openclaw-gateway-status-say-runtime-running-but-rpc-probe-failed)
+  - [为什么 `zovsironclaw gateway status` 显示 `Config (cli)` 和 `Config (service)` 不同？](#why-does-openclaw-gateway-status-show-config-cli-and-config-service-different)
   - ["another gateway instance is already listening"是什么意思？](#what-does-another-gateway-instance-is-already-listening-mean)
   - [如何以远程模式运行 OpenClaw（客户端连接到其他位置的 Gateway 网关）？](#how-do-i-run-openclaw-in-remote-mode-client-connects-to-a-gateway-elsewhere)
   - [控制 UI 显示"unauthorized"（或持续重连），怎么办？](#the-control-ui-says-unauthorized-or-keeps-reconnecting-what-now)
@@ -184,7 +184,7 @@ x-i18n:
   - [Telegram setMyCommands 因网络错误失败，应该检查什么？](#telegram-setmycommands-fails-with-network-errors-what-should-i-check)
   - [TUI 没有输出，应该检查什么？](#tui-shows-no-output-what-should-i-check)
   - [如何完全停止然后启动 Gateway 网关？](#how-do-i-completely-stop-then-start-the-gateway)
-  - [通俗解释：`openclaw gateway restart` 与 `openclaw gateway`](#eli5-openclaw-gateway-restart-vs-openclaw-gateway)
+  - [通俗解释：`zovsironclaw gateway restart` 与 `zovsironclaw gateway`](#eli5-openclaw-gateway-restart-vs-openclaw-gateway)
   - [出现故障时获取更多详情的最快方法是什么？](#whats-the-fastest-way-to-get-more-details-when-something-fails)
 - [媒体与附件](#media-attachments)
   - [我的 Skills 生成了图片/PDF，但什么都没发送](#my-skill-generated-an-imagepdf-but-nothing-was-sent)
@@ -223,7 +223,7 @@ x-i18n:
 3. **守护进程 + 端口状态**
 
    ```bash
-   openclaw gateway status
+   zovsironclaw gateway status
    ```
 
    显示 supervisor 运行状态与 RPC 可达性、探测目标 URL，以及服务可能使用的配置。
@@ -253,7 +253,7 @@ x-i18n:
 6. **运行 doctor（修复）**
 
    ```bash
-   openclaw doctor
+   zovsironclaw doctor
    ```
 
    修复/迁移配置/状态 + 运行健康检查。参阅 [Doctor](/gateway/doctor)。
@@ -293,17 +293,17 @@ https://github.com/openclaw/openclaw/pulls
 ```bash
 openclaw status
 openclaw models status
-openclaw doctor
+zovsironclaw doctor
 ```
 
 它们的作用：
 
 - `openclaw status`：Gateway 网关/智能体健康状况 + 基本配置的快速快照。
 - `openclaw models status`：检查提供商认证 + 模型可用性。
-- `openclaw doctor`：验证并修复常见的配置/状态问题。
+- `zovsironclaw doctor`：验证并修复常见的配置/状态问题。
 
 其他有用的 CLI 检查：`openclaw status --all`、`openclaw logs --follow`、
-`openclaw gateway status`、`openclaw health --verbose`。
+`zovsironclaw gateway status`、`openclaw health --verbose`。
 
 快速调试流程：[出问题后的最初六十秒](#first-60-seconds-if-somethings-broken)。
 安装文档：[安装](/install)、[安装程序标志](/install/installer)、[更新](/install/updating)。
@@ -314,7 +314,7 @@ openclaw doctor
 
 ```bash
 curl -fsSL https://openclaw.ai/install.sh | bash
-openclaw onboard --install-daemon
+zovsironclaw onboard --install-daemon
 ```
 
 向导还可以自动构建 UI 资源。新手引导后，通常在端口 **18789** 上运行 Gateway 网关。
@@ -327,10 +327,10 @@ cd openclaw
 pnpm install
 pnpm build
 pnpm ui:build # 首次运行时自动安装 UI 依赖
-openclaw onboard
+zovsironclaw onboard
 ```
 
-如果你还没有全局安装，通过 `pnpm openclaw onboard` 运行。
+如果你还没有全局安装，通过 `pnpm zovsironclaw onboard` 运行。
 
 ### 新手引导后如何打开仪表板
 
@@ -341,14 +341,14 @@ openclaw onboard
 **本地（同一台机器）：**
 
 - 打开 `http://127.0.0.1:18789/`。
-- 如果要求认证，运行 `openclaw dashboard` 并使用带令牌的链接（`?token=...`）。
+- 如果要求认证，运行 `zovsironclaw dashboard` 并使用带令牌的链接（`?token=...`）。
 - 令牌与 `gateway.auth.token`（或 `OPENCLAW_GATEWAY_TOKEN`）的值相同，UI 在首次加载后会存储它。
 
 **非本地环境：**
 
-- **Tailscale Serve**（推荐）：保持绑定 loopback，运行 `openclaw gateway --tailscale serve`，打开 `https://<magicdns>/`。如果 `gateway.auth.allowTailscale` 为 `true`，身份标头满足认证要求（无需令牌）。
-- **Tailnet 绑定**：运行 `openclaw gateway --bind tailnet --token "<token>"`，打开 `http://<tailscale-ip>:18789/`，在仪表板设置中粘贴令牌。
-- **SSH 隧道**：`ssh -N -L 18789:127.0.0.1:18789 user@host`，然后从 `openclaw dashboard` 打开 `http://127.0.0.1:18789/?token=...`。
+- **Tailscale Serve**（推荐）：保持绑定 loopback，运行 `zovsironclaw gateway --tailscale serve`，打开 `https://<magicdns>/`。如果 `gateway.auth.allowTailscale` 为 `true`，身份标头满足认证要求（无需令牌）。
+- **Tailnet 绑定**：运行 `zovsironclaw gateway --bind tailnet --token "<token>"`，打开 `http://<tailscale-ip>:18789/`，在仪表板设置中粘贴令牌。
+- **SSH 隧道**：`ssh -N -L 18789:127.0.0.1:18789 user@host`，然后从 `zovsironclaw dashboard` 打开 `http://127.0.0.1:18789/?token=...`。
 
 参阅[仪表板](/web/dashboard)和 [Web 界面](/web)了解绑定模式和认证详情。
 
@@ -382,7 +382,7 @@ Node **>= 22** 是必需的。推荐使用 `pnpm`。**不推荐**使用 Bun 运�
 1. 重启 Gateway 网关：
 
 ```bash
-openclaw gateway restart
+zovsironclaw gateway restart
 ```
 
 2. 检查状态和认证：
@@ -396,7 +396,7 @@ openclaw logs --follow
 3. 如果仍然挂起，运行：
 
 ```bash
-openclaw doctor
+zovsironclaw doctor
 ```
 
 如果 Gateway 网关在远程，确保隧道/Tailscale 连接正常，且 UI 指向正确的 Gateway 网关。参阅[远程访问](/gateway/remote)。
@@ -407,12 +407,12 @@ openclaw doctor
 
 1. 在新机器上安装 OpenClaw。
 2. 从旧机器复制 `$OPENCLAW_STATE_DIR`（默认：`~/.openclaw`）。
-3. 复制你的工作区（默认：`~/.openclaw/workspace`）。
-4. 运行 `openclaw doctor` 并重启 Gateway 网关服务。
+3. 复制你的工作区（默认：`~/.zovsironclaw/workspace`）。
+4. 运行 `zovsironclaw doctor` 并重启 Gateway 网关服务。
 
 这会保留配置、认证配置文件、WhatsApp 凭据、会话和记忆。如果你处于远程模式，请记住 Gateway 网关主机拥有会话存储和工作区。
 
-**重要：** 如果你只将工作区提交/推送到 GitHub，你只备份了**记忆 + 引导文件**，但**不包括**会话历史或认证。它们位于 `~/.openclaw/` 下（例如 `~/.openclaw/agents/<agentId>/sessions/`）。
+**重要：** 如果你只将工作区提交/推送到 GitHub，你只备份了**记忆 + 引导文件**，但**不包括**会话历史或认证。它们位于 `~/.zovsironclaw/` 下（例如 `~/.zovsironclaw/agents/<agentId>/sessions/`）。
 
 相关：[迁移](/install/migrating)、[磁盘上的文件位置](/help/faq#where-does-openclaw-store-its-data)、
 [智能体工作区](/concepts/agent-workspace)、[Doctor](/gateway/doctor)、
@@ -609,14 +609,14 @@ openclaw update --no-restart
 
 ```bash
 openclaw update --yes --no-restart
-openclaw gateway restart
+zovsironclaw gateway restart
 ```
 
 文档：[更新](/cli/update)、[更新指南](/install/updating)。
 
 ### 新手引导向导具体做了什么
 
-`openclaw onboard` 是推荐的设置路径。在**本地模式**下，它引导你完成：
+`zovsironclaw onboard` 是推荐的设置路径。在**本地模式**下，它引导你完成：
 
 - **模型/认证设置**（推荐使用 Anthropic **setup-token** 进行 Claude 订阅，支持 OpenAI Codex OAuth，API 密钥可选，支持 LM Studio 本地模型）
 - **工作区**位置 + 引导文件
@@ -683,7 +683,7 @@ OpenClaw 通过 OAuth（ChatGPT 登录）支持 **OpenAI Code (Codex)**。向导
 
 ### 如何设置 Gemini CLI OAuth
 
-Gemini CLI 使用**插件认证流程**，而不是 `openclaw.json` 中的 client id 或 secret。
+Gemini CLI 使用**插件认证流程**，而不是 `zovsironclaw.json` 中的 client id 或 secret。
 
 步骤：
 
@@ -790,7 +790,7 @@ brew install <formula>
 
 可以。安装另一种方式，然后运行 Doctor 使 Gateway 网关服务指向新的入口点。
 这**不会删除你的数据**——它只改变 OpenClaw 代码的安装位置。你的状态
-（`~/.openclaw`）和工作区（`~/.openclaw/workspace`）保持不变。
+（`~/.openclaw`）和工作区（`~/.zovsironclaw/workspace`）保持不变。
 
 从 npm → git：
 
@@ -799,16 +799,16 @@ git clone https://github.com/openclaw/openclaw.git
 cd openclaw
 pnpm install
 pnpm build
-openclaw doctor
-openclaw gateway restart
+zovsironclaw doctor
+zovsironclaw gateway restart
 ```
 
 从 git → npm：
 
 ```bash
 npm install -g openclaw@latest
-openclaw doctor
-openclaw gateway restart
+zovsironclaw doctor
+zovsironclaw gateway restart
 ```
 
 Doctor 会检测 Gateway 网关服务入口点不匹配，并提供重写服务配置以匹配当前安装的选项（在自动化中使用 `--repair`）。
@@ -934,11 +934,11 @@ OpenClaw 是一个**个人助手**和协调层，不是 IDE 替代品。使用 C
 
 ### 如何自定义 Skills 而不弄脏仓库
 
-使用托管覆盖而不是编辑仓库副本。将你的更改放在 `~/.openclaw/skills/<name>/SKILL.md`（或通过 `~/.openclaw/openclaw.json` 中的 `skills.load.extraDirs` 添加文件夹）。优先级是 `<workspace>/skills` > `~/.openclaw/skills` > 内置，所以托管覆盖优先生效而不会修改 git。只有值得上游合并的编辑才应该放在仓库中并作为 PR 提交。
+使用托管覆盖而不是编辑仓库副本。将你的更改放在 `~/.zovsironclaw/skills/<name>/SKILL.md`（或通过 `~/.zovsironclaw/zovsironclaw.json` 中的 `skills.load.extraDirs` 添加文件夹）。优先级是 `<workspace>/skills` > `~/.zovsironclaw/skills` > 内置，所以托管覆盖优先生效而不会修改 git。只有值得上游合并的编辑才应该放在仓库中并作为 PR 提交。
 
 ### 可以从自定义文件夹加载 Skills 吗
 
-可以。通过 `~/.openclaw/openclaw.json` 中的 `skills.load.extraDirs` 添加额外目录（最低优先级）。默认优先级保持不变：`<workspace>/skills` → `~/.openclaw/skills` → 内置 → `skills.load.extraDirs`。`clawhub` 默认安装到 `./skills`，OpenClaw 将其视为 `<workspace>/skills`。
+可以。通过 `~/.zovsironclaw/zovsironclaw.json` 中的 `skills.load.extraDirs` 添加额外目录（最低优先级）。默认优先级保持不变：`<workspace>/skills` → `~/.zovsironclaw/skills` → 内置 → `skills.load.extraDirs`。`clawhub` 默认安装到 `./skills`，OpenClaw 将其视为 `<workspace>/skills`。
 
 ### 如何为不同任务使用不同模型
 
@@ -1028,7 +1028,7 @@ pnpm add -g clawhub
    exec ssh -T user@mac-host /opt/homebrew/bin/imsg "$@"
    ```
 2. 将包装器放在 Linux 主机的 `PATH` 上（例如 `~/bin/imsg`）。
-3. 覆盖 Skills 元数据（工作区或 `~/.openclaw/skills`）以允许 Linux：
+3. 覆盖 Skills 元数据（工作区或 `~/.zovsironclaw/skills`）以允许 Linux：
    ```markdown
    ---
    name: imsg
@@ -1063,7 +1063,7 @@ clawhub install <skill-slug>
 clawhub update --all
 ```
 
-ClawHub 安装到当前目录下的 `./skills`（或回退到你配置的 OpenClaw 工作区）；OpenClaw 在下一个会话中将其视为 `<workspace>/skills`。对于跨智能体共享的 Skills，将它们放在 `~/.openclaw/skills/<name>/SKILL.md`。某些 Skills 期望通过 Homebrew 安装二进制文件；在 Linux 上意味着 Linuxbrew（参阅上面的 Homebrew Linux 常见问题条目）。参阅[Skills](/tools/skills)和 [ClawHub](/tools/clawhub)。
+ClawHub 安装到当前目录下的 `./skills`（或回退到你配置的 OpenClaw 工作区）；OpenClaw 在下一个会话中将其视为 `<workspace>/skills`。对于跨智能体共享的 Skills，将它们放在 `~/.zovsironclaw/skills/<name>/SKILL.md`。某些 Skills 期望通过 Homebrew 安装二进制文件；在 Linux 上意味着 Linuxbrew（参阅上面的 Homebrew Linux 常见问题条目）。参阅[Skills](/tools/skills)和 [ClawHub](/tools/clawhub)。
 
 ### 如何安装用于浏览器接管的 Chrome 扩展
 
@@ -1151,7 +1151,7 @@ OpenClaw 还会运行**静默的预压缩记忆刷新**，以提醒模型在自�
 
 | 路径                                                            | 用途                                                 |
 | --------------------------------------------------------------- | ---------------------------------------------------- |
-| `$OPENCLAW_STATE_DIR/openclaw.json`                             | 主配置（JSON5）                                      |
+| `$OPENCLAW_STATE_DIR/zovsironclaw.json`                             | 主配置（JSON5）                                      |
 | `$OPENCLAW_STATE_DIR/credentials/oauth.json`                    | 旧版 OAuth 导入（首次使用时复制到认证配置文件）      |
 | `$OPENCLAW_STATE_DIR/agents/<agentId>/agent/auth-profiles.json` | 认证配置文件（OAuth + API 密钥）                     |
 | `$OPENCLAW_STATE_DIR/agents/<agentId>/agent/auth.json`          | 运行时认证缓存（自动管理）                           |
@@ -1160,9 +1160,9 @@ OpenClaw 还会运行**静默的预压缩记忆刷新**，以提醒模型在自�
 | `$OPENCLAW_STATE_DIR/agents/<agentId>/sessions/`                | 对话历史和状态（按智能体）                           |
 | `$OPENCLAW_STATE_DIR/agents/<agentId>/sessions/sessions.json`   | 会话元数据（按智能体）                               |
 
-旧版单智能体路径：`~/.openclaw/agent/*`（通过 `openclaw doctor` 迁移）。
+旧版单智能体路径：`~/.zovsironclaw/agent/*`（通过 `zovsironclaw doctor` 迁移）。
 
-你的**工作区**（AGENTS.md、记忆文件、Skills 等）是独立的，通过 `agents.defaults.workspace` 配置（默认：`~/.openclaw/workspace`）。
+你的**工作区**（AGENTS.md、记忆文件、Skills 等）是独立的，通过 `agents.defaults.workspace` 配置（默认：`~/.zovsironclaw/workspace`）。
 
 ### AGENTS.md / SOUL.md / USER.md / MEMORY.md 应该放在哪里
 
@@ -1170,13 +1170,13 @@ OpenClaw 还会运行**静默的预压缩记忆刷新**，以提醒模型在自�
 
 - **工作区（按智能体）**：`AGENTS.md`、`SOUL.md`、`IDENTITY.md`、`USER.md`、
   `MEMORY.md`（或 `memory.md`）、`memory/YYYY-MM-DD.md`、可选的 `HEARTBEAT.md`。
-- **状态目录（`~/.openclaw`）**：配置、凭据、认证配置文件、会话、日志和共享 Skills（`~/.openclaw/skills`）。
+- **状态目录（`~/.openclaw`）**：配置、凭据、认证配置文件、会话、日志和共享 Skills（`~/.zovsironclaw/skills`）。
 
-默认工作区是 `~/.openclaw/workspace`，可通过以下方式配置：
+默认工作区是 `~/.zovsironclaw/workspace`，可通过以下方式配置：
 
 ```json5
 {
-  agents: { defaults: { workspace: "~/.openclaw/workspace" } },
+  agents: { defaults: { workspace: "~/.zovsironclaw/workspace" } },
 }
 ```
 
@@ -1222,13 +1222,13 @@ OpenClaw 还会运行**静默的预压缩记忆刷新**，以提醒模型在自�
 
 ### 配置文件是什么格式？在哪里
 
-OpenClaw 从 `$OPENCLAW_CONFIG_PATH`（默认：`~/.openclaw/openclaw.json`）读取可选的 **JSON5** 配置：
+OpenClaw 从 `$OPENCLAW_CONFIG_PATH`（默认：`~/.zovsironclaw/zovsironclaw.json`）读取可选的 **JSON5** 配置：
 
 ```
 $OPENCLAW_CONFIG_PATH
 ```
 
-如果文件不存在，使用安全的默认值（包括默认工作区 `~/.openclaw/workspace`）。
+如果文件不存在，使用安全的默认值（包括默认工作区 `~/.zovsironclaw/workspace`）。
 
 ### 我设置了 gateway.bind: "lan"（或 "tailnet"），现在什么都监听不了 / UI 显示未授权
 
@@ -1255,7 +1255,7 @@ $OPENCLAW_CONFIG_PATH
 
 向导默认生成 Gateway 网关令牌（即使在 local loopback 上），因此**本地 WS 客户端必须认证**。这阻止了其他本地进程调用 Gateway 网关。在控制 UI 设置（或你的客户端配置）中粘贴令牌以连接。
 
-如果你**确实**想要开放 local loopback，从配置中移除 `gateway.auth`。Doctor 可以随时为你生成令牌：`openclaw doctor --generate-gateway-token`。
+如果你**确实**想要开放 local loopback，从配置中移除 `gateway.auth`。Doctor 可以随时为你生成令牌：`zovsironclaw doctor --generate-gateway-token`。
 
 ### 更改配置后需要重启吗
 
@@ -1289,7 +1289,7 @@ Gateway 网关监视配置文件并支持热重载：
 
 - 如果你使用允许列表，添加 `web_search`/`web_fetch` 或 `group:web`。
 - `web_fetch` 默认启用（除非明确禁用）。
-- 守护进程从 `~/.openclaw/.env`（或服务环境）读取环境变量。
+- 守护进程从 `~/.zovsironclaw/.env`（或服务环境）读取环境变量。
 
 文档：[Web 工具](/tools/web)。
 
@@ -1299,8 +1299,8 @@ Gateway 网关监视配置文件并支持热重载：
 
 恢复：
 
-- 从备份恢复（git 或复制的 `~/.openclaw/openclaw.json`）。
-- 如果没有备份，重新运行 `openclaw doctor` 并重新配置渠道/模型。
+- 从备份恢复（git 或复制的 `~/.zovsironclaw/zovsironclaw.json`）。
+- 如果没有备份，重新运行 `zovsironclaw doctor` 并重新配置渠道/模型。
 - 如果这是意外情况，提交 bug 并附上你最后已知的配置或任何备份。
 - 本地编码智能体通常可以从日志或历史中重建工作配置。
 
@@ -1386,7 +1386,7 @@ Telegram → Gateway 网关 → 智能体 → `node.*` → 节点 → Gateway �
 
 检查基础项：
 
-- Gateway 网关正在运行：`openclaw gateway status`
+- Gateway 网关正在运行：`zovsironclaw gateway status`
 - Gateway 网关健康：`openclaw status`
 - 渠道健康：`openclaw channels status`
 
@@ -1404,12 +1404,12 @@ Telegram → Gateway 网关 → 智能体 → `node.*` → 节点 → Gateway �
 
 **最简单：** 使用两个机器人都能访问的普通聊天渠道（Telegram/Slack/WhatsApp）。让机器人 A 给机器人 B 发消息，然后让机器人 B 正常回复。
 
-**CLI 桥接（通用）：** 运行一个脚本调用另一个 Gateway 网关，使用 `openclaw agent --message ... --deliver`，定向到另一个机器人监听的聊天。如果一个机器人在远程 VPS 上，通过 SSH/Tailscale 将你的 CLI 指向该远程 Gateway 网关（参阅[远程访问](/gateway/remote)）。
+**CLI 桥接（通用）：** 运行一个脚本调用另一个 Gateway 网关，使用 `zovsironclaw agent --message ... --deliver`，定向到另一个机器人监听的聊天。如果一个机器人在远程 VPS 上，通过 SSH/Tailscale 将你的 CLI 指向该远程 Gateway 网关（参阅[远程访问](/gateway/remote)）。
 
 示例模式（从能到达目标 Gateway 网关的机器上运行）：
 
 ```bash
-openclaw agent --message "Hello from local bot" --deliver --channel telegram --reply-to <chat-id>
+zovsironclaw agent --message "Hello from local bot" --deliver --channel telegram --reply-to <chat-id>
 ```
 
 提示：添加护栏防止两个机器人无限循环（仅提及、渠道允许列表或“不回复机器人消息”规则）。
@@ -1457,7 +1457,7 @@ SSH 对临时 shell 访问很好，但节点对于持续的智能体工作流和
 
 ```json5
 {
-  agents: { defaults: { workspace: "~/.openclaw/workspace" } },
+  agents: { defaults: { workspace: "~/.zovsironclaw/workspace" } },
   channels: { whatsapp: { allowFrom: ["+15555550123"] } },
 }
 ```
@@ -1484,7 +1484,7 @@ SSH 对临时 shell 访问很好，但节点对于持续的智能体工作流和
 如果你想要无 SSH 的控制 UI，在 VPS 上使用 Tailscale Serve：
 
 ```bash
-openclaw gateway --tailscale serve
+zovsironclaw gateway --tailscale serve
 ```
 
 这保持 Gateway 网关绑定到 local loopback 并通过 Tailscale 暴露 HTTPS。参阅 [Tailscale](/gateway/tailscale)。
@@ -1512,7 +1512,7 @@ Serve 暴露 **Gateway 网关控制 UI + WS**。节点通过同一个 Gateway �
 OpenClaw 从父进程（shell、launchd/systemd、CI 等）读取环境变量，并额外加载：
 
 - 当前工作目录下的 `.env`
-- `~/.openclaw/.env`（即 `$OPENCLAW_STATE_DIR/.env`）的全局回退 `.env`
+- `~/.zovsironclaw/.env`（即 `$OPENCLAW_STATE_DIR/.env`）的全局回退 `.env`
 
 两个 `.env` 文件都不会覆盖已有的环境变量。
 
@@ -1533,7 +1533,7 @@ OpenClaw 从父进程（shell、launchd/systemd、CI 等）读取环境变量，
 
 两个常见修复方法：
 
-1. 将缺失的密钥放在 `~/.openclaw/.env` 中，这样即使服务不继承你的 shell 环境也能被获取。
+1. 将缺失的密钥放在 `~/.zovsironclaw/.env` 中，这样即使服务不继承你的 shell 环境也能被获取。
 2. 启用 shell 导入（可选的便利功能）：
 
 ```json5
@@ -1556,7 +1556,7 @@ OpenClaw 从父进程（shell、launchd/systemd、CI 等）读取环境变量，
 
 如果 Gateway 网关作为服务（launchd/systemd）运行，它不会继承你的 shell 环境。通过以下方式之一修复：
 
-1. 将令牌放在 `~/.openclaw/.env` 中：
+1. 将令牌放在 `~/.zovsironclaw/.env` 中：
    ```
    COPILOT_GITHUB_TOKEN=...
    ```
@@ -1627,14 +1627,14 @@ openclaw reset --scope full --yes --non-interactive
 然后重新运行新手引导：
 
 ```bash
-openclaw onboard --install-daemon
+zovsironclaw onboard --install-daemon
 ```
 
 注意：
 
 - 新手引导向导在看到现有配置时也提供**重置**选项。参阅[向导](/start/wizard)。
 - 如果你使用了配置文件（`--profile` / `OPENCLAW_PROFILE`），重置每个状态目录（默认为 `~/.openclaw-<profile>`）。
-- 开发重置：`openclaw gateway --dev --reset`（仅限开发；清除开发配置 + 凭据 + 会话 + 工作区）。
+- 开发重置：`zovsironclaw gateway --dev --reset`（仅限开发；清除开发配置 + 凭据 + 会话 + 工作区）。
 
 ### 我遇到了 context too large 错误——如何重置或压缩
 
@@ -1741,7 +1741,7 @@ openclaw directory groups list --channel whatsapp
 
 没有硬性限制。几十个（甚至几百个）都没问题，但请注意：
 
-- **磁盘增长：** 会话 + 记录位于 `~/.openclaw/agents/<agentId>/sessions/` 下。
+- **磁盘增长：** 会话 + 记录位于 `~/.zovsironclaw/agents/<agentId>/sessions/` 下。
 - **令牌成本：** 更多智能体意味着更多并发模型使用。
 - **运维开销：** 按智能体的认证配置文件、工作区和渠道路由。
 
@@ -1749,7 +1749,7 @@ openclaw directory groups list --channel whatsapp
 
 - 每个智能体保持一个**活跃**工作区（`agents.defaults.workspace`）。
 - 如果磁盘增长，修剪旧会话（删除 JSONL 或存储条目）。
-- 使用 `openclaw doctor` 发现无用的工作区和配置文件不匹配。
+- 使用 `zovsironclaw doctor` 发现无用的工作区和配置文件不匹配。
 
 ### 可以同时运行多个机器人或聊天（Slack）吗？应该如何设置
 
@@ -1814,9 +1814,9 @@ MiniMax M2.1 有自己的文档：[MiniMax](/providers/minimax) 和
 - 聊天中的 `/model`（快速，按会话）
 - `openclaw models set ...`（只更新模型配置）
 - `openclaw configure --section models`（交互式）
-- 编辑 `~/.openclaw/openclaw.json` 中的 `agents.defaults.model`
+- 编辑 `~/.zovsironclaw/zovsironclaw.json` 中的 `agents.defaults.model`
 
-避免使用部分对象执行 `config.apply`，除非你打算替换整个配置。如果你确实覆盖了配置，从备份恢复或重新运行 `openclaw doctor` 来修复。
+避免使用部分对象执行 `config.apply`，除非你打算替换整个配置。如果你确实覆盖了配置，从备份恢复或重新运行 `zovsironclaw doctor` 来修复。
 
 文档：[模型](/concepts/models)、[Configure](/cli/configure)、[Config](/cli/config)、[Doctor](/gateway/doctor)。
 
@@ -2011,12 +2011,12 @@ Z.AI（GLM 模型）：
 这通常意味着**新智能体**的认证存储为空。认证是按智能体的，存储在：
 
 ```
-~/.openclaw/agents/<agentId>/agent/auth-profiles.json
+~/.zovsironclaw/agents/<agentId>/agent/auth-profiles.json
 ```
 
 修复选项：
 
-- 运行 `openclaw agents add <id>` 并在向导中配置认证。
+- 运行 `zovsironclaw agents add <id>` 并在向导中配置认证。
 - 或从主智能体的 `agentDir` 复制 `auth-profiles.json` 到新智能体的 `agentDir`。
 
 **不要**在智能体之间重用 `agentDir`；这会导致认证/会话冲突。
@@ -2043,10 +2043,10 @@ No credentials found for profile "anthropic:default"
 ### No credentials found for profile "anthropic:default" 的修复清单
 
 - **确认认证配置文件的位置**（新路径 vs 旧路径）
-  - 当前：`~/.openclaw/agents/<agentId>/agent/auth-profiles.json`
-  - 旧版：`~/.openclaw/agent/*`（通过 `openclaw doctor` 迁移）
+  - 当前：`~/.zovsironclaw/agents/<agentId>/agent/auth-profiles.json`
+  - 旧版：`~/.zovsironclaw/agent/*`（通过 `zovsironclaw doctor` 迁移）
 - **确认环境变量被 Gateway 网关加载**
-  - 如果你在 shell 中设置了 `ANTHROPIC_API_KEY` 但通过 systemd/launchd 运行 Gateway 网关，它可能不会继承。将其放在 `~/.openclaw/.env` 中或启用 `env.shellEnv`。
+  - 如果你在 shell 中设置了 `ANTHROPIC_API_KEY` 但通过 systemd/launchd 运行 Gateway 网关，它可能不会继承。将其放在 `~/.zovsironclaw/.env` 中或启用 `env.shellEnv`。
 - **确保你编辑的是正确的智能体**
   - 多智能体设置意味着可能有多个 `auth-profiles.json` 文件。
 - **完整性检查模型/认证状态**
@@ -2060,7 +2060,7 @@ No credentials found for profile "anthropic:default"
   - 运行 `claude setup-token`，然后用 `openclaw models auth setup-token --provider anthropic` 粘贴。
   - 如果令牌在另一台机器上创建，使用 `openclaw models auth paste-token --provider anthropic`。
 - **如果你想使用 API 密钥**
-  - 在 **Gateway 网关主机**上将 `ANTHROPIC_API_KEY` 放入 `~/.openclaw/.env`。
+  - 在 **Gateway 网关主机**上将 `ANTHROPIC_API_KEY` 放入 `~/.zovsironclaw/.env`。
   - 清除任何强制缺失配置文件的固定顺序：
     ```bash
     openclaw models auth order clear --provider anthropic
@@ -2089,7 +2089,7 @@ No credentials found for profile "anthropic:default"
 认证配置文件是绑定到提供商的命名凭据记录（OAuth 或 API 密钥）。配置文件位于：
 
 ```
-~/.openclaw/agents/<agentId>/agent/auth-profiles.json
+~/.zovsironclaw/agents/<agentId>/agent/auth-profiles.json
 ```
 
 ### 典型的配置文件 ID 有哪些
@@ -2149,24 +2149,24 @@ OpenClaw 两者都支持：
 --port > OPENCLAW_GATEWAY_PORT > gateway.port > 默认 18789
 ```
 
-### 为什么 openclaw gateway status 显示 Runtime: running 但 RPC probe: failed
+### 为什么 zovsironclaw gateway status 显示 Runtime: running 但 RPC probe: failed
 
 因为"running"是 **supervisor** 的视角（launchd/systemd/schtasks）。RPC 探测是 CLI 实际连接到 Gateway 网关 WebSocket 并调用 `status`。
 
-使用 `openclaw gateway status` 并关注这些行：
+使用 `zovsironclaw gateway status` 并关注这些行：
 
 - `Probe target:`（探测实际使用的 URL）
 - `Listening:`（端口上实际绑定的内容）
 - `Last gateway error:`（进程存活但端口未监听时的常见根因）
 
-### 为什么 openclaw gateway status 显示 Config (cli) 和 Config (service) 不同
+### 为什么 zovsironclaw gateway status 显示 Config (cli) 和 Config (service) 不同
 
 你正在编辑一个配置文件，而服务运行的是另一个（通常是 `--profile` / `OPENCLAW_STATE_DIR` 不匹配）。
 
 修复：
 
 ```bash
-openclaw gateway install --force
+zovsironclaw gateway install --force
 ```
 
 从你希望服务使用的相同 `--profile` / 环境运行该命令。
@@ -2175,7 +2175,7 @@ openclaw gateway install --force
 
 OpenClaw 通过在启动时立即绑定 WebSocket 监听器来强制运行时锁（默认 `ws://127.0.0.1:18789`）。如果绑定因 `EADDRINUSE` 失败，它会抛出 `GatewayLockError` 表示另一个实例已在监听。
 
-修复：停止另一个实例，释放端口，或使用 `openclaw gateway --port <port>` 运行。
+修复：停止另一个实例，释放端口，或使用 `zovsironclaw gateway --port <port>` 运行。
 
 ### 如何以远程模式运行 OpenClaw（客户端连接到其他位置的 Gateway 网关）
 
@@ -2196,7 +2196,7 @@ OpenClaw 通过在启动时立即绑定 WebSocket 监听器来强制运行时锁
 
 注意：
 
-- `openclaw gateway` 仅在 `gateway.mode` 为 `local` 时启动（或你传递覆盖标志）。
+- `zovsironclaw gateway` 仅在 `gateway.mode` 为 `local` 时启动（或你传递覆盖标志）。
 - macOS 应用监视配置文件，当这些值更改时实时切换模式。
 
 ### 控制 UI 显示"unauthorized"或持续重连，怎么办
@@ -2210,8 +2210,8 @@ OpenClaw 通过在启动时立即绑定 WebSocket 监听器来强制运行时锁
 
 修复：
 
-- 最快：`openclaw dashboard`（打印 + 复制带令牌的链接，尝试打开；如果无头则显示 SSH 提示）。
-- 如果你还没有令牌：`openclaw doctor --generate-gateway-token`。
+- 最快：`zovsironclaw dashboard`（打印 + 复制带令牌的链接，尝试打开；如果无头则显示 SSH 提示）。
+- 如果你还没有令牌：`zovsironclaw doctor --generate-gateway-token`。
 - 如果是远程，先建隧道：`ssh -N -L 18789:127.0.0.1:18789 user@host` 然后打开 `http://127.0.0.1:18789/?token=...`。
 - 在 Gateway 网关主机上设置 `gateway.auth.token`（或 `OPENCLAW_GATEWAY_TOKEN`）。
 - 在控制 UI 设置中粘贴相同的令牌（或使用一次性 `?token=...` 链接刷新）。
@@ -2292,7 +2292,7 @@ openclaw logs --follow
 
 服务/supervisor 日志（当 Gateway 网关通过 launchd/systemd 运行时）：
 
-- macOS：`$OPENCLAW_STATE_DIR/logs/gateway.log` 和 `gateway.err.log`（默认：`~/.openclaw/logs/...`；配置文件使用 `~/.openclaw-<profile>/logs/...`）
+- macOS：`$OPENCLAW_STATE_DIR/logs/gateway.log` 和 `gateway.err.log`（默认：`~/.zovsironclaw/logs/...`；配置文件使用 `~/.openclaw-<profile>/logs/...`）
 - Linux：`journalctl --user -u openclaw-gateway[-<profile>].service -n 200 --no-pager`
 - Windows：`schtasks /Query /TN "OpenClaw Gateway 网关 (<profile>)" /V /FO LIST`
 
@@ -2303,11 +2303,11 @@ openclaw logs --follow
 使用 Gateway 网关辅助命令：
 
 ```bash
-openclaw gateway status
-openclaw gateway restart
+zovsironclaw gateway status
+zovsironclaw gateway restart
 ```
 
-如果你手动运行 Gateway 网关，`openclaw gateway --force` 可以回收端口。参阅 [Gateway 网关](/gateway)。
+如果你手动运行 Gateway 网关，`zovsironclaw gateway --force` 可以回收端口。参阅 [Gateway 网关](/gateway)。
 
 ### 我在 Windows 上关闭了终端——如何重启 OpenClaw
 
@@ -2319,14 +2319,14 @@ openclaw gateway restart
 
 ```powershell
 wsl
-openclaw gateway status
-openclaw gateway restart
+zovsironclaw gateway status
+zovsironclaw gateway restart
 ```
 
 如果你从未安装服务，在前台启动：
 
 ```bash
-openclaw gateway run
+zovsironclaw gateway run
 ```
 
 **2) 原生 Windows（不推荐）：** Gateway 网关直接在 Windows 中运行。
@@ -2334,14 +2334,14 @@ openclaw gateway run
 打开 PowerShell 并运行：
 
 ```powershell
-openclaw gateway status
-openclaw gateway restart
+zovsironclaw gateway status
+zovsironclaw gateway restart
 ```
 
 如果你手动运行（无服务），使用：
 
 ```powershell
-openclaw gateway run
+zovsironclaw gateway run
 ```
 
 文档：[Windows (WSL2)](/platforms/windows)、[Gateway 网关服务运维手册](/gateway)。
@@ -2371,9 +2371,9 @@ openclaw logs --follow
 
 这通常意味着 UI 丢失了 WebSocket 连接。检查：
 
-1. Gateway 网关在运行吗？`openclaw gateway status`
+1. Gateway 网关在运行吗？`zovsironclaw gateway status`
 2. Gateway 网关健康吗？`openclaw status`
-3. UI 有正确的令牌吗？`openclaw dashboard`
+3. UI 有正确的令牌吗？`zovsironclaw dashboard`
 4. 如果是远程，隧道/Tailscale 链接正常吗？
 
 然后跟踪日志：
@@ -2415,8 +2415,8 @@ openclaw logs --follow
 ### 如何完全停止然后启动 Gateway 网关如果你安装了服务：
 
 ```bash
-openclaw gateway stop
-openclaw gateway start
+zovsironclaw gateway stop
+zovsironclaw gateway start
 ```
 
 这会停止/启动**受监管的服务**（macOS 上的 launchd，Linux 上的 systemd）。
@@ -2425,17 +2425,17 @@ openclaw gateway start
 如果你在前台运行，用 Ctrl‑C 停止，然后：
 
 ```bash
-openclaw gateway run
+zovsironclaw gateway run
 ```
 
 文档：[Gateway 网关服务运维手册](/gateway)。
 
-### 通俗解释：openclaw gateway restart 与 openclaw gateway
+### 通俗解释：zovsironclaw gateway restart 与 zovsironclaw gateway
 
-- `openclaw gateway restart`：重启**后台服务**（launchd/systemd）。
-- `openclaw gateway`：在这个终端会话中**前台**运行 Gateway 网关。
+- `zovsironclaw gateway restart`：重启**后台服务**（launchd/systemd）。
+- `zovsironclaw gateway`：在这个终端会话中**前台**运行 Gateway 网关。
 
-如果你安装了服务，使用 Gateway 网关命令。想要一次性前台运行时使用 `openclaw gateway`。
+如果你安装了服务，使用 Gateway 网关命令。想要一次性前台运行时使用 `zovsironclaw gateway`。
 
 ### 出现故障时获取更多详情的最快方法是什么
 
@@ -2450,7 +2450,7 @@ openclaw gateway run
 CLI 发送：
 
 ```bash
-openclaw message send --target +15555550123 --message "Here you go" --media /path/to/file.png
+zovsironclaw message send --target +15555550123 --message "Here you go" --media /path/to/file.png
 ```
 
 还要检查：
@@ -2468,11 +2468,11 @@ openclaw message send --target +15555550123 --message "Here you go" --media /pat
 
 - 支持私信的渠道上的默认行为是**配对**：
   - 未知发送者会收到配对码；机器人不处理他们的消息。
-  - 批准方式：`openclaw pairing approve <channel> <code>`
-  - 每个渠道的待处理请求上限为 **3 个**；如果没收到代码，检查 `openclaw pairing list <channel>`。
+  - 批准方式：`zovsironclaw pairing approve <channel> <code>`
+  - 每个渠道的待处理请求上限为 **3 个**；如果没收到代码，检查 `zovsironclaw pairing list <channel>`。
 - 公开开放私信需要明确选择加入（`dmPolicy: "open"` 且允许列表 `"*"`）。
 
-运行 `openclaw doctor` 以发现有风险的私信策略。
+运行 `zovsironclaw doctor` 以发现有风险的私信策略。
 
 ### 提示注入只对公开机器人有影响吗
 
@@ -2515,7 +2515,7 @@ openclaw message send --target +15555550123 --message "Here you go" --media /pat
 检查待处理请求：
 
 ```bash
-openclaw pairing list telegram
+zovsironclaw pairing list telegram
 ```
 
 如果你想立即获得访问权限，将你的发送者 ID 加入允许列表或为该账户设置 `dmPolicy: "open"`。
@@ -2527,13 +2527,13 @@ openclaw pairing list telegram
 批准配对：
 
 ```bash
-openclaw pairing approve whatsapp <code>
+zovsironclaw pairing approve whatsapp <code>
 ```
 
 列出待处理请求：
 
 ```bash
-openclaw pairing list whatsapp
+zovsironclaw pairing list whatsapp
 ```
 
 向导电话号码提示：它用于设置你的**允许列表/所有者**，以便你自己的私信被允许。它不用于自动发送。如果你在个人 WhatsApp 号码上运行，使用该号码并启用 `channels.whatsapp.selfChatMode`。

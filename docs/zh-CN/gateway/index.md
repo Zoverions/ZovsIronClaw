@@ -19,22 +19,22 @@ x-i18n:
 ## 是什么
 
 - 拥有单一 Baileys/Telegram 连接和控制/事件平面的常驻进程。
-- 替代旧版 `gateway` 命令。CLI 入口点：`openclaw gateway`。
+- 替代旧版 `gateway` 命令。CLI 入口点：`zovsironclaw gateway`。
 - 运行直到停止；出现致命错误时以非零退出码退出，以便 supervisor 重启它。
 
 ## 如何运行（本地）
 
 ```bash
-openclaw gateway --port 18789
+zovsironclaw gateway --port 18789
 # 在 stdio 中获取完整的调试/追踪日志：
-openclaw gateway --port 18789 --verbose
+zovsironclaw gateway --port 18789 --verbose
 # 如果端口被占用，终止监听器然后启动：
-openclaw gateway --force
+zovsironclaw gateway --force
 # 开发循环（TS 更改时自动重载）：
 pnpm gateway:watch
 ```
 
-- 配置热重载监视 `~/.openclaw/openclaw.json`（或 `OPENCLAW_CONFIG_PATH`）。
+- 配置热重载监视 `~/.zovsironclaw/zovsironclaw.json`（或 `OPENCLAW_CONFIG_PATH`）。
   - 默认模式：`gateway.reload.mode="hybrid"`（热应用安全更改，关键更改时重启）。
   - 热重载在需要时通过 **SIGUSR1** 使用进程内重启。
   - 使用 `gateway.reload.mode="off"` 禁用。
@@ -43,7 +43,7 @@ pnpm gateway:watch
   - OpenAI Chat Completions（HTTP）：[`/v1/chat/completions`](/gateway/openai-http-api)。
   - OpenResponses（HTTP）：[`/v1/responses`](/gateway/openresponses-http-api)。
   - Tools Invoke（HTTP）：[`/tools/invoke`](/gateway/tools-invoke-http-api)。
-- 默认在 `canvasHost.port`（默认 `18793`）上启动 Canvas 文件服务器，从 `~/.openclaw/workspace/canvas` 提供 `http://<gateway-host>:18793/__openclaw__/canvas/`。使用 `canvasHost.enabled=false` 或 `OPENCLAW_SKIP_CANVAS_HOST=1` 禁用。
+- 默认在 `canvasHost.port`（默认 `18793`）上启动 Canvas 文件服务器，从 `~/.zovsironclaw/workspace/canvas` 提供 `http://<gateway-host>:18793/__openclaw__/canvas/`。使用 `canvasHost.enabled=false` 或 `OPENCLAW_SKIP_CANVAS_HOST=1` 禁用。
 - 输出日志到 stdout；使用 launchd/systemd 保持运行并轮转日志。
 - 故障排除时传递 `--verbose` 以将调试日志（握手、请求/响应、事件）从日志文件镜像到 stdio。
 - `--force` 使用 `lsof` 查找所选端口上的监听器，发送 SIGTERM，记录它终止了什么，然后启动 Gateway 网关（如果缺少 `lsof` 则快速失败）。
@@ -97,11 +97,11 @@ openclaw --dev health
 默认值（可通过 env/flags/config 覆盖）：
 
 - `OPENCLAW_STATE_DIR=~/.openclaw-dev`
-- `OPENCLAW_CONFIG_PATH=~/.openclaw-dev/openclaw.json`
+- `OPENCLAW_CONFIG_PATH=~/.openclaw-dev/zovsironclaw.json`
 - `OPENCLAW_GATEWAY_PORT=19001`（Gateway 网关 WS + HTTP）
 - 浏览器控制服务端口 = `19003`（派生：`gateway.port+2`，仅 loopback）
 - `canvasHost.port=19005`（派生：`gateway.port+4`）
-- 当你在 `--dev` 下运行 `setup`/`onboard` 时，`agents.defaults.workspace` 默认变为 `~/.openclaw/workspace-dev`。
+- 当你在 `--dev` 下运行 `setup`/`onboard` 时，`agents.defaults.workspace` 默认变为 `~/.zovsironclaw/workspace-dev`。
 
 派生端口（经验法则）：
 
@@ -128,8 +128,8 @@ openclaw --profile rescue gateway install
 示例：
 
 ```bash
-OPENCLAW_CONFIG_PATH=~/.openclaw/a.json OPENCLAW_STATE_DIR=~/.openclaw-a openclaw gateway --port 19001
-OPENCLAW_CONFIG_PATH=~/.openclaw/b.json OPENCLAW_STATE_DIR=~/.openclaw-b openclaw gateway --port 19002
+OPENCLAW_CONFIG_PATH=~/.zovsironclaw/a.json OPENCLAW_STATE_DIR=~/.openclaw-a zovsironclaw gateway --port 19001
+OPENCLAW_CONFIG_PATH=~/.zovsironclaw/b.json OPENCLAW_STATE_DIR=~/.openclaw-b zovsironclaw gateway --port 19002
 ```
 
 ## 协议（运维视角）
@@ -211,19 +211,19 @@ OPENCLAW_CONFIG_PATH=~/.openclaw/b.json OPENCLAW_STATE_DIR=~/.openclaw-b opencla
   - StandardOut/Err：文件路径或 `syslog`
 - 失败时，launchd 重启；致命的配置错误应保持退出，以便运维人员注意到。
 - LaunchAgents 是按用户的，需要已登录的会话；对于无头设置，使用自定义 LaunchDaemon（未随附）。
-  - `openclaw gateway install` 写入 `~/Library/LaunchAgents/bot.molt.gateway.plist`
+  - `zovsironclaw gateway install` 写入 `~/Library/LaunchAgents/bot.molt.gateway.plist`
     （或 `bot.molt.<profile>.plist`；旧版 `com.openclaw.*` 会被清理）。
-  - `openclaw doctor` 审计 LaunchAgent 配置，可以将其更新为当前默认值。
+  - `zovsironclaw doctor` 审计 LaunchAgent 配置，可以将其更新为当前默认值。
 
 ## Gateway 网关服务管理（CLI）
 
 使用 Gateway 网关 CLI 进行 install/start/stop/restart/status：
 
 ```bash
-openclaw gateway status
-openclaw gateway install
-openclaw gateway stop
-openclaw gateway restart
+zovsironclaw gateway status
+zovsironclaw gateway install
+zovsironclaw gateway stop
+zovsironclaw gateway restart
 openclaw logs --follow
 ```
 
@@ -239,16 +239,16 @@ openclaw logs --follow
 - `logs` 通过 RPC 尾随 Gateway 网关文件日志（无需手动 `tail`/`grep`）。
 - 如果检测到其他类似 Gateway 网关的服务，CLI 会发出警告，除非它们是 OpenClaw 配置文件服务。
   我们仍然建议大多数设置**每台机器一个 Gateway 网关**；使用隔离的配置文件/端口进行冗余或救援机器人。参见[多个 Gateway 网关](/gateway/multiple-gateways)。
-  - 清理：`openclaw gateway uninstall`（当前服务）和 `openclaw doctor`（旧版迁移）。
-- `gateway install` 在已安装时是无操作的；使用 `openclaw gateway install --force` 重新安装（配置文件/env/路径更改）。
+  - 清理：`zovsironclaw gateway uninstall`（当前服务）和 `zovsironclaw doctor`（旧版迁移）。
+- `gateway install` 在已安装时是无操作的；使用 `zovsironclaw gateway install --force` 重新安装（配置文件/env/路径更改）。
 
 捆绑的 mac 应用：
 
 - OpenClaw.app 可以捆绑基于 Node 的 Gateway 网关中继并安装标记为
   `bot.molt.gateway`（或 `bot.molt.<profile>`；旧版 `com.openclaw.*` 标签仍能干净卸载）的按用户 LaunchAgent。
-- 要干净地停止它，使用 `openclaw gateway stop`（或 `launchctl bootout gui/$UID/bot.molt.gateway`）。
-- 要重启，使用 `openclaw gateway restart`（或 `launchctl kickstart -k gui/$UID/bot.molt.gateway`）。
-  - `launchctl` 仅在 LaunchAgent 已安装时有效；否则先使用 `openclaw gateway install`。
+- 要干净地停止它，使用 `zovsironclaw gateway stop`（或 `launchctl bootout gui/$UID/bot.molt.gateway`）。
+- 要重启，使用 `zovsironclaw gateway restart`（或 `launchctl kickstart -k gui/$UID/bot.molt.gateway`）。
+  - `launchctl` 仅在 LaunchAgent 已安装时有效；否则先使用 `zovsironclaw gateway install`。
   - 运行命名配置文件时，将标签替换为 `bot.molt.<profile>`。
 
 ## 监管（systemd 用户单元）
@@ -258,7 +258,7 @@ OpenClaw 在 Linux/WSL2 上默认安装 **systemd 用户服务**。我们
 对于多用户或常驻服务器使用**系统服务**（无需 lingering，
 共享监管）。
 
-`openclaw gateway install` 写入用户单元。`openclaw doctor` 审计
+`zovsironclaw gateway install` 写入用户单元。`zovsironclaw doctor` 审计
 单元并可以将其更新以匹配当前推荐的默认值。
 
 创建 `~/.config/systemd/user/openclaw-gateway[-<profile>].service`：
@@ -270,7 +270,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=/usr/local/bin/openclaw gateway --port 18789
+ExecStart=/usr/local/bin/zovsironclaw gateway --port 18789
 Restart=always
 RestartSec=5
 Environment=OPENCLAW_GATEWAY_TOKEN=
@@ -322,14 +322,14 @@ Windows 安装应使用 **WSL2** 并遵循上面的 Linux systemd 部分。
 
 ## CLI 辅助工具
 
-- `openclaw gateway health|status` — 通过 Gateway 网关 WS 请求 health/status。
-- `openclaw message send --target <num> --message "hi" [--media ...]` — 通过 Gateway 网关发送（对 WhatsApp 是幂等的）。
-- `openclaw agent --message "hi" --to <num>` — 运行智能体轮次（默认等待最终结果）。
-- `openclaw gateway call <method> --params '{"k":"v"}'` — 用于调试的原始方法调用器。
-- `openclaw gateway stop|restart` — 停止/重启受监管的 Gateway 网关服务（launchd/systemd）。
+- `zovsironclaw gateway health|status` — 通过 Gateway 网关 WS 请求 health/status。
+- `zovsironclaw message send --target <num> --message "hi" [--media ...]` — 通过 Gateway 网关发送（对 WhatsApp 是幂等的）。
+- `zovsironclaw agent --message "hi" --to <num>` — 运行智能体轮次（默认等待最终结果）。
+- `zovsironclaw gateway call <method> --params '{"k":"v"}'` — 用于调试的原始方法调用器。
+- `zovsironclaw gateway stop|restart` — 停止/重启受监管的 Gateway 网关服务（launchd/systemd）。
 - Gateway 网关辅助子命令假设 `--url` 上有运行中的 Gateway 网关；它们不再自动生成一个。
 
 ## 迁移指南
 
-- 淘汰 `openclaw gateway` 和旧版 TCP 控制端口的使用。
+- 淘汰 `zovsironclaw gateway` 和旧版 TCP 控制端口的使用。
 - 更新客户端以使用带有强制 connect 和结构化 presence 的 WS 协议。
