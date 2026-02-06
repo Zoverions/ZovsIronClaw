@@ -319,6 +319,8 @@ importers:
         specifier: workspace:*
         version: link:../..
 
+  extensions/gca-brain: {}
+
   extensions/google-antigravity-auth:
     devDependencies:
       openclaw:
