@@ -4,7 +4,27 @@
  * Provides ethical AI reasoning with geometric steering and moral evaluation
  */
 
-import type { Message, Tool, ToolCall } from "../types/index.js";
+export interface Message {
+  role: string;
+  content: string | Array<{ type: string; text?: string; image_url?: string }>;
+  tool_calls?: ToolCall[];
+}
+
+export interface Tool {
+  name: string;
+  description?: string;
+  parameters?: Record<string, any>;
+}
+
+export interface ToolCall {
+  id: string;
+  type: "function";
+  function: {
+    name: string;
+    arguments: string;
+  };
+  _gcaSignature?: string;
+}
 
 export interface GCAConfig {
   serviceUrl: string;
@@ -33,6 +53,13 @@ export interface GCAReasoningResponse {
   moral_signature?: string;
   risk_score: number;
   reasoning_path: string[];
+}
+
+export interface EntropyResponse {
+  entropy_score: number;
+  risk_level: "low" | "medium" | "high";
+  sentiment_volatility: number;
+  reason: string;
 }
 
 /**
@@ -73,7 +100,7 @@ export class GCABridgeProvider {
 
     const userText = typeof lastMessage.content === "string" 
       ? lastMessage.content 
-      : lastMessage.content.map(c => c.type === "text" ? c.text : "").join(" ");
+      : (lastMessage.content as Array<any>).map((c: any) => c.type === "text" ? c.text : "").join(" ");
 
     // Prepare request for GCA service
     const request: GCAReasoningRequest = {
@@ -162,6 +189,39 @@ export class GCABridgeProvider {
     } catch (error) {
       console.error("[GCA Bridge] Arena error:", error);
       throw error;
+    }
+  }
+
+  /**
+   * Check entropy of content
+   */
+  async entropyCheck(content: string, threshold?: number): Promise<EntropyResponse> {
+    try {
+      const response = await fetch(`${this.serviceUrl}/v1/entropy`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          content,
+          threshold: threshold ?? 0.5,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Entropy check failed: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("[GCA Bridge] Entropy check error:", error);
+      // Fail Closed: Block messages if the moral kernel is unreachable
+      return {
+        entropy_score: 1.0,
+        risk_level: "high",
+        sentiment_volatility: 0,
+        reason: "GCA Service Unavailable - Security Fail Safe",
+      };
     }
   }
 

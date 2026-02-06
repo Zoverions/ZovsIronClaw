@@ -41,6 +41,7 @@ import { createReplyToModeFilterForChannel, resolveReplyToMode } from "./reply-t
 import { incrementCompactionCount } from "./session-updates.js";
 import { persistSessionUsageUpdate } from "./session-usage.js";
 import { createTypingSignaler } from "./typing-mode.js";
+import { createGCAProvider } from "../../providers/gca-bridge.js";
 
 const BLOCK_REPLY_SEND_TIMEOUT_MS = 15_000;
 
@@ -101,6 +102,21 @@ export async function runReplyAgent(params: {
     shouldInjectGroupIntro,
     typingMode,
   } = params;
+
+  // --- MORAL KERNEL INTERVENTION ---
+  if (commandBody && commandBody.trim()) {
+    const entropyThreshold = (followupRun.run.config as any).agents?.defaults?.ethics?.entropyThreshold ?? 0.8;
+    const gca = createGCAProvider();
+    const entropyResult = await gca.entropyCheck(commandBody, entropyThreshold);
+
+    if (entropyResult.risk_level === "high") {
+      defaultRuntime.error(`[Moral Kernel] Blocked message with entropy score ${entropyResult.entropy_score}: ${entropyResult.reason}`);
+      return [{
+        text: `🛡️ [ETHICAL INTERVENTION] Message blocked by Moral Kernel.\n\nReason: ${entropyResult.reason}\nEntropy Score: ${entropyResult.entropy_score.toFixed(3)}`
+      }];
+    }
+  }
+  // ---------------------------------
 
   let activeSessionEntry = sessionEntry;
   const activeSessionStore = sessionStore;
