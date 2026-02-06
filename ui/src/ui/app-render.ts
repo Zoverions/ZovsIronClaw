@@ -78,6 +78,7 @@ import { renderOverview } from "./views/overview.ts";
 import { renderSessions } from "./views/sessions.ts";
 import { renderSkills } from "./views/skills.ts";
 import { renderUsage } from "./views/usage.ts";
+import "./components/neural-link.ts";
 
 const AVATAR_DATA_RE = /^data:/i;
 const AVATAR_HTTP_RE = /^https?:\/\//i;
@@ -144,6 +145,7 @@ export function renderApp(state: AppViewState) {
           </div>
         </div>
         <div class="topbar-status">
+          <neural-link></neural-link>
           <div class="pill">
             <span class="statusDot ${state.connected ? "ok" : ""}"></span>
             <span>Health</span>

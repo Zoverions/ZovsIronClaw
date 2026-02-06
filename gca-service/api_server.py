@@ -29,6 +29,7 @@ from gca_core.qpt import QuaternionArchitect
 from gca_core.arena import ArenaProtocol
 from gca_core.memory_advanced import BiomimeticMemory
 from gca_core.perception import PerceptionSystem
+from gca_core.observer import Observer
 from dreamer import DeepDreamer
 
 # Configure logging
@@ -73,6 +74,7 @@ moral_kernel = MoralKernel(risk_tolerance=0.3)
 resonance = ResonanceEngine(glassbox, memory)
 qpt = QuaternionArchitect()
 perception = PerceptionSystem()
+observer = Observer(glassbox, memory, perception)
 
 logger.info("GCA Service initialized successfully")
 
@@ -119,6 +121,12 @@ class TranscribeResponse(BaseModel):
 
 class DescribeResponse(BaseModel):
     text: str
+
+class ObservationResponse(BaseModel):
+    status: str
+    alignment: Dict[str, Any]
+    detected_state: Dict[str, Any]
+    description: str
 
 # ============================================================================
 # Endpoints
@@ -311,6 +319,44 @@ async def describe_media(
         return DescribeResponse(text=text)
     except Exception as e:
         logger.error(f"Description error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/v1/observe", response_model=ObservationResponse)
+async def observe_user(
+    file: UploadFile = File(...),
+    modality: str = Form(...) # "vision" or "audio"
+):
+    try:
+        # 1. Process Input
+        content = await file.read()
+
+        # 2. Analyze via Observer (Scientifically Grounded)
+        analysis = await run_in_threadpool(observer.analyze_input, content, modality)
+
+        # 3. Update Biomimetic Memory State
+        # (Assuming update_user_state exists or we simulate it by perceiving the state description)
+        if "state" in analysis:
+             # Convert vector dict to string representation for memory ingestion
+             state_desc = f"[USER_STATE] Detected {modality} cues: {analysis['description']} -> State: {analysis['state']}"
+             bio_mem.perceive(state_desc)
+
+        # 4. Check for Intervention against Goal
+        # Load Goal (Mock for now, or from memory if available)
+        # Ideally, we fetch this from a persistent source
+        goal_text = "I want to be a stoic, high-output coder"
+        # In future, fetch via: memory.get_goal()
+
+        alignment = observer.check_goal_alignment(analysis['state'], goal_text)
+
+        return ObservationResponse(
+            status="processed",
+            alignment=alignment,
+            detected_state=analysis['state'],
+            description=analysis.get('description', '')
+        )
+
+    except Exception as e:
+        logger.error(f"Observation error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 # ============================================================================
