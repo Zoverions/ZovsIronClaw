@@ -6,8 +6,10 @@ import { googleProvider } from "./google/index.js";
 import { groqProvider } from "./groq/index.js";
 import { minimaxProvider } from "./minimax/index.js";
 import { openaiProvider } from "./openai/index.js";
+import { gcaProvider } from "./gca/index.js";
 
 const PROVIDERS: MediaUnderstandingProvider[] = [
+  gcaProvider,
   groqProvider,
   openaiProvider,
   googleProvider,

@@ -34,6 +34,7 @@ import {
   type EmbeddingProviderResult,
   type GeminiEmbeddingClient,
   type OpenAiEmbeddingClient,
+  type GCAEmbeddingClient,
 } from "./embeddings.js";
 import { bm25RankToScore, buildFtsQuery, mergeHybridResults } from "./hybrid.js";
 import {
@@ -112,11 +113,12 @@ export class MemoryIndexManager implements MemorySearchManager {
   private readonly workspaceDir: string;
   private readonly settings: ResolvedMemorySearchConfig;
   private provider: EmbeddingProvider;
-  private readonly requestedProvider: "openai" | "local" | "gemini" | "auto";
-  private fallbackFrom?: "openai" | "local" | "gemini";
+  private readonly requestedProvider: "openai" | "local" | "gemini" | "gca" | "auto";
+  private fallbackFrom?: "openai" | "local" | "gemini" | "gca";
   private fallbackReason?: string;
   private openAi?: OpenAiEmbeddingClient;
   private gemini?: GeminiEmbeddingClient;
+  private gca?: GCAEmbeddingClient;
   private batch: {
     enabled: boolean;
     wait: boolean;
@@ -217,6 +219,7 @@ export class MemoryIndexManager implements MemorySearchManager {
     this.fallbackReason = params.providerResult.fallbackReason;
     this.openAi = params.providerResult.openAi;
     this.gemini = params.providerResult.gemini;
+    this.gca = params.providerResult.gca;
     this.sources = new Set(params.settings.sources);
     this.db = this.openDatabase();
     this.providerKey = this.computeProviderKey();
@@ -1346,7 +1349,8 @@ export class MemoryIndexManager implements MemorySearchManager {
     const enabled = Boolean(
       batch?.enabled &&
       ((this.openAi && this.provider.id === "openai") ||
-        (this.gemini && this.provider.id === "gemini")),
+        (this.gemini && this.provider.id === "gemini") ||
+        (this.gca && this.provider.id === "gca")),
     );
     return {
       enabled,
@@ -1365,7 +1369,7 @@ export class MemoryIndexManager implements MemorySearchManager {
     if (this.fallbackFrom) {
       return false;
     }
-    const fallbackFrom = this.provider.id as "openai" | "gemini" | "local";
+    const fallbackFrom = this.provider.id as "openai" | "gemini" | "local" | "gca";
 
     const fallbackModel =
       fallback === "gemini"
@@ -1389,6 +1393,7 @@ export class MemoryIndexManager implements MemorySearchManager {
     this.provider = fallbackResult.provider;
     this.openAi = fallbackResult.openAi;
     this.gemini = fallbackResult.gemini;
+    this.gca = fallbackResult.gca;
     this.providerKey = this.computeProviderKey();
     this.batch = this.resolveBatchConfig();
     log.warn(`memory embeddings: switched to fallback provider (${fallback})`, { reason });
@@ -1850,6 +1855,13 @@ export class MemoryIndexManager implements MemorySearchManager {
           headers: entries,
         }),
       );
+    }
+    if (this.provider.id === "gca" && this.gca) {
+       return hashText(JSON.stringify({
+          provider: "gca",
+          baseUrl: this.gca.baseUrl,
+          model: this.provider.model
+       }));
     }
     return hashText(JSON.stringify({ provider: this.provider.id, model: this.provider.model }));
   }

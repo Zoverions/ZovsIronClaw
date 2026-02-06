@@ -14,3 +14,14 @@ safety:
   max_divergence: 5.0      # Hallucination threshold
   repetition_penalty: 1.2  # Prevents mental loops
   moral_threshold: -1.0    # Entropy score limit for actions
+
+perception:
+  embeddings:
+    model_id: "sentence-transformers/all-MiniLM-L6-v2"
+    device: "cpu"
+  vision:
+    model_id: "Qwen/Qwen2-VL-2B-Instruct" # Small enough for CPU inference
+    device: "cpu"
+  audio:
+    model_size: "tiny" # faster-whisper model size (tiny, base, small, medium, large)
+    device: "cpu"

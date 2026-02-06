@@ -3,10 +3,11 @@ GCA API Server: FastAPI Bridge between OpenClaw (Node.js) and GCA (Python)
 Exposes GCA reasoning, moral evaluation, and geometric steering via REST API.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 import logging
 import sys
 import yaml
@@ -27,6 +28,7 @@ from gca_core.resonance import ResonanceEngine
 from gca_core.qpt import QuaternionArchitect
 from gca_core.arena import ArenaProtocol
 from gca_core.memory_advanced import BiomimeticMemory
+from gca_core.perception import PerceptionSystem
 from dreamer import DeepDreamer
 
 # Configure logging
@@ -70,6 +72,7 @@ optimizer = GCAOptimizer(glassbox, memory)
 moral_kernel = MoralKernel(risk_tolerance=0.3)
 resonance = ResonanceEngine(glassbox, memory)
 qpt = QuaternionArchitect()
+perception = PerceptionSystem()
 
 logger.info("GCA Service initialized successfully")
 
@@ -104,6 +107,18 @@ class EntropyResponse(BaseModel):
     risk_level: str  # e.g., "low", "medium", "high"
     sentiment_volatility: float
     reason: str
+
+class EmbeddingRequest(BaseModel):
+    text: Union[str, List[str]]
+
+class EmbeddingResponse(BaseModel):
+    embeddings: Union[List[float], List[List[float]]]
+
+class TranscribeResponse(BaseModel):
+    text: str
+
+class DescribeResponse(BaseModel):
+    text: str
 
 # ============================================================================
 # Endpoints
@@ -257,6 +272,46 @@ async def calculate_entropy(request: EntropyRequest):
         sentiment_volatility=volatility,
         reason=reason
     )
+
+@app.post("/v1/embeddings", response_model=EmbeddingResponse)
+async def get_embeddings(request: EmbeddingRequest):
+    try:
+        embeddings = await run_in_threadpool(perception.embed_text, request.text)
+        return EmbeddingResponse(embeddings=embeddings)
+    except Exception as e:
+        logger.error(f"Embedding error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/v1/transcribe", response_model=TranscribeResponse)
+async def transcribe_media(file: UploadFile = File(...)):
+    try:
+        content = await file.read()
+        text = await run_in_threadpool(perception.transcribe_audio, content)
+        return TranscribeResponse(text=text)
+    except Exception as e:
+        logger.error(f"Transcription error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/v1/describe", response_model=DescribeResponse)
+async def describe_media(
+    file: UploadFile = File(...),
+    prompt: str = Form("Describe this media.")
+):
+    try:
+        content = await file.read()
+        # Detect if video by extension or mime if possible, but uploaded file has filename
+        filename = file.filename or "unknown"
+        ext = os.path.splitext(filename)[1].lower()
+
+        if ext in ['.mp4', '.avi', '.mov', '.mkv', '.webm']:
+            text = await run_in_threadpool(perception.describe_video_bytes, content, prompt)
+        else:
+            text = await run_in_threadpool(perception.describe_image_bytes, content, prompt)
+
+        return DescribeResponse(text=text)
+    except Exception as e:
+        logger.error(f"Description error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ============================================================================
 # Helpers
