@@ -209,6 +209,10 @@ export async function resolveApiKeyForProvider(params: {
     return resolveAwsSdkAuthInfo();
   }
 
+  if (normalized === "gca") {
+    return { apiKey: "local", source: "local", mode: "api-key" };
+  }
+
   if (provider === "openai") {
     const hasCodex = listProfilesForProvider(store, "openai-codex").length > 0;
     if (hasCodex) {
