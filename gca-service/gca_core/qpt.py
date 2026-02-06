@@ -35,7 +35,8 @@ class QuaternionArchitect:
         self,
         raw_prompt: str,
         soul_config: Optional[Dict] = None,
-        context: Optional[str] = None
+        context: Optional[str] = None,
+        working_memory: str = ""
     ) -> str:
         """
         Wrap user input into the Quaternion Cognitive Structure.
@@ -44,6 +45,7 @@ class QuaternionArchitect:
             raw_prompt: Raw user input
             soul_config: Soul configuration with QPT defaults
             context: Additional context information
+            working_memory: Active short-term memory context
             
         Returns:
             Structured prompt in QPT format
@@ -56,6 +58,11 @@ class QuaternionArchitect:
             
         # Override context if provided
         w = context if context else qpt.get("w", self.default_config["w"])
+
+        # Inject working memory into context (w)
+        if working_memory:
+            w = f"{w}\n\n[WORKING MEMORY]\n{working_memory}"
+
         x = qpt.get("x", self.default_config["x"])
         y = qpt.get("y", self.default_config["y"])
         z = qpt.get("z", self.default_config["z"])

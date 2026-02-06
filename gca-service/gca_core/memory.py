@@ -33,9 +33,11 @@ class IsotropicMemory:
         # In-memory vector store
         self.vectors: Dict[str, torch.Tensor] = {}
         self.metadata: Dict[str, dict] = {}
+        self.basis: Optional[torch.Tensor] = None
         
         # Load existing vectors if available
         self._load_vectors()
+        self._load_basis()
         logger.info(f"Isotropic Memory initialized with {len(self.vectors)} vectors")
         
     def _load_vectors(self):
@@ -59,6 +61,48 @@ class IsotropicMemory:
             except Exception as e:
                 logger.warning(f"Failed to load metadata: {e}")
                 
+    def _load_basis(self):
+        """Load the universal projection basis if it exists."""
+        basis_file = self.storage_path / "basis.pt"
+        if basis_file.exists():
+            try:
+                self.basis = torch.load(basis_file, map_location=self.device)
+                logger.info(f"Loaded basis matrix of shape {self.basis.shape}")
+            except Exception as e:
+                logger.warning(f"Failed to load basis: {e}")
+
+    def get_or_create_basis(self, input_dim: int, output_dim: int) -> torch.Tensor:
+        """
+        Get existing basis or create a new random orthogonal basis.
+        """
+        if self.basis is not None:
+            if self.basis.shape == (input_dim, output_dim):
+                return self.basis.to(self.device)
+            else:
+                logger.warning(f"Existing basis shape {self.basis.shape} mismatch with requested ({input_dim}, {output_dim}). Recreating.")
+
+        # Create random orthogonal matrix
+        # Create a random matrix and use QR decomposition to orthogonalize it
+        rand_mat = torch.randn(input_dim, output_dim, device=self.device)
+        q, r = torch.linalg.qr(rand_mat)
+        self.basis = q
+
+        self.save_basis()
+        logger.info(f"Created and saved new basis matrix: {self.basis.shape}")
+        return self.basis
+
+    def save_basis(self):
+        """Save the basis matrix to storage."""
+        if self.basis is None:
+            return
+
+        basis_file = self.storage_path / "basis.pt"
+        try:
+            torch.save(self.basis.cpu(), basis_file)
+            logger.info("Saved basis matrix to storage")
+        except Exception as e:
+            logger.error(f"Failed to save basis: {e}")
+
     def save_vectors(self):
         """Save vectors to persistent storage."""
         vector_file = self.storage_path / "vectors.pt"

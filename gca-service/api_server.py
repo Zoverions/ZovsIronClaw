@@ -26,6 +26,8 @@ from gca_core.memory import IsotropicMemory
 from gca_core.resonance import ResonanceEngine
 from gca_core.qpt import QuaternionArchitect
 from gca_core.arena import ArenaProtocol
+from gca_core.memory_advanced import BiomimeticMemory
+from dreamer import DeepDreamer
 
 # Configure logging
 logging.basicConfig(
@@ -61,6 +63,9 @@ app.add_middleware(
 logger.info("Booting IronClaw Core...")
 glassbox = GlassBox() # Uses config.yaml
 memory = IsotropicMemory(glassbox.device, storage_path="./gca_assets")
+bio_mem = BiomimeticMemory(glassbox, memory)
+dreamer = DeepDreamer(bio_mem)
+
 optimizer = GCAOptimizer(glassbox, memory)
 moral_kernel = MoralKernel(risk_tolerance=0.3)
 resonance = ResonanceEngine(glassbox, memory)
@@ -121,6 +126,9 @@ async def reasoning_engine(req: ReasonRequest):
         # 1. PARSE SOUL CONFIG
         steering_bias = _parse_vector_config(req.soul_config)
         
+        # 1.5 PERCEIVE (Sensory Input)
+        bio_mem.perceive(req.text)
+
         # 2. INGEST & RESONANCE
         resonance.ingest(req.user_id, req.text)
         user_vec = resonance.get_style_vector(req.user_id)
@@ -128,6 +136,9 @@ async def reasoning_engine(req: ReasonRequest):
         # 3. GEOMETRIC ROUTING
         intent = optimizer.route_intent(req.text)
         skill_vec = memory.get_vector(intent)
+
+        # 3.5 RETRIEVE WORKING MEMORY CONTEXT
+        wm_context = bio_mem.retrieve_context(skill_vec)
 
         # 4. VECTOR COMPOSITION
         # Final = Skill + UserResonance + SoulBias
@@ -137,7 +148,7 @@ async def reasoning_engine(req: ReasonRequest):
         strength = 1.5
         
         # 5. QPT STRUCTURING
-        structured_prompt = qpt.restructure(req.text, req.soul_config)
+        structured_prompt = qpt.restructure(req.text, req.soul_config, working_memory=wm_context)
 
         # 6. THINKING (Generation)
         response_text = glassbox.generate_steered(
@@ -146,6 +157,9 @@ async def reasoning_engine(req: ReasonRequest):
             strength=strength
         )
         
+        # 6.5 PERCEIVE OUTPUT (Feedback Loop)
+        bio_mem.perceive(response_text)
+
         # 7. TOOL EXTRACTION & MORAL AUDIT
         detected_tool = _parse_tool_from_text(response_text, req.tools_available)
         
@@ -192,6 +206,11 @@ async def reasoning_engine(req: ReasonRequest):
              content=f"[SYSTEM ERROR] {str(e)}",
              meta={}
         )
+
+@app.post("/v1/dream")
+async def trigger_dream_cycle():
+    dreamer.rem_cycle()
+    return {"status": "awake", "synapses_updated": True}
 
 @app.get("/v1/arena/run")
 async def run_arena(rounds: int = 10):
