@@ -3,6 +3,31 @@ import os
 import sys
 import shutil
 
+# ============================================================================
+# GCA Brain Build Script (PyInstaller)
+# ============================================================================
+# This script bundles the GCA FastAPI service (`api_server.py`) into a single
+# standalone executable named `gca-brain`.
+#
+# Requirements:
+#   - Python 3.12+
+#   - pyinstaller
+#   - Installed dependencies from `requirements.txt`
+#
+# Usage:
+#   1. Install dependencies:
+#      pip install -r requirements.txt
+#      pip install pyinstaller
+#
+#   2. Run script:
+#      python build_binary.py
+#
+# Output:
+#   - dist/gca-brain (Linux/macOS) OR dist/gca-brain.exe (Windows)
+#
+# This binary is then consumed by the Tauri Desktop App (`apps/desktop`).
+# ============================================================================
+
 # Ensure we are in the gca-service directory
 if os.path.basename(os.getcwd()) != 'gca-service':
     if os.path.exists('gca-service'):

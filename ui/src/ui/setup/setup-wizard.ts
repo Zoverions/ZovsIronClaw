@@ -2,6 +2,21 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { BaseStyles } from '../components/base-styles';
 
+// ============================================================================
+// Setup Wizard (Tauri Integration)
+// ============================================================================
+// This component guides users through the initial configuration of the
+// Desktop App. It handles:
+// 1. Hardware Capability Check
+// 2. Model Weight Download (Mock/Real via Tauri backend)
+// 3. Permission Request (Microphone/Camera)
+// 4. Soul Selection (Architect/Companion/Guardian)
+//
+// Integration:
+// - Uses `window.__TAURI__` to invoke Rust backend commands.
+// - Falls back to mock behavior in browser dev environment.
+// ============================================================================
+
 // Declare global invoke function from Tauri
 declare global {
   interface Window {

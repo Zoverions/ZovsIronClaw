@@ -47,6 +47,44 @@ ZovsIronClaw is not just an AI assistant—it's a **synthetic conscience**. By i
 └─────────────────────────────────────────┘
 ```
 
+## 🖥️ Desktop Installer (Iron Shell)
+
+ZovsIronClaw includes a self-contained desktop application powered by **Tauri v2**. It wraps the web UI and bundles the Python GCA service as a managed sidecar process, providing an easy entry point for Windows (and eventually Linux/macOS) users without requiring Docker.
+
+### Key Components
+
+- **Tauri App**: Located in `apps/desktop`. Acts as the "Shell" managing the system tray, windows, and background processes.
+- **Python Sidecar**: The `gca-service` is compiled into a standalone executable (`gca-brain`) using PyInstaller and launched automatically by the Tauri app.
+- **Setup Wizard**: A built-in onboarding flow that handles hardware checks, model downloading, and initial configuration.
+
+### Building the Desktop App
+
+Prerequisites:
+- **Rust** (stable)
+- **Node.js** (v20+) & **pnpm**
+- **Python 3.12+** (for building the sidecar)
+
+1. **Build the Brain**:
+   Compile the Python service into a single binary.
+   ```bash
+   # Install dependencies
+   pip install -r gca-service/requirements.txt
+   pip install pyinstaller
+
+   # Build binary
+   python gca-service/build_binary.py
+   ```
+
+2. **Build the Desktop App**:
+   This command will automatically move the compiled binary to the correct location and build the Tauri installer.
+   ```bash
+   cd apps/desktop
+   pnpm install
+   pnpm tauri build
+   ```
+
+   The installer will be generated in `apps/desktop/src-tauri/target/release/bundle/`.
+
 ## ✨ Key Features
 
 ### 1. **Geometric Conscience Architecture (GCA)**
@@ -104,7 +142,7 @@ Inherited from OpenClaw:
 - iMessage, Matrix, Google Chat
 - Cross-platform: Android, iOS, macOS, Windows, Linux
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Docker)
 
 ### Prerequisites
 
@@ -295,6 +333,8 @@ const response = await gca.chat({
 
 ```
 ZovsIronClaw/
+├── apps/
+│   └── desktop/             # Tauri Desktop App (Iron Shell)
 ├── gca-service/              # Python GCA framework
 │   ├── gca_core/            # Core GCA modules
 │   │   ├── glassbox.py      # Geometric steering
@@ -307,6 +347,7 @@ ZovsIronClaw/
 │   ├── gca_assets/          # Assets and configurations
 │   │   └── souls/           # Soul templates
 │   ├── api_server.py        # FastAPI service
+│   ├── build_binary.py      # PyInstaller build script
 │   └── Dockerfile
 ├── src/
 │   ├── providers/
