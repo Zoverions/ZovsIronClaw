@@ -1,31 +1,104 @@
 import logging
+import threading
+import time
+import os
+import torch
+from pathlib import Path
+from typing import Optional
 
-logger = logging.getLogger("GCA-Pulse")
+logger = logging.getLogger("GCA.Pulse")
 
 class Pulse:
-    def __init__(self, resonance_engine=None):
-        self.resonance = resonance_engine
-        self.entropy_threshold = 0.7
+    def __init__(self, glassbox, bio_mem, check_interval=300):
+        self.glassbox = glassbox
+        self.bio_mem = bio_mem
+        self.check_interval = check_interval
+        self.running = False
+        self.goal_text = "Maintain system stability and assist the user safely."
+        self._goal_vec_cache = None
+        self._load_goal()
 
-    def check_vitals(self, system_status_text: str):
-        """
-        Analyzes the 'state of the world' text.
-        If entropy is high (chaos), it returns a Trigger Signal.
-        """
-        # In a real system, we'd use the Glassbox to measure the entropy of the status text
-        # Here we use a heuristic mock
+    def _load_goal(self):
+        # Look for GOAL.md in .agent/prompts/ relative to service root
+        # Assuming execution from gca-service/ directory
+        try:
+            # Try multiple locations
+            candidates = [
+                Path("../.agent/prompts/GOAL.md"), # From gca-service/
+                Path(".agent/prompts/GOAL.md"),    # From repo root
+                Path("/app/.agent/prompts/GOAL.md") # Docker path
+            ]
 
-        urgency = 0.0
-        if "error" in system_status_text.lower(): urgency += 0.4
-        if "critical" in system_status_text.lower(): urgency += 0.5
-        if "offline" in system_status_text.lower(): urgency += 0.3
+            found = False
+            for path in candidates:
+                if path.exists():
+                    with open(path, "r") as f:
+                        self.goal_text = f.read().strip()
+                    logger.info(f"Loaded GOAL.md from {path}")
+                    found = True
+                    break
 
-        if urgency > self.entropy_threshold:
-            logger.info(f"[💓] Pulse Triggered: Entropy {urgency}")
-            return {
-                "trigger": True,
-                "vector_modifier": "URGENCY",
-                "message": "System entropy is rising. Intervention recommended."
-            }
+            if not found:
+                logger.warning("GOAL.md not found. Using default goal.")
 
-        return {"trigger": False}
+        except Exception as e:
+            logger.error(f"Failed to load GOAL.md: {e}")
+
+    def start_heartbeat(self):
+        if self.running:
+            return
+        self.running = True
+        thread = threading.Thread(target=self._heartbeat_loop, daemon=True)
+        thread.start()
+        logger.info("Pulse heartbeat started.")
+
+    def _heartbeat_loop(self):
+        while self.running:
+            try:
+                self._check_divergence()
+            except Exception as e:
+                logger.error(f"Pulse heartbeat error: {e}")
+            time.sleep(self.check_interval)
+
+    def _check_divergence(self):
+        # 1. Get Goal Vector
+        # Use explicit cache to ensure stability even if LRU cycles
+        if self._goal_vec_cache is None:
+            self._goal_vec_cache = self.glassbox.get_activation(self.goal_text)
+
+        goal_vec = self._goal_vec_cache
+
+        # 2. Get Current State Vector (Average of Working Memory)
+        # Use thread-safe snapshot
+        if hasattr(self.bio_mem, "get_working_memory_snapshot"):
+             working_memory = self.bio_mem.get_working_memory_snapshot()
+        else:
+             working_memory = list(self.bio_mem.working_memory)
+
+        if not working_memory:
+            return # No context yet
+
+        current_vecs = [e.vector for e in working_memory]
+        if not current_vecs:
+            return
+
+        # Stack and mean
+        # Ensure vectors are on same device as goal_vec
+        device = goal_vec.device
+        current_vecs = [v.to(device) for v in current_vecs]
+
+        state_vec = torch.stack(current_vecs).mean(dim=0)
+
+        # 3. Calculate Similarity
+        # Normalize
+        goal_vec = torch.nn.functional.normalize(goal_vec, dim=0)
+        state_vec = torch.nn.functional.normalize(state_vec, dim=0)
+
+        similarity = torch.dot(goal_vec, state_vec).item()
+
+        logger.info(f"[💓] Pulse Check: Goal Alignment = {similarity:.4f}")
+
+        if similarity < 0.5:
+            logger.warning(f"[💓] DIVERGENCE DETECTED! Alignment {similarity:.4f} < 0.5")
+            # Trigger intervention logic (placeholder)
+            # self.bio_mem.perceive("System warning: Goal divergence detected. Re-aligning.")

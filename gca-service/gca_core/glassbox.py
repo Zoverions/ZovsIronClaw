@@ -9,6 +9,7 @@ import os
 from typing import Optional, Dict, Any, List
 import logging
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from functools import lru_cache
 
 logger = logging.getLogger("GCA.GlassBox")
 
@@ -50,12 +51,11 @@ class GlassBox:
         self.layer_idx = CFG['geometry']['layer_idx']
         self.activation_cache = {}
         logger.info("GlassBox initialized.")
-        
-    def get_activation(self, text: str, layer_idx: Optional[int] = None) -> torch.Tensor:
-        """
-        Extract activation vectors from the model for given text.
-        """
-        target_layer = layer_idx if layer_idx is not None else self.layer_idx
+
+    @lru_cache(maxsize=1024)
+    def _cached_activation(self, text: str, layer_idx: int) -> torch.Tensor:
+        """Internal cached activation method to avoid re-computation."""
+        target_layer = layer_idx
 
         activations = []
         def hook(module, input, output):
@@ -78,6 +78,19 @@ class GlassBox:
         if activations:
             return activations[0].squeeze()
         return torch.zeros(1) # Should not happen
+
+    def get_activation(self, text: str, layer_idx: Optional[int] = None) -> torch.Tensor:
+        """
+        Extract activation vectors from the model for given text.
+        Uses caching for repeated queries.
+        """
+        target_layer = layer_idx if layer_idx is not None else self.layer_idx
+
+        # In a real multi-instance scenario, lru_cache on instance method is tricky due to 'self'.
+        # However, for this singleton usage pattern, it's acceptable.
+        # If 'self' changes (unlikely for GlassBox which is loaded once), cache might be stale or memory leak.
+        # A safer approach for strict OOP would be a separate cache per instance or memoization on text only.
+        return self._cached_activation(text, target_layer)
 
     def generate_steered(
         self,

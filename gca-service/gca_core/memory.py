@@ -35,9 +35,14 @@ class IsotropicMemory:
         self.metadata: Dict[str, dict] = {}
         self.basis: Optional[torch.Tensor] = None
         
+        # Optimization: Stacked tensors for vectorized search
+        self._vector_stack: Optional[torch.Tensor] = None
+        self._vector_names: List[str] = []
+
         # Load existing vectors if available
         self._load_vectors()
         self._load_basis()
+        self._rebuild_stack()
         logger.info(f"Isotropic Memory initialized with {len(self.vectors)} vectors")
         
     def _load_vectors(self):
@@ -47,7 +52,7 @@ class IsotropicMemory:
         
         if vector_file.exists():
             try:
-                data = torch.load(vector_file)
+                data = torch.load(vector_file, map_location=self.device)
                 self.vectors = data
                 logger.info(f"Loaded {len(self.vectors)} vectors from storage")
             except Exception as e:
@@ -116,18 +121,34 @@ class IsotropicMemory:
         except Exception as e:
             logger.error(f"Failed to save vectors: {e}")
             
+    def _rebuild_stack(self):
+        """Rebuild the optimization stack."""
+        if not self.vectors:
+            self._vector_stack = None
+            self._vector_names = []
+            return
+
+        self._vector_names = list(self.vectors.keys())
+        # Ensure all on device
+        tensors = [self.vectors[n].to(self.device) for n in self._vector_names]
+
+        if tensors:
+            # Stack and normalize
+            stack = torch.stack(tensors)
+            self._vector_stack = stack / (stack.norm(dim=1, keepdim=True) + 1e-8)
+        else:
+            self._vector_stack = None
+
     def store_vector(self, name: str, vector: torch.Tensor, metadata: Optional[dict] = None):
         """
         Store a vector with associated metadata.
-        
-        Args:
-            name: Unique identifier for the vector
-            vector: The vector to store
-            metadata: Optional metadata dictionary
         """
         self.vectors[name] = vector.to(self.device)
         if metadata:
             self.metadata[name] = metadata
+
+        # Invalidate/Update stack (lazy or eager? Eager for now as writes are rare)
+        self._rebuild_stack()
         logger.debug(f"Stored vector: {name}")
         
     def get_vector(self, name: str) -> Optional[torch.Tensor]:
@@ -174,29 +195,31 @@ class IsotropicMemory:
         
     def find_similar(self, query_vector: torch.Tensor, top_k: int = 5) -> List[tuple]:
         """
-        Find the most similar vectors to a query vector.
-        
-        Args:
-            query_vector: Vector to compare against
-            top_k: Number of results to return
-            
-        Returns:
-            List of (name, similarity_score) tuples
+        Find the most similar vectors using vectorized operations.
         """
-        if not self.vectors:
+        if self._vector_stack is None or len(self.vectors) == 0:
             return []
             
-        similarities = []
-        query_norm = query_vector / (query_vector.norm() + 1e-8)
+        # Ensure query is on device and normalized
+        query = query_vector.to(self.device)
+        query_norm = query / (query.norm() + 1e-8)
+
+        # Matrix Multiplication: (N, D) @ (D) -> (N)
+        # _vector_stack is already normalized
+        scores = torch.mv(self._vector_stack, query_norm)
+
+        # TopK
+        k = min(top_k, len(self.vectors))
+        values, indices = torch.topk(scores, k)
         
-        for name, vec in self.vectors.items():
-            vec_norm = vec / (vec.norm() + 1e-8)
-            similarity = torch.dot(query_norm, vec_norm).item()
-            similarities.append((name, similarity))
+        results = []
+        for i in range(k):
+            idx = indices[i].item()
+            score = values[i].item()
+            name = self._vector_names[idx]
+            results.append((name, score))
             
-        # Sort by similarity (descending)
-        similarities.sort(key=lambda x: x[1], reverse=True)
-        return similarities[:top_k]
+        return results
         
     def create_skill_vector(
         self,
