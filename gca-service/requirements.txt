@@ -17,3 +17,4 @@ Pillow
 einops
 moviepy
 qwen-vl-utils
+cryptography

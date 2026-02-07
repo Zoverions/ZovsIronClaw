@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 import logging
 from pathlib import Path
+from gca_core.secure_storage import SecureStorage
 
 logger = logging.getLogger("GCA.MemoryAdvanced")
 
@@ -65,6 +66,53 @@ class BiomimeticMemory:
              input_dim = self.gb.model.config.hidden_size
 
         self.basis = self.base_mem.get_or_create_basis(input_dim, self.basis_size)
+
+        # Initialize secure storage
+        self.secure_storage = SecureStorage()
+
+        # Restore recent context
+        self._load_recent_memories()
+
+    def _load_recent_memories(self):
+        """
+        Load recent memories from encrypted storage to populate Working Memory.
+        This provides continuity across restarts.
+        """
+        memory_file = self.base_mem.storage_path / "memories.enc"
+        if not memory_file.exists():
+            return
+
+        try:
+            # Load all memories (could be optimized to read only last N lines)
+            all_memories = self.secure_storage.load_jsonl(memory_file)
+
+            # Take only the most recent ones that fit in WM
+            recent = all_memories[-WORKING_MEMORY_CAPACITY:]
+
+            for mem_data in recent:
+                # Reconstruct Engram
+                # Note: Vector might need to be recomputed if not stored fully,
+                # but we stored a preview. Ideally we re-embed or use the preview if sufficient.
+                # For now, we'll re-embed to ensure vector quality in WM.
+                vector = self.gb.get_activation(mem_data["content"])
+
+                # Project to concept space
+                basis = self.basis.to(vector.device)
+                concept_vector = torch.matmul(vector, basis)
+                concept_vector = torch.nn.functional.normalize(concept_vector, dim=0)
+
+                engram = Engram(
+                    content=mem_data["content"],
+                    vector=concept_vector,
+                    activation_count=mem_data.get("activation_count", 0),
+                    creation_time=mem_data.get("created_at", time.time()),
+                    last_accessed=time.time() # Refresh access time
+                )
+                self.working_memory.append(engram)
+
+            logger.info(f"Restored {len(self.working_memory)} memories from encrypted storage.")
+        except Exception as e:
+            logger.warning(f"Failed to restore memories: {e}")
 
     def perceive(self, text: str):
         """
@@ -148,10 +196,11 @@ class BiomimeticMemory:
 
     def _save_long_term(self, engram):
         """
-        Save consolidated memory to a JSONL file.
+        Save consolidated memory to an encrypted file.
         """
         try:
-            memory_file = self.base_mem.storage_path / "memories.jsonl"
+            # Change extension to .enc to signify encryption
+            memory_file = self.base_mem.storage_path / "memories.enc"
             entry = {
                 "content": engram.content,
                 "activation_count": engram.activation_count,
@@ -161,9 +210,7 @@ class BiomimeticMemory:
                 "vector_preview": engram.vector.tolist()[:5]
             }
 
-            with open(memory_file, "a", encoding="utf-8") as f:
-                f.write(json.dumps(entry) + "\n")
-
-            logger.info(f"Saved memory to {memory_file}")
+            self.secure_storage.append_jsonl(memory_file, entry)
+            logger.info(f"Saved encrypted memory to {memory_file}")
         except Exception as e:
             logger.error(f"Failed to save long term memory: {e}")

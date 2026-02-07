@@ -128,3 +128,9 @@ Process the user input above according to the quaternion structure defined. Main
                     break
                     
         return components
+
+class NonCommutativeProcessor:
+    """
+    Placeholder for NonCommutativeProcessor to fix import errors.
+    """
+    pass
