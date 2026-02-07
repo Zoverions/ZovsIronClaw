@@ -75,3 +75,15 @@ USER.md
 memory/
 .agent/*.json
 !.agent/workflows/
+gca-service/build/
+gca-service/dist/
+apps/desktop/src-tauri/binaries/
+apps/desktop/src-tauri/target/
+gca-service/mocks/
+gca-service/build/
+gca-service/dist/
+apps/desktop/src-tauri/binaries/
+apps/desktop/src-tauri/target/
+build/
+dist/
+*.spec

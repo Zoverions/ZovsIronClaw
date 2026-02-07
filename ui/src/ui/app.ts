@@ -80,6 +80,8 @@ import { resolveInjectedAssistantIdentity } from "./assistant-identity.ts";
 import { loadAssistantIdentity as loadAssistantIdentityInternal } from "./controllers/assistant-identity.ts";
 import { loadSettings, type UiSettings } from "./storage.ts";
 import { type ChatAttachment, type ChatQueueItem, type CronFormState } from "./ui-types.ts";
+import { html } from "lit";
+import "./setup/setup-view";
 
 declare global {
   interface Window {
@@ -323,6 +325,9 @@ export class OpenClawApp extends LitElement {
   @state() logsMaxBytes = 250_000;
   @state() logsAtBottom = true;
 
+  // New state for Setup Wizard
+  @state() showSetupWizard = window.location.hash.includes('setup');
+
   client: GatewayBrowserClient | null = null;
   private chatScrollFrame: number | null = null;
   private chatScrollTimeout: number | null = null;
@@ -350,6 +355,12 @@ export class OpenClawApp extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     handleConnected(this as unknown as Parameters<typeof handleConnected>[0]);
+
+    // Check if setup is needed (mock check)
+    // In production, this would check if models exist or config is fresh
+    if (window.location.hash.includes('setup')) {
+      this.showSetupWizard = true;
+    }
   }
 
   protected firstUpdated() {
@@ -564,6 +575,9 @@ export class OpenClawApp extends LitElement {
   }
 
   render() {
+    if (this.showSetupWizard) {
+      return html`<setup-view></setup-view>`;
+    }
     return renderApp(this as unknown as AppViewState);
   }
 }
