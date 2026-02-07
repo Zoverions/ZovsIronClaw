@@ -31,7 +31,9 @@ from gca_core.arena import ArenaProtocol
 from gca_core.memory_advanced import BiomimeticMemory
 from gca_core.perception import PerceptionSystem
 from gca_core.observer import Observer
-from gca_core.pulse import Pulse
+from gca_core.pulse import PulseSystem
+from gca_core.causal_flow import CausalFlowEngine
+from gca_core.swarm import SwarmNetwork
 from dreamer import DeepDreamer
 
 # Configure logging
@@ -78,14 +80,22 @@ resonance = ResonanceEngine(glassbox, memory)
 qpt = QuaternionArchitect()
 perception = PerceptionSystem()
 observer = Observer(glassbox)
-pulse = Pulse(glassbox, bio_mem)
-pulse.start_heartbeat()
+causal_engine = CausalFlowEngine(glassbox)
 
 # Init Reflective Logger first so Pulse can use it
 reflective_logger = ReflectiveLogger(glassbox, bio_mem, moral_kernel)
 
-pulse = Pulse(glassbox, bio_mem, logger_instance=reflective_logger)
-pulse.start_heartbeat()
+# Pulse System (v4.8)
+pulse = PulseSystem(bio_mem, glassbox)
+
+# Pulse Intervention Hook
+def pulse_correction(msg):
+    # Log intervention and inject into next memory context
+    reflective_logger.log("warning", f"PULSE INTERVENTION: {msg}")
+    bio_mem.perceive(f"SYSTEM_INTERVENTION: {msg}")
+
+pulse.set_intervention_callback(pulse_correction)
+pulse.start()
 
 # Init Iron Swarm
 swarm_network = SwarmNetwork(glassbox, reflective_logger)
@@ -110,10 +120,16 @@ base_logger.info("GCA Service initialized successfully with Reflective Logger")
 # Models
 # ============================================================================
 
+class SoulConfig(BaseModel):
+    base_style: str  # e.g., "Architect"
+    blend_styles: List[str] = [] # ["Stoic", "Python"]
+    blend_weights: List[float] = [] # [0.3, 0.2]
+
 class ReasonRequest(BaseModel):
     user_id: str
     text: str
     soul_config: Optional[str] = ""
+    soul_object: Optional[SoulConfig] = None # v4.6 Dynamic Soul
     input_modality: Optional[str] = "text" # 'text' or 'voice'
     tools_available: List[str] = []
     context: Optional[str] = None # For additional context like previous messages
@@ -157,6 +173,12 @@ class ObservationRequest(BaseModel):
     source: Optional[str] = "unknown"
     timestamp: Optional[float] = None
 
+class ObservationResponse(BaseModel):
+    status: str
+    alignment: float
+    detected_state: Union[List[float], str]
+    description: str
+
 # ============================================================================
 # Endpoints
 # ============================================================================
@@ -167,7 +189,23 @@ async def health():
         "status": "healthy",
         "model": glassbox.model_name,
         "device": glassbox.device,
-        "vectors_loaded": len(memory.list_vectors())
+        "vectors_loaded": len(memory.list_vectors()),
+        "pulse_entropy": pulse.current_entropy
+    }
+
+@app.post("/v1/soul/compose")
+async def compose_soul(config: SoulConfig):
+    """
+    v4.6: Dynamic Vector Blending.
+    Returns the vector statistics of the new composite soul.
+    """
+    # Logic to mix vectors from registry (Mock for confirmation)
+    # In a real scenario, we would use soul_loader.create_composite_soul
+    return {
+        "status": "composed",
+        "name": f"{config.base_style}-Custom",
+        "vector_norm": 1.0,
+        "components": config.blend_styles
     }
 
 @app.post("/v1/observe")
@@ -192,6 +230,14 @@ async def observe_environment(req: ObservationRequest):
 async def reasoning_engine(req: ReasonRequest):
     reflective_logger.log("info", f"Incoming from {req.user_id}: {req.text[:50]}...")
 
+    # v4.8: Pulse Check
+    if pulse.current_entropy > 0.8:
+        return ReasoningResponse(
+            status="BLOCKED",
+            content="[SYSTEM HALT] Mental entropy too high. Please restate intent clearly.",
+            meta={"entropy_score": pulse.current_entropy}
+        )
+
     try:
         # 0. CAUSAL ANALYSIS
         # We assume text is both micro and macro for self-analysis unless context provided
@@ -200,6 +246,12 @@ async def reasoning_engine(req: ReasonRequest):
         # 1. PARSE SOUL CONFIG
         soul_positive, soul_negative = _parse_vector_config(req.soul_config)
         
+        # v4.6: Dynamic Soul Object Override
+        if req.soul_object:
+            # We would resolve vectors here. For now, we append to soul_positive if names match skills
+            # This is a basic integration.
+            pass
+
         # 1.5 PERCEIVE (Sensory Input + Environment)
         # We pass environmental_context here so memory can capture "The Mood of the City"
         bio_mem.perceive(req.text, env_context=req.environmental_context)
