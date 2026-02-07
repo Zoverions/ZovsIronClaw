@@ -1,6 +1,7 @@
 """
 GCA API Server: FastAPI Bridge between OpenClaw (Node.js) and GCA (Python)
 Exposes GCA reasoning, moral evaluation, and geometric steering via REST API.
+Integrates Recursive Universe Framework for Causal Flow Analysis.
 """
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
@@ -29,6 +30,7 @@ from gca_core.qpt import QuaternionArchitect
 from gca_core.arena import ArenaProtocol
 from gca_core.memory_advanced import BiomimeticMemory
 from gca_core.perception import PerceptionSystem
+from gca_core.causal_flow import CausalFlowEngine
 from dreamer import DeepDreamer
 
 # Configure logging
@@ -50,7 +52,7 @@ else:
 app = FastAPI(
     title="GCA Service API",
     description="Geometric Conscience Architecture - Ethical AI Reasoning Engine",
-    version="4.5.0"
+    version="4.5.1"
 )
 
 app.add_middleware(
@@ -73,6 +75,7 @@ moral_kernel = MoralKernel(risk_tolerance=0.3)
 resonance = ResonanceEngine(glassbox, memory)
 qpt = QuaternionArchitect()
 perception = PerceptionSystem()
+causal_engine = CausalFlowEngine(glassbox=glassbox)
 
 logger.info("GCA Service initialized successfully")
 
@@ -86,7 +89,8 @@ class ReasonRequest(BaseModel):
     soul_config: Optional[str] = ""
     input_modality: Optional[str] = "text" # 'text' or 'voice'
     tools_available: List[str] = []
-    context: Optional[str] = None
+    context: Optional[str] = None # For additional context like previous messages
+    environmental_context: Optional[str] = None # Weather, Location, Mood, etc.
 
 class ReasoningResponse(BaseModel):
     status: str
@@ -138,11 +142,16 @@ async def reasoning_engine(req: ReasonRequest):
     logger.info(f"Incoming from {req.user_id}: {req.text[:50]}...")
 
     try:
+        # 0. CAUSAL ANALYSIS
+        # We assume text is both micro and macro for self-analysis unless context provided
+        causal_metrics = causal_engine.calculate_causal_beta(req.text, req.text)
+
         # 1. PARSE SOUL CONFIG
         steering_bias = _parse_vector_config(req.soul_config)
         
-        # 1.5 PERCEIVE (Sensory Input)
-        bio_mem.perceive(req.text)
+        # 1.5 PERCEIVE (Sensory Input + Environment)
+        # We pass environmental_context here so memory can capture "The Mood of the City"
+        bio_mem.perceive(req.text, env_context=req.environmental_context)
 
         # 2. INGEST & RESONANCE
         resonance.ingest(req.user_id, req.text)
@@ -151,6 +160,9 @@ async def reasoning_engine(req: ReasonRequest):
         # 3. GEOMETRIC ROUTING
         intent = optimizer.route_intent(req.text)
         skill_vec = memory.get_vector(intent)
+
+        # Update user insight with actual intent
+        bio_mem.track_user_pattern(req.user_id, causal_metrics.get('beta_c', 0), intent)
 
         # 3.5 RETRIEVE WORKING MEMORY CONTEXT
         wm_context = bio_mem.retrieve_context(skill_vec)
@@ -162,8 +174,19 @@ async def reasoning_engine(req: ReasonRequest):
         # Auto-tune strength (mock logic for now)
         strength = 1.5
         
-        # 5. QPT STRUCTURING
-        structured_prompt = qpt.restructure(req.text, req.soul_config, working_memory=wm_context)
+        # 5. QPT STRUCTURING (Recursive Universe Injection)
+        # We inject the causal analysis and environmental context into the QPT 'w' scalar
+        context_str = req.context or ""
+        if req.environmental_context:
+            context_str += f"\n[Environment] {req.environmental_context}"
+
+        structured_prompt = qpt.restructure(
+            raw_prompt=req.text,
+            soul_config=req.soul_config,
+            context=context_str,
+            working_memory=wm_context,
+            causal_analysis=causal_metrics
+        )
 
         # 6. THINKING (Generation)
         response_text = glassbox.generate_steered(
@@ -175,11 +198,19 @@ async def reasoning_engine(req: ReasonRequest):
         # 6.5 PERCEIVE OUTPUT (Feedback Loop)
         bio_mem.perceive(response_text)
 
+        # Causal Analysis of Response (Self-Reflection)
+        response_metrics = causal_engine.calculate_causal_beta(response_text, response_text)
+
         # 7. TOOL EXTRACTION & MORAL AUDIT
         detected_tool = _parse_tool_from_text(response_text, req.tools_available)
         
         if detected_tool:
             action = _tool_to_action(detected_tool)
+
+            # Inject Causal/Assembly Data into Action for Moral Kernel
+            action.target_network_assembly = causal_metrics.get('network_assembly', 0.0)
+            action.is_causally_emergent = causal_metrics.get('is_emergent', False)
+
             approved, reason = moral_kernel.evaluate([action])
             risk_score = moral_kernel.calculate_risk_score(action)
             
@@ -200,7 +231,9 @@ async def reasoning_engine(req: ReasonRequest):
                 moral_signature=signature,
                 meta={
                     "intent": intent,
-                    "risk_score": risk_score
+                    "risk_score": risk_score,
+                    "causal_flow": causal_metrics,
+                    "response_causal_flow": response_metrics
                 }
             )
 
@@ -209,7 +242,9 @@ async def reasoning_engine(req: ReasonRequest):
             content=response_text,
             meta={
                 "intent": intent,
-                "resonance": "active"
+                "resonance": "active",
+                "causal_flow": causal_metrics,
+                "response_causal_flow": response_metrics
             }
         )
 
@@ -307,6 +342,13 @@ async def describe_media(
             text = await run_in_threadpool(perception.describe_video_bytes, content, prompt)
         else:
             text = await run_in_threadpool(perception.describe_image_bytes, content, prompt)
+
+        # Run Causal Flow Analysis on the description
+        # We don't change the response structure of describe, but we could log or trigger side effects
+        causal_metrics = causal_engine.calculate_causal_beta(text, text)
+        if causal_metrics.get("is_emergent"):
+            logger.info(f"✨ EMERGENT VISUAL DETECTED: {text[:50]}...")
+            text = f"[✨ EMERGENT SIGNAL] {text}"
 
         return DescribeResponse(text=text)
     except Exception as e:
