@@ -382,6 +382,47 @@ async def describe_media(
         logger.error(f"Description error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/v1/observe", response_model=ObservationResponse)
+async def observe_user(
+    file: UploadFile = File(...),
+    modality: str = Form(...) # "vision" or "audio"
+):
+    try:
+        # 1. Process Input
+        content = await file.read()
+
+        # 2. Analyze via Observer (Scientifically Grounded)
+        analysis = await run_in_threadpool(observer.analyze_input, content, modality)
+
+        # 3. Update Biomimetic Memory State
+        # (Assuming update_user_state exists or we simulate it by perceiving the state description)
+        if "state" in analysis:
+             # Convert vector dict to string representation for memory ingestion
+             state_desc = f"[USER_STATE] Detected {modality} cues: {analysis['description']} -> State: {analysis['state']}"
+             bio_mem.perceive(state_desc)
+
+        # 4. Check for Intervention against Goal
+        # Load Goal from .agent/prompts/GOAL.md
+        goal_path = Path(__file__).parent.parent / ".agent" / "prompts" / "GOAL.md"
+        if goal_path.exists():
+            with open(goal_path, "r") as f:
+                goal_text = f.read().strip()
+        else:
+            goal_text = "I want to be a stoic, high-output coder" # Fallback
+
+        alignment = observer.check_goal_alignment(analysis['state'], goal_text)
+
+        return ObservationResponse(
+            status="processed",
+            alignment=alignment,
+            detected_state=analysis['state'],
+            description=analysis.get('description', '')
+        )
+
+    except Exception as e:
+        logger.error(f"Observation error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ============================================================================
 # Helpers
 # ============================================================================
