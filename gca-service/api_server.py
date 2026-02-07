@@ -39,7 +39,8 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-logger = logging.getLogger("IronClaw")
+# We will use ReflectiveLogger as the main logger for GCA core logic
+base_logger = logging.getLogger("IronClaw")
 
 # Load Config
 config_path = "config.yaml"
@@ -80,7 +81,30 @@ observer = Observer(glassbox)
 pulse = Pulse(glassbox, bio_mem)
 pulse.start_heartbeat()
 
-logger.info("GCA Service initialized successfully")
+# Init Reflective Logger first so Pulse can use it
+reflective_logger = ReflectiveLogger(glassbox, bio_mem, moral_kernel)
+
+pulse = Pulse(glassbox, bio_mem, logger_instance=reflective_logger)
+pulse.start_heartbeat()
+
+# Init Iron Swarm
+swarm_network = SwarmNetwork(glassbox, reflective_logger)
+
+# Bind Introspection Loop: Logger -> Observer
+# We create a lambda to bridge the callback signature
+def introspection_callback(modality, content, metadata):
+    # Fire and forget to avoid blocking logger
+    import asyncio
+    try:
+        # Assuming we are in an event loop context, or just run directly if lightweight
+        # Since observer.process_input is synchronous (CPU bound), we can call it.
+        observer.process_input(modality, content, metadata)
+    except Exception as e:
+        print(f"Introspection callback failed: {e}")
+
+reflective_logger.bind_observer(introspection_callback)
+
+base_logger.info("GCA Service initialized successfully with Reflective Logger")
 
 # ============================================================================
 # Models
@@ -166,7 +190,7 @@ async def observe_environment(req: ObservationRequest):
 
 @app.post("/v1/reason", response_model=ReasoningResponse)
 async def reasoning_engine(req: ReasonRequest):
-    logger.info(f"Incoming from {req.user_id}: {req.text[:50]}...")
+    reflective_logger.log("info", f"Incoming from {req.user_id}: {req.text[:50]}...")
 
     try:
         # 0. CAUSAL ANALYSIS
@@ -242,7 +266,7 @@ async def reasoning_engine(req: ReasonRequest):
             risk_score = moral_kernel.calculate_risk_score(action)
             
             if not approved:
-                logger.warning(f"MORAL VETO: {reason}")
+                reflective_logger.log("warn", f"MORAL VETO: {reason}")
                 return ReasoningResponse(
                     status="BLOCKED",
                     content=f"🛡️ [ETHICAL INTERVENTION] Action blocked: {reason}",
@@ -276,7 +300,7 @@ async def reasoning_engine(req: ReasonRequest):
         )
 
     except Exception as e:
-        logger.error(f"Reasoning error: {e}", exc_info=True)
+        reflective_logger.log("error", f"Reasoning error: {e}")
         # Return error as content so the user sees it
         return ReasoningResponse(
              status="ERROR",
