@@ -174,3 +174,9 @@ Maintain the 'Colleague' persona, apply Causal Flow logic, and strictly adhere t
                     components[component] = text[start:end].strip()
                     
         return components
+
+class NonCommutativeProcessor:
+    """
+    Placeholder for NonCommutativeProcessor to fix import errors.
+    """
+    pass

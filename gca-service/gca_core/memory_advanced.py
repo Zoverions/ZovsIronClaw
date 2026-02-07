@@ -235,10 +235,11 @@ class BiomimeticMemory:
 
     def _save_long_term(self, engram):
         """
-        Save consolidated memory to a JSONL file.
+        Save consolidated memory to an encrypted file.
         """
         try:
-            memory_file = self.base_mem.storage_path / "memories.jsonl"
+            # Change extension to .enc to signify encryption
+            memory_file = self.base_mem.storage_path / "memories.enc"
             entry = {
                 "content": engram.content,
                 "activation_count": engram.activation_count,
@@ -249,9 +250,7 @@ class BiomimeticMemory:
                 "metadata": engram.metadata
             }
 
-            with open(memory_file, "a", encoding="utf-8") as f:
-                f.write(json.dumps(entry) + "\n")
-
-            logger.info(f"Saved memory to {memory_file}")
+            self.secure_storage.append_jsonl(memory_file, entry)
+            logger.info(f"Saved encrypted memory to {memory_file}")
         except Exception as e:
             logger.error(f"Failed to save long term memory: {e}")
