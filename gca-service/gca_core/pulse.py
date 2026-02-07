@@ -6,22 +6,16 @@ import torch
 from pathlib import Path
 from typing import Optional
 
-# We will let API server inject the logger or use a weak ref
-# For now, default to standard, but allow injection
 logger = logging.getLogger("GCA.Pulse")
 
 class Pulse:
-    def __init__(self, glassbox, bio_mem, check_interval=300, logger_instance=None):
+    def __init__(self, glassbox, bio_mem, check_interval=300):
         self.glassbox = glassbox
         self.bio_mem = bio_mem
         self.check_interval = check_interval
         self.running = False
         self.goal_text = "Maintain system stability and assist the user safely."
-        self._goal_vec_cache = None
         self._load_goal()
-
-        # Use ReflectiveLogger if provided
-        self.logger = logger_instance if logger_instance else logger
 
     def _load_goal(self):
         # Look for GOAL.md in .agent/prompts/ relative to service root
@@ -67,11 +61,8 @@ class Pulse:
 
     def _check_divergence(self):
         # 1. Get Goal Vector
-        # Use explicit cache to ensure stability even if LRU cycles
-        if self._goal_vec_cache is None:
-            self._goal_vec_cache = self.glassbox.get_activation(self.goal_text)
-
-        goal_vec = self._goal_vec_cache
+        # We re-compute in case model changed or cache (could be cached)
+        goal_vec = self.glassbox.get_activation(self.goal_text)
 
         # 2. Get Current State Vector (Average of Working Memory)
         # Use thread-safe snapshot
@@ -101,20 +92,9 @@ class Pulse:
 
         similarity = torch.dot(goal_vec, state_vec).item()
 
-        if hasattr(self.logger, 'log'):
-             self.logger.log("info", f"[💓] Pulse Check: Goal Alignment = {similarity:.4f}")
-        else:
-             self.logger.info(f"[💓] Pulse Check: Goal Alignment = {similarity:.4f}")
+        logger.info(f"[💓] Pulse Check: Goal Alignment = {similarity:.4f}")
 
         if similarity < 0.5:
-            msg = f"[💓] DIVERGENCE DETECTED! Alignment {similarity:.4f} < 0.5"
-            if hasattr(self.logger, 'log'):
-                 self.logger.log("warn", msg)
-                 # Update entropy on logger if possible
-                 if hasattr(self.logger, 'update_entropy'):
-                     self.logger.update_entropy(1.0 - similarity) # Lower alignment -> Higher entropy
-            else:
-                 self.logger.warning(msg)
-
+            logger.warning(f"[💓] DIVERGENCE DETECTED! Alignment {similarity:.4f} < 0.5")
             # Trigger intervention logic (placeholder)
             # self.bio_mem.perceive("System warning: Goal divergence detected. Re-aligning.")

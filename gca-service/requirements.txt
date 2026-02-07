@@ -17,3 +17,4 @@ Pillow
 einops
 moviepy
 qwen-vl-utils
+networkx>=3.0.0

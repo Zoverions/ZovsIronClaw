@@ -228,6 +228,21 @@ export const icons = {
       />
     </svg>
   `,
+  camera: html`
+    <svg viewBox="0 0 24 24">
+      <path
+        d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"
+      />
+      <circle cx="12" cy="13" r="3" />
+    </svg>
+  `,
+  ironClaw: html`
+    <svg viewBox="0 0 120 120">
+      <path fill="currentColor" d="M60 10 C30 10 15 35 15 55 C15 75 30 95 45 100 L45 110 L55 110 L55 100 C55 100 60 102 65 100 L65 110 L75 110 L75 100 C90 95 105 75 105 55 C105 35 90 10 60 10Z"/>
+      <path fill="currentColor" d="M20 45 C5 40 0 50 5 60 C10 70 20 65 25 55 C28 48 25 45 20 45Z"/>
+      <path fill="currentColor" d="M100 45 C115 40 120 50 115 60 C110 70 100 65 95 55 C92 48 95 45 100 45Z"/>
+    </svg>
+  `,
 } as const;
 
 export type IconName = keyof typeof icons;

@@ -3,3 +3,10 @@
 @import "./styles/layout.mobile.css";
 @import "./styles/components.css";
 @import "./styles/config.css";
+
+/* Neural Link Active State */
+body.neural-link-active {
+  border: 4px solid #00ff41;
+  box-shadow: inset 0 0 20px rgba(0, 255, 65, 0.2);
+  transition: all 0.5s ease;
+}
