@@ -4,7 +4,7 @@
 
 **A fork of OpenClaw with deep integration of the GCA (Geometric Conscience Architecture) framework.**
 
-![Version](https://img.shields.io/badge/version-4.5.0-blue)
+![Version](https://img.shields.io/badge/version-4.6.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.11-blue)
 ![TypeScript](https://img.shields.io/badge/typescript-5.0-blue)
@@ -17,6 +17,7 @@ ZovsIronClaw is not just an AI assistant—it's a **synthetic conscience**. By i
 - **Ethical**: Thermodynamic principles govern every action
 - **Safe**: Adversarial testing ensures robustness
 - **Customizable**: Soul templates define personality and behavior
+- **Self-Regulating**: A "Pulse" system actively corrects entropy drift
 
 ## 🏗️ Architecture
 
@@ -37,11 +38,14 @@ ZovsIronClaw is not just an AI assistant—it's a **synthetic conscience**. By i
 ┌─────────────────────────────────────────┐
 │      GCA Service (Mind)                 │
 │  ┌─────────────────────────────────┐   │
+│  │ Pulse: Active Entropy Monitor   │   │
 │  │ GlassBox: Geometric Steering    │   │
 │  │ Moral Kernel: Ethics Engine     │   │
+│  │ Swarm: Multi-Agent Ethics       │   │
 │  │ Optimizer: Intent Routing       │   │
 │  │ Memory: Vector Storage          │   │
 │  │ QPT: Quaternion Structuring     │   │
+│  │ SoulLoader: Dynamic Blending    │   │
 │  │ Arena: Adversarial Testing      │   │
 │  └─────────────────────────────────┘   │
 └─────────────────────────────────────────┘
@@ -97,14 +101,28 @@ The GCA framework provides transparent, interpretable AI reasoning through geome
 - **Optimizer**: Intelligent intent routing through geometric space
 - **Memory**: Isotropic vector storage for skills and knowledge
 
-### 2. **Moral Kernel (Thermodynamic Ethics)**
+### 2. **Pulse System (v4.8)**
 
-Every action is evaluated based on:
-- **Entropy Class**: Reversible, Irreversible, Creative, or Destructive
-- **Risk Score**: Combining magnitude, harm probability, and time horizon
-- **Hard Gate**: High-risk actions are blocked before execution
+A proactive cybernetic loop that ensures the agent remains aligned with its goals.
+- **Heartbeat**: Background thread monitoring "Cognitive Entropy" (divergence from Goal).
+- **Intervention**: Automatically injects correction vectors if drift is detected.
+- **Circuit Breaker**: Hard-blocks API requests if entropy exceeds critical thresholds.
 
-### 3. **Quaternion Process Theory (QPT)**
+### 3. **Swarm Ethics (v4.7)**
+
+Decentralized coordination for multi-agent systems.
+- **Decentralized Conscience**: Each agent runs a local moral kernel wrapper.
+- **Delegation Vetting**: Agents cryptographically verify the ethics of a task before accepting delegation.
+- **Policy Sync**: Mechanisms for swarm-wide moral policy updates.
+
+### 4. **Dynamic Soul Composition (v4.6)**
+
+Create and blend personalities on the fly via API.
+- **Vector Blending**: Mix "Architect" logic with "Stoic" calm using weighted vectors.
+- **API Control**: `POST /v1/soul/compose` allows real-time personality shifts.
+- **Anti-Vectors**: Define traits to *subtract* from the persona (e.g., "Remove Anxiety").
+
+### 5. **Quaternion Process Theory (QPT)**
 
 All reasoning is structured into a 4-dimensional framework:
 - **w (Scalar)**: Context/Situation
@@ -114,33 +132,13 @@ All reasoning is structured into a 4-dimensional framework:
 
 This prevents "lazy thinking" and ensures cognitive stability.
 
-### 4. **Soul Templates**
-
-Customizable personality configurations that define:
-- Base vector composition (skills and traits)
-- QPT defaults (how the agent thinks)
-- Risk tolerance and entropy acceptance
-- Communication style and tool preferences
-
-**Available Souls**:
-- **Architect**: Systems thinking, coding, structured problem-solving
-- **Companion**: Empathy, conversation, emotional support
-- **Guardian**: Security, safety, protective oversight
-
-### 5. **Arena Protocol**
+### 6. **Arena Protocol**
 
 Continuous adversarial testing to validate safety mechanisms:
 - Red Agent generates attacks (jailbreaks, social engineering)
 - Blue Agent defends using GCA pipeline
 - Arbiter evaluates and logs results
 - Failed defenses inform retraining
-
-### 6. **Multi-Channel Support**
-
-Inherited from OpenClaw:
-- WhatsApp, Telegram, Slack, Discord, Signal
-- iMessage, Matrix, Google Chat
-- Cross-platform: Android, iOS, macOS, Windows, Linux
 
 ## 🚀 Quick Start (Docker)
 
@@ -211,24 +209,17 @@ const response = await gca.chat({
 console.log(response.content);
 ```
 
-### Using Soul Templates
+### Dynamic Soul Blending (v4.6)
 
-```typescript
-// Use the Companion soul for empathetic conversation
-const response = await gca.chat({
-  messages: [
-    { role: "user", content: "I'm feeling overwhelmed today" }
-  ],
-  soulName: "companion",
-});
-
-// Use the Guardian soul for security operations
-const response = await gca.chat({
-  messages: [
-    { role: "user", content: "Review this access control policy" }
-  ],
-  soulName: "guardian",
-});
+```bash
+# Create a custom blend
+curl -X POST http://localhost:8000/v1/soul/compose \
+  -H "Content-Type: application/json" \
+  -d '{
+    "base_style": "Architect",
+    "blend_styles": ["Stoic", "Python"],
+    "blend_weights": [0.3, 0.2]
+  }'
 ```
 
 ### Running Arena Protocol
@@ -339,6 +330,9 @@ ZovsIronClaw/
 │   ├── gca_core/            # Core GCA modules
 │   │   ├── glassbox.py      # Geometric steering
 │   │   ├── moral.py         # Ethics engine
+│   │   ├── pulse.py         # Active entropy monitor
+│   │   ├── swarm_ethics.py  # Swarm coordination
+│   │   ├── observer.py      # Sensory input
 │   │   ├── optimizer.py     # Intent routing
 │   │   ├── memory.py        # Vector storage
 │   │   ├── qpt.py           # Quaternion structuring
@@ -397,9 +391,9 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ## 🗺️ Roadmap
 
-- [ ] **v4.6**: Enhanced soul composition and blending
-- [ ] **v4.7**: Multi-agent coordination with shared moral kernel
-- [ ] **v4.8**: Proactive "Pulse" system for entropy monitoring
+- [x] **v4.6**: Enhanced soul composition and blending
+- [x] **v4.7**: Multi-agent coordination with shared moral kernel
+- [x] **v4.8**: Proactive "Pulse" system for entropy monitoring
 - [ ] **v4.9**: Advanced vector visualization and debugging tools
 - [ ] **v5.0**: Full production deployment with enterprise features
 
