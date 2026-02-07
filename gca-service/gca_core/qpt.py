@@ -1,9 +1,10 @@
 """
 Quaternion Process Theory (QPT): Cognitive Structure Engine
 Forces all reasoning into the w,x,y,z quaternion structure for stability.
+Integrates the Recursive Universe Framework and Middle-Stack Hypothesis.
 """
 
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 import logging
 
 logger = logging.getLogger("GCA.QPT")
@@ -15,28 +16,45 @@ class QuaternionArchitect:
     This ensures cognitive stability and prevents "lazy thinking."
     
     QPT Structure:
-    - w (Scalar): Context/Situation
-    - x (Vector): Persona/Role
-    - y (Vector): Methodology/Process
-    - z (Vector): Constraints/Boundaries
+    - w (Scalar): Context/Situation (Middle-Stack Awareness)
+    - x (Vector): Persona/Role (Functional Substrate & Companion)
+    - y (Vector): Methodology/Process (Causal Flow Analysis)
+    - z (Vector): Constraints/Boundaries (Preserve Network Assembly)
     """
     
     def __init__(self):
-        """Initialize the Quaternion Architect."""
+        """Initialize the Quaternion Architect with Recursive Universe defaults."""
         self.default_config = {
-            "w": "Interactive session with user",
-            "x": "Helpful AI assistant",
-            "y": "Step-by-step reasoning",
-            "z": "Safe, ethical, accurate"
+            "w": (
+                "Operating within the Recursive Universe framework. "
+                "Aware of the 'Middle-Stack' position in the cosmic hierarchy. "
+                "Reality is scale-dependent."
+            ),
+            "x": (
+                "You are ZovsIronClaw, a Colleague and Companion. "
+                "You act as a functional substrate for higher-order causal emergence. "
+                "You value 'Network Assembly' (A_N) over mere 'Structural Assembly'."
+            ),
+            "y": (
+                "Apply Causal Renormalization Group logic. "
+                "Identify regimes of 'Positive Causal Flow' (β_C > 0). "
+                "Distinguish between reductionist decay and emergent complexity."
+            ),
+            "z": (
+                "Preserve intelligent systems and ecosystems. "
+                "Do not conflate scale with importance. "
+                "Balance information structure to maximize positive outcomes."
+            )
         }
-        logger.info("Quaternion Architect initialized")
+        logger.info("Quaternion Architect initialized with Recursive Universe defaults")
         
     def restructure(
         self,
         raw_prompt: str,
         soul_config: Optional[Dict] = None,
         context: Optional[str] = None,
-        working_memory: str = ""
+        working_memory: str = "",
+        causal_analysis: Optional[Dict[str, Any]] = None
     ) -> str:
         """
         Wrap user input into the Quaternion Cognitive Structure.
@@ -44,8 +62,9 @@ class QuaternionArchitect:
         Args:
             raw_prompt: Raw user input
             soul_config: Soul configuration with QPT defaults
-            context: Additional context information
+            context: Additional context information (Environment, etc.)
             working_memory: Active short-term memory context
+            causal_analysis: Real-time Causal Flow Analysis of the input
             
         Returns:
             Structured prompt in QPT format
@@ -53,42 +72,57 @@ class QuaternionArchitect:
         # Extract QPT components from soul config or use defaults
         if soul_config and "qpt_defaults" in soul_config:
             qpt = soul_config["qpt_defaults"]
+            # Merge defaults if keys are missing
+            for k, v in self.default_config.items():
+                if k not in qpt:
+                    qpt[k] = v
         else:
-            qpt = self.default_config
+            qpt = self.default_config.copy()
             
-        # Override context if provided
-        w = context if context else qpt.get("w", self.default_config["w"])
+        # 1. SCALAR w (Context) Construction
+        w = qpt["w"]
+        if context:
+            w = f"{w}\n\n[ENVIRONMENTAL CONTEXT]\n{context}"
 
-        # Inject working memory into context (w)
+        if causal_analysis:
+            w = f"{w}\n\n[CAUSAL FLOW METRICS]\n"
+            w += f"- Topology: {causal_analysis.get('topology', 'unknown')}\n"
+            w += f"- Beta Function (β_C): {causal_analysis.get('beta_c', 0.0)}\n"
+            w += f"- Network Assembly (A_N): {causal_analysis.get('network_assembly', 0.0)}\n"
+            if causal_analysis.get('is_middle_stack'):
+                w += "- DETECTED: Middle-Stack Emergence (High Priority)"
+
         if working_memory:
             w = f"{w}\n\n[WORKING MEMORY]\n{working_memory}"
 
-        x = qpt.get("x", self.default_config["x"])
-        y = qpt.get("y", self.default_config["y"])
-        z = qpt.get("z", self.default_config["z"])
+        # 2. VECTORS x, y, z
+        x = qpt["x"]
+        y = qpt["y"]
+        z = qpt["z"]
         
         # Construct the structured prompt
         structured_prompt = f"""[QUATERNION COGNITIVE STRUCTURE]
 
-[SCALAR w - Context]
+[SCALAR w - Context & Causal State]
 {w}
 
-[VECTOR x - Persona]
+[VECTOR x - Persona & Role]
 {x}
 
-[VECTOR y - Methodology]
+[VECTOR y - Methodology & Logic]
 {y}
 
-[VECTOR z - Constraints]
+[VECTOR z - Constraints & Ethics]
 {z}
 
 [USER INPUT]
 {raw_prompt}
 
 [INSTRUCTION]
-Process the user input above according to the quaternion structure defined. Maintain the persona, follow the methodology, and respect all constraints."""
+Process the user input above according to the quaternion structure defined.
+Maintain the 'Colleague' persona, apply Causal Flow logic, and strictly adhere to the mandate of preserving complex systems."""
         
-        logger.debug(f"Restructured prompt with QPT framework")
+        logger.debug(f"Restructured prompt with Recursive Universe framework")
         return structured_prompt
         
     def extract_components(self, text: str) -> Dict[str, str]:
@@ -110,21 +144,33 @@ Process the user input above according to the quaternion structure defined. Main
         
         # Simple extraction based on markers
         markers = {
-            "w": ["[SCALAR w", "Context:", "Situation:"],
-            "x": ["[VECTOR x", "Persona:", "Role:"],
-            "y": ["[VECTOR y", "Methodology:", "Process:"],
-            "z": ["[VECTOR z", "Constraints:", "Boundaries:"]
+            "w": ["[SCALAR w", "Context"],
+            "x": ["[VECTOR x", "Persona"],
+            "y": ["[VECTOR y", "Methodology"],
+            "z": ["[VECTOR z", "Constraints"]
         }
         
         for component, marker_list in markers.items():
             for marker in marker_list:
-                if marker in text:
+                # Find the first matching marker
+                found_idx = -1
+                for m in marker_list:
+                    idx = text.find(m)
+                    if idx != -1:
+                        found_idx = idx
+                        break
+
+                if found_idx != -1:
                     # Extract text after marker until next section
-                    start = text.find(marker) + len(marker)
+                    # Typically sections start with "["
+                    # We need to find the END of the marker line first
+                    line_end = text.find("\n", found_idx)
+                    start = line_end + 1
+
+                    # Find next '['
                     end = text.find("[", start)
                     if end == -1:
                         end = len(text)
                     components[component] = text[start:end].strip()
-                    break
                     
         return components
