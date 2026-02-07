@@ -2,8 +2,9 @@ import torch
 import json
 import time
 import os
-from dataclasses import dataclass, field, asdict
-from typing import List, Dict, Optional, Any
+import threading
+from dataclasses import dataclass, field
+from typing import List, Dict, Optional
 import logging
 from pathlib import Path
 import numpy as np
@@ -81,6 +82,7 @@ class BiomimeticMemory:
 
         # The Workbench (Short Term / Working Memory)
         self.working_memory: List[Engram] = []
+        self.lock = threading.Lock()
 
         # User Modeling
         self.user_insights: Dict[str, UserInsight] = {}
@@ -127,27 +129,28 @@ class BiomimeticMemory:
             # Add environment directly to WM (bypass rehearsal check for now)
             self.working_memory.append(env_engram)
 
-        # Check if relevant to existing WM (Rehearsal)
-        for existing in self.working_memory:
-            sim = torch.nn.functional.cosine_similarity(existing.vector, concept_vector, dim=0)
-            if sim > 0.85:
-                existing.activation_count += 1
-                existing.last_accessed = time.time()
-                # Update content with new detail (Refinement)
-                # Avoid infinite growth if it's just a repetition
-                if text not in existing.content and len(existing.content) < 500:
-                    existing.content = f"{existing.content} -> {text}"
+        with self.lock:
+            # Check if relevant to existing WM (Rehearsal)
+            for existing in self.working_memory:
+                sim = torch.nn.functional.cosine_similarity(existing.vector, concept_vector, dim=0)
+                if sim > 0.85:
+                    existing.activation_count += 1
+                    existing.last_accessed = time.time()
+                    # Update content with new detail (Refinement)
+                    # Avoid infinite growth if it's just a repetition
+                    if text not in existing.content:
+                        existing.content = f"{existing.content} -> {text}"
 
-                # Hebbian Learning: Fire together
-                self.hebbian.fire(existing.vector, concept_vector)
-                return
+                    # Hebbian Learning: Fire together
+                    self.hebbian.fire(existing.vector, concept_vector)
+                    return
 
-        # Add to WM
-        self.working_memory.append(engram)
+            # Add to WM
+            self.working_memory.append(engram)
 
-        # Enforce Capacity Limits (Cognitive Load Management)
-        while len(self.working_memory) > WORKING_MEMORY_CAPACITY:
-            self._evict_or_consolidate()
+            # Enforce Capacity Limits (Cognitive Load Management)
+            if len(self.working_memory) > WORKING_MEMORY_CAPACITY:
+                self._evict_or_consolidate()
 
     def track_user_pattern(self, user_id: str, complexity_score: float, intent: str):
         """
@@ -215,14 +218,20 @@ class BiomimeticMemory:
         current_thought_vector = torch.nn.functional.normalize(current_thought_vector, dim=0)
 
         relevant_context = []
-        for engram in self.working_memory:
-            sim = torch.dot(engram.vector, current_thought_vector)
-            if sim > 0.6:
-                relevant_context.append(engram.content)
-                # Rehearsal: Reset decay timer
-                engram.last_accessed = time.time()
+        with self.lock:
+            for engram in self.working_memory:
+                sim = torch.dot(engram.vector, current_thought_vector)
+                if sim > 0.6:
+                    relevant_context.append(engram.content)
+                    # Rehearsal: Reset decay timer
+                    engram.last_accessed = time.time()
 
         return "\n".join(relevant_context)
+
+    def get_working_memory_snapshot(self) -> List[Engram]:
+        """Thread-safe copy of working memory."""
+        with self.lock:
+            return list(self.working_memory)
 
     def _save_long_term(self, engram):
         """

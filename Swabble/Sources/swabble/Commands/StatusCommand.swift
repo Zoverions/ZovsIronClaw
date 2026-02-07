@@ -21,12 +21,31 @@ struct StatusCommand: ParsableCommand {
         let wake = cfg?.wake.word ?? "clawd"
         let wakeEnabled = cfg?.wake.enabled ?? false
         let latest = await TranscriptsStore.shared.latest().suffix(3)
+
+        // Check Neural Link Status
+        let brainStatus = await checkBrainHealth()
+
         print("wake: \(wakeEnabled ? wake : "disabled")")
+        print("brain: \(brainStatus)")
+
         if latest.isEmpty {
             print("transcripts: (none yet)")
         } else {
             print("last transcripts:")
             latest.forEach { print("- \($0)") }
+        }
+    }
+
+    private func checkBrainHealth() async -> String {
+        guard let url = URL(string: "http://localhost:8000/health") else { return "config error" }
+        do {
+            let (_, response) = try await URLSession.shared.data(from: url)
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                return "CONNECTED (Neural Link Active)"
+            }
+            return "ERROR (Status: \((response as? HTTPURLResponse)?.statusCode ?? 0))"
+        } catch {
+            return "OFFLINE (Is GCA service running?)"
         }
     }
 
