@@ -6,10 +6,12 @@ import torch
 from pathlib import Path
 from typing import Optional
 
+# We will let API server inject the logger or use a weak ref
+# For now, default to standard, but allow injection
 logger = logging.getLogger("GCA.Pulse")
 
 class Pulse:
-    def __init__(self, glassbox, bio_mem, check_interval=300):
+    def __init__(self, glassbox, bio_mem, check_interval=300, logger_instance=None):
         self.glassbox = glassbox
         self.bio_mem = bio_mem
         self.check_interval = check_interval
@@ -17,6 +19,9 @@ class Pulse:
         self.goal_text = "Maintain system stability and assist the user safely."
         self._goal_vec_cache = None
         self._load_goal()
+
+        # Use ReflectiveLogger if provided
+        self.logger = logger_instance if logger_instance else logger
 
     def _load_goal(self):
         # Look for GOAL.md in .agent/prompts/ relative to service root
@@ -96,9 +101,20 @@ class Pulse:
 
         similarity = torch.dot(goal_vec, state_vec).item()
 
-        logger.info(f"[💓] Pulse Check: Goal Alignment = {similarity:.4f}")
+        if hasattr(self.logger, 'log'):
+             self.logger.log("info", f"[💓] Pulse Check: Goal Alignment = {similarity:.4f}")
+        else:
+             self.logger.info(f"[💓] Pulse Check: Goal Alignment = {similarity:.4f}")
 
         if similarity < 0.5:
-            logger.warning(f"[💓] DIVERGENCE DETECTED! Alignment {similarity:.4f} < 0.5")
+            msg = f"[💓] DIVERGENCE DETECTED! Alignment {similarity:.4f} < 0.5"
+            if hasattr(self.logger, 'log'):
+                 self.logger.log("warn", msg)
+                 # Update entropy on logger if possible
+                 if hasattr(self.logger, 'update_entropy'):
+                     self.logger.update_entropy(1.0 - similarity) # Lower alignment -> Higher entropy
+            else:
+                 self.logger.warning(msg)
+
             # Trigger intervention logic (placeholder)
             # self.bio_mem.perceive("System warning: Goal divergence detected. Re-aligning.")

@@ -31,6 +31,7 @@ from gca_core.memory_advanced import BiomimeticMemory
 from gca_core.perception import PerceptionSystem
 from gca_core.observer import Observer
 from gca_core.pulse import Pulse
+from gca_core.reflective_logger import ReflectiveLogger
 from dreamer import DeepDreamer
 
 # Configure logging
@@ -38,7 +39,8 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-logger = logging.getLogger("IronClaw")
+# We will use ReflectiveLogger as the main logger for GCA core logic
+base_logger = logging.getLogger("IronClaw")
 
 # Load Config
 config_path = "config.yaml"
@@ -76,10 +78,28 @@ resonance = ResonanceEngine(glassbox, memory)
 qpt = QuaternionArchitect()
 perception = PerceptionSystem()
 observer = Observer(glassbox)
-pulse = Pulse(glassbox, bio_mem)
+
+# Init Reflective Logger first so Pulse can use it
+reflective_logger = ReflectiveLogger(glassbox, bio_mem, moral_kernel)
+
+pulse = Pulse(glassbox, bio_mem, logger_instance=reflective_logger)
 pulse.start_heartbeat()
 
-logger.info("GCA Service initialized successfully")
+# Bind Introspection Loop: Logger -> Observer
+# We create a lambda to bridge the callback signature
+def introspection_callback(modality, content, metadata):
+    # Fire and forget to avoid blocking logger
+    import asyncio
+    try:
+        # Assuming we are in an event loop context, or just run directly if lightweight
+        # Since observer.process_input is synchronous (CPU bound), we can call it.
+        observer.process_input(modality, content, metadata)
+    except Exception as e:
+        print(f"Introspection callback failed: {e}")
+
+reflective_logger.bind_observer(introspection_callback)
+
+base_logger.info("GCA Service initialized successfully with Reflective Logger")
 
 # ============================================================================
 # Models
@@ -131,6 +151,9 @@ class ObservationRequest(BaseModel):
     source: Optional[str] = "unknown"
     timestamp: Optional[float] = None
 
+class FocusRequest(BaseModel):
+    focus: str
+
 # ============================================================================
 # Endpoints
 # ============================================================================
@@ -143,6 +166,14 @@ async def health():
         "device": glassbox.device,
         "vectors_loaded": len(memory.list_vectors())
     }
+
+@app.post("/v1/focus")
+async def set_system_focus(req: FocusRequest):
+    """
+    Steer the Reflective Logger's attention.
+    """
+    reflective_logger.set_focus(req.focus)
+    return {"status": "focus_updated", "focus": req.focus}
 
 @app.post("/v1/observe")
 async def observe_environment(req: ObservationRequest):
@@ -164,7 +195,7 @@ async def observe_environment(req: ObservationRequest):
 
 @app.post("/v1/reason", response_model=ReasoningResponse)
 async def reasoning_engine(req: ReasonRequest):
-    logger.info(f"Incoming from {req.user_id}: {req.text[:50]}...")
+    reflective_logger.log("info", f"Incoming from {req.user_id}: {req.text[:50]}...")
 
     try:
         # 1. PARSE SOUL CONFIG
@@ -213,7 +244,7 @@ async def reasoning_engine(req: ReasonRequest):
             risk_score = moral_kernel.calculate_risk_score(action)
             
             if not approved:
-                logger.warning(f"MORAL VETO: {reason}")
+                reflective_logger.log("warn", f"MORAL VETO: {reason}")
                 return ReasoningResponse(
                     status="BLOCKED",
                     content=f"🛡️ [ETHICAL INTERVENTION] Action blocked: {reason}",
@@ -243,7 +274,7 @@ async def reasoning_engine(req: ReasonRequest):
         )
 
     except Exception as e:
-        logger.error(f"Reasoning error: {e}", exc_info=True)
+        reflective_logger.log("error", f"Reasoning error: {e}")
         # Return error as content so the user sees it
         return ReasoningResponse(
              status="ERROR",
