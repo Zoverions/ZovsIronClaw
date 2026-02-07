@@ -32,6 +32,7 @@ from gca_core.perception import PerceptionSystem
 from gca_core.observer import Observer
 from gca_core.pulse import Pulse
 from gca_core.reflective_logger import ReflectiveLogger
+from gca_core.swarm import SwarmNetwork
 from dreamer import DeepDreamer
 
 # Configure logging
@@ -85,6 +86,9 @@ reflective_logger = ReflectiveLogger(glassbox, bio_mem, moral_kernel)
 pulse = Pulse(glassbox, bio_mem, logger_instance=reflective_logger)
 pulse.start_heartbeat()
 
+# Init Iron Swarm
+swarm_network = SwarmNetwork(glassbox, reflective_logger)
+
 # Bind Introspection Loop: Logger -> Observer
 # We create a lambda to bridge the callback signature
 def introspection_callback(modality, content, metadata):
@@ -112,6 +116,7 @@ class ReasonRequest(BaseModel):
     input_modality: Optional[str] = "text" # 'text' or 'voice'
     tools_available: List[str] = []
     context: Optional[str] = None
+    swarm_context: Optional[Dict[str, Any]] = None # Context from peer agents
 
 class ReasoningResponse(BaseModel):
     status: str
@@ -154,6 +159,14 @@ class ObservationRequest(BaseModel):
 class FocusRequest(BaseModel):
     focus: str
 
+class SwarmNodeRegisterRequest(BaseModel):
+    agent_id: str
+    role: str
+    capabilities: List[str] = []
+
+class SwarmTaskRequest(BaseModel):
+    task: str
+
 # ============================================================================
 # Endpoints
 # ============================================================================
@@ -174,6 +187,24 @@ async def set_system_focus(req: FocusRequest):
     """
     reflective_logger.set_focus(req.focus)
     return {"status": "focus_updated", "focus": req.focus}
+
+# --- Swarm Endpoints ---
+
+@app.post("/v1/swarm/register")
+async def swarm_register_node(req: SwarmNodeRegisterRequest):
+    status = swarm_network.register_node(req.agent_id, req.role, req.capabilities)
+    return {"status": status, "swarm_id": swarm_network.swarm_id}
+
+@app.post("/v1/swarm/delegate")
+async def swarm_delegate_task(req: SwarmTaskRequest):
+    agent_id = swarm_network.delegate_task(req.task)
+    if agent_id:
+        return {"status": "assigned", "agent_id": agent_id, "task": req.task}
+    return {"status": "pending", "reason": "no_suitable_agent"}
+
+@app.get("/v1/swarm/status")
+async def swarm_status():
+    return swarm_network.get_network_status()
 
 @app.post("/v1/observe")
 async def observe_environment(req: ObservationRequest):
