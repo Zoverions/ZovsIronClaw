@@ -5,9 +5,21 @@ use std::path::PathBuf;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
 
+// Sanitize filename to prevent path traversal
+fn is_safe_filename(filename: &str) -> bool {
+    // Only allow alphanumeric, dashes, underscores, and dots
+    filename.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.') &&
+    !filename.contains("..") &&
+    !filename.contains("/") &&
+    !filename.contains("\\")
+}
+
 // Check if model file exists
 #[tauri::command]
 fn check_model_exists(filename: &str) -> bool {
+    if !is_safe_filename(filename) {
+        return false;
+    }
     if let Some(mut path) = dirs::data_dir() {
         path.push("ZovsIronClaw");
         path.push("models");
@@ -20,6 +32,10 @@ fn check_model_exists(filename: &str) -> bool {
 // Download model file
 #[tauri::command]
 async fn download_model(url: &str, filename: &str, window: tauri::Window) -> Result<(), String> {
+    if !is_safe_filename(filename) {
+        return Err("Invalid filename".to_string());
+    }
+
     let mut path = dirs::data_dir().ok_or("Could not find data directory")?;
     path.push("ZovsIronClaw");
     path.push("models");
@@ -51,13 +67,51 @@ async fn download_model(url: &str, filename: &str, window: tauri::Window) -> Res
         if total_size > 0 {
             let progress = (downloaded as f64 / total_size as f64) * 100.0;
             // Emit progress event to frontend
-            // Using "download-progress" channel
             window.emit("download-progress", progress).unwrap_or(());
         }
     }
 
     Ok(())
 }
+
+// Save Soul Configuration
+#[tauri::command]
+async fn save_soul_config(soul_name: &str) -> Result<(), String> {
+    if !is_safe_filename(soul_name) {
+        return Err("Invalid soul name".to_string());
+    }
+
+    let mut path = dirs::data_dir().ok_or("Could not find data directory")?;
+    path.push("ZovsIronClaw");
+
+    if !path.exists() {
+        fs::create_dir_all(&path).await.map_err(|e| e.to_string())?;
+    }
+
+    path.push("config.json");
+
+    // Load existing config if possible
+    let mut config = serde_json::Map::new();
+    if path.exists() {
+        if let Ok(content) = fs::read_to_string(&path).await {
+            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+                if let Some(obj) = json.as_object() {
+                    config = obj.clone();
+                }
+            }
+        }
+    }
+
+    // Update soul
+    config.insert("active_soul".to_string(), serde_json::Value::String(soul_name.to_string()));
+
+    // Write back
+    let json_str = serde_json::to_string_pretty(&config).map_err(|e| e.to_string())?;
+    fs::write(&path, json_str).await.map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -91,7 +145,11 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![check_model_exists, download_model])
+        .invoke_handler(tauri::generate_handler![
+            check_model_exists,
+            download_model,
+            save_soul_config
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
