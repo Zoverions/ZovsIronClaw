@@ -2,11 +2,12 @@ import torch
 import json
 import time
 import os
+import threading
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 import logging
 from pathlib import Path
-from gca_core.secure_storage import SecureStorage
+import numpy as np
 
 logger = logging.getLogger("GCA.MemoryAdvanced")
 
@@ -22,6 +23,28 @@ class Engram:
     activation_count: int = 0
     last_accessed: float = field(default_factory=time.time)
     creation_time: float = field(default_factory=time.time)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class UserInsight:
+    """Tracks the user's Causal Signature and patterns."""
+    user_id: str
+    avg_complexity: float = 0.5  # Tracking preference for depth
+    mood_volatility: float = 0.1
+    top_intents: Dict[str, int] = field(default_factory=dict)
+    last_interaction: float = field(default_factory=time.time)
+
+    def update(self, complexity_score: float, intent: str):
+        # Exponential moving average for complexity
+        self.avg_complexity = (self.avg_complexity * 0.9) + (complexity_score * 0.1)
+
+        # Update intents
+        if intent in self.top_intents:
+            self.top_intents[intent] += 1
+        else:
+            self.top_intents[intent] = 1
+
+        self.last_interaction = time.time()
 
 class HebbianNetwork:
     """
@@ -59,6 +82,12 @@ class BiomimeticMemory:
 
         # The Workbench (Short Term / Working Memory)
         self.working_memory: List[Engram] = []
+        self.lock = threading.Lock()
+
+        # User Modeling
+        self.user_insights: Dict[str, UserInsight] = {}
+        self.insights_path = self.base_mem.storage_path / "user_insights.json"
+        self._load_insights()
 
         # Ensure basis exists
         input_dim = 1024 # Default fallback
@@ -67,94 +96,98 @@ class BiomimeticMemory:
 
         self.basis = self.base_mem.get_or_create_basis(input_dim, self.basis_size)
 
-        # Initialize secure storage
-        self.secure_storage = SecureStorage()
-
-        # Restore recent context
-        self._load_recent_memories()
-
-    def _load_recent_memories(self):
-        """
-        Load recent memories from encrypted storage to populate Working Memory.
-        This provides continuity across restarts.
-        """
-        memory_file = self.base_mem.storage_path / "memories.enc"
-        if not memory_file.exists():
-            return
-
-        try:
-            # Load all memories (could be optimized to read only last N lines)
-            all_memories = self.secure_storage.load_jsonl(memory_file)
-
-            # Take only the most recent ones that fit in WM
-            recent = all_memories[-WORKING_MEMORY_CAPACITY:]
-
-            for mem_data in recent:
-                # Reconstruct Engram
-                # Note: Vector might need to be recomputed if not stored fully,
-                # but we stored a preview. Ideally we re-embed or use the preview if sufficient.
-                # For now, we'll re-embed to ensure vector quality in WM.
-                vector = self.gb.get_activation(mem_data["content"])
-
-                # Project to concept space
-                basis = self.basis.to(vector.device)
-                concept_vector = torch.matmul(vector, basis)
-                concept_vector = torch.nn.functional.normalize(concept_vector, dim=0)
-
-                engram = Engram(
-                    content=mem_data["content"],
-                    vector=concept_vector,
-                    activation_count=mem_data.get("activation_count", 0),
-                    creation_time=mem_data.get("created_at", time.time()),
-                    last_accessed=time.time() # Refresh access time
-                )
-                self.working_memory.append(engram)
-
-            logger.info(f"Restored {len(self.working_memory)} memories from encrypted storage.")
-        except Exception as e:
-            logger.warning(f"Failed to restore memories: {e}")
-
-    def perceive(self, text: str):
+    def perceive(self, text: str, env_context: Optional[str] = None):
         """
         Sensory Input -> Working Memory.
         If WM is full, the oldest/least-used item is pushed out (Forgotten or Consolidated).
+
+        Args:
+            text: The main input text.
+            env_context: Optional string describing environment (weather, news, location).
         """
         if not text:
             return
 
-        raw_vector = self.gb.get_activation(text)
+        # Combine text with environment for vectorization, but keep content separate
+        full_input = f"{env_context}\n{text}" if env_context else text
+        raw_vector = self.gb.get_activation(full_input)
 
         # Project to concept space: (Hidden) @ (Hidden, 32) -> (32)
-        # We need self.basis to be (Hidden, 32)
-        # raw_vector is (Hidden)
-
         basis = self.basis.to(raw_vector.device)
         concept_vector = torch.matmul(raw_vector, basis)
         concept_vector = torch.nn.functional.normalize(concept_vector, dim=0)
 
-        engram = Engram(content=text, vector=concept_vector)
+        # Create Engram
+        metadata = {"has_env_context": bool(env_context)}
+        engram = Engram(content=text, vector=concept_vector, metadata=metadata)
 
-        # Check if relevant to existing WM (Rehearsal)
-        for existing in self.working_memory:
-            sim = torch.nn.functional.cosine_similarity(existing.vector, concept_vector, dim=0)
-            if sim > 0.85:
-                existing.activation_count += 1
-                existing.last_accessed = time.time()
-                # Update content with new detail (Refinement)
-                # Avoid infinite growth if it's just a repetition
-                if text not in existing.content:
-                    existing.content = f"{existing.content} -> {text}"
+        # If specific environmental context exists, add it as a separate context engram too
+        if env_context:
+            env_vec = torch.matmul(self.gb.get_activation(env_context), basis)
+            env_vec = torch.nn.functional.normalize(env_vec, dim=0)
+            env_engram = Engram(content=f"[ENV] {env_context}", vector=env_vec)
+            # Add environment directly to WM (bypass rehearsal check for now)
+            self.working_memory.append(env_engram)
 
-                # Hebbian Learning: Fire together
-                self.hebbian.fire(existing.vector, concept_vector)
-                return
+        with self.lock:
+            # Check if relevant to existing WM (Rehearsal)
+            for existing in self.working_memory:
+                sim = torch.nn.functional.cosine_similarity(existing.vector, concept_vector, dim=0)
+                if sim > 0.85:
+                    existing.activation_count += 1
+                    existing.last_accessed = time.time()
+                    # Update content with new detail (Refinement)
+                    # Avoid infinite growth if it's just a repetition
+                    if text not in existing.content:
+                        existing.content = f"{existing.content} -> {text}"
 
-        # Add to WM
-        self.working_memory.append(engram)
+                    # Hebbian Learning: Fire together
+                    self.hebbian.fire(existing.vector, concept_vector)
+                    return
 
-        # Enforce Capacity Limits (Cognitive Load Management)
-        if len(self.working_memory) > WORKING_MEMORY_CAPACITY:
-            self._evict_or_consolidate()
+            # Add to WM
+            self.working_memory.append(engram)
+
+            # Enforce Capacity Limits (Cognitive Load Management)
+            if len(self.working_memory) > WORKING_MEMORY_CAPACITY:
+                self._evict_or_consolidate()
+
+    def track_user_pattern(self, user_id: str, complexity_score: float, intent: str):
+        """
+        Update the persistent model of the user based on interaction analysis.
+        """
+        if user_id not in self.user_insights:
+            self.user_insights[user_id] = UserInsight(user_id=user_id)
+
+        self.user_insights[user_id].update(complexity_score, intent)
+        logger.debug(f"Updated insight for {user_id}: Complexity={self.user_insights[user_id].avg_complexity:.2f}")
+
+        # Periodically save (e.g., every update for now, or could throttle)
+        self._save_insights()
+
+    def get_user_insight(self, user_id: str) -> Optional[UserInsight]:
+        return self.user_insights.get(user_id)
+
+    def _load_insights(self):
+        """Load user insights from disk."""
+        if self.insights_path.exists():
+            try:
+                with open(self.insights_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    for uid, udata in data.items():
+                        self.user_insights[uid] = UserInsight(**udata)
+                logger.info(f"Loaded insights for {len(self.user_insights)} users.")
+            except Exception as e:
+                logger.error(f"Failed to load user insights: {e}")
+
+    def _save_insights(self):
+        """Save user insights to disk."""
+        try:
+            data = {uid: asdict(insight) for uid, insight in self.user_insights.items()}
+            with open(self.insights_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            logger.error(f"Failed to save user insights: {e}")
 
     def _evict_or_consolidate(self):
         """
@@ -185,14 +218,20 @@ class BiomimeticMemory:
         current_thought_vector = torch.nn.functional.normalize(current_thought_vector, dim=0)
 
         relevant_context = []
-        for engram in self.working_memory:
-            sim = torch.dot(engram.vector, current_thought_vector)
-            if sim > 0.6:
-                relevant_context.append(engram.content)
-                # Rehearsal: Reset decay timer
-                engram.last_accessed = time.time()
+        with self.lock:
+            for engram in self.working_memory:
+                sim = torch.dot(engram.vector, current_thought_vector)
+                if sim > 0.6:
+                    relevant_context.append(engram.content)
+                    # Rehearsal: Reset decay timer
+                    engram.last_accessed = time.time()
 
         return "\n".join(relevant_context)
+
+    def get_working_memory_snapshot(self) -> List[Engram]:
+        """Thread-safe copy of working memory."""
+        with self.lock:
+            return list(self.working_memory)
 
     def _save_long_term(self, engram):
         """
@@ -207,7 +246,8 @@ class BiomimeticMemory:
                 "created_at": engram.creation_time,
                 "consolidated_at": time.time(),
                 # Store vector as list for JSON serialization if needed
-                "vector_preview": engram.vector.tolist()[:5]
+                "vector_preview": engram.vector.tolist()[:5],
+                "metadata": engram.metadata
             }
 
             self.secure_storage.append_jsonl(memory_file, entry)

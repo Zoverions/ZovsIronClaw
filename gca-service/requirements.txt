@@ -17,4 +17,4 @@ Pillow
 einops
 moviepy
 qwen-vl-utils
-cryptography
+networkx>=3.0.0
