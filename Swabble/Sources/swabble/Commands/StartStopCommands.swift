@@ -8,7 +8,8 @@ struct StartCommand: ParsableCommand {
     }
 
     mutating func run() async throws {
-        print("start: launchd helper not implemented; run 'swabble serve' instead")
+        let logger = Logger(level: .error)
+        logger.error("Not Implemented: start command (launchd helper missing); run 'swabble serve' instead")
     }
 }
 
@@ -19,7 +20,8 @@ struct StopCommand: ParsableCommand {
     }
 
     mutating func run() async throws {
-        print("stop: launchd helper not implemented yet")
+        let logger = Logger(level: .error)
+        logger.error("Not Implemented: stop command (launchd helper missing)")
     }
 }
 
@@ -30,6 +32,7 @@ struct RestartCommand: ParsableCommand {
     }
 
     mutating func run() async throws {
-        print("restart: launchd helper not implemented yet")
+        let logger = Logger(level: .error)
+        logger.error("Not Implemented: restart command (launchd helper missing)")
     }
 }
