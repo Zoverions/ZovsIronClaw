@@ -29,6 +29,8 @@ from gca_core.qpt import QuaternionArchitect
 from gca_core.arena import ArenaProtocol
 from gca_core.memory_advanced import BiomimeticMemory
 from gca_core.perception import PerceptionSystem
+from gca_core.observer import Observer
+from gca_core.pulse import Pulse
 from dreamer import DeepDreamer
 
 # Configure logging
@@ -73,6 +75,9 @@ moral_kernel = MoralKernel(risk_tolerance=0.3)
 resonance = ResonanceEngine(glassbox, memory)
 qpt = QuaternionArchitect()
 perception = PerceptionSystem()
+observer = Observer(glassbox)
+pulse = Pulse(glassbox, bio_mem)
+pulse.start_heartbeat()
 
 logger.info("GCA Service initialized successfully")
 
@@ -120,6 +125,12 @@ class TranscribeResponse(BaseModel):
 class DescribeResponse(BaseModel):
     text: str
 
+class ObservationRequest(BaseModel):
+    content: str
+    modality: str = "text" # text, audio, vision
+    source: Optional[str] = "unknown"
+    timestamp: Optional[float] = None
+
 # ============================================================================
 # Endpoints
 # ============================================================================
@@ -133,13 +144,31 @@ async def health():
         "vectors_loaded": len(memory.list_vectors())
     }
 
+@app.post("/v1/observe")
+async def observe_environment(req: ObservationRequest):
+    try:
+        # Pass metadata as dict
+        metadata = {"source": req.source, "timestamp": req.timestamp}
+
+        # Run in threadpool to avoid blocking event loop with pytorch ops
+        result = await run_in_threadpool(
+            observer.process_input,
+            req.modality,
+            req.content,
+            metadata
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Observation error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/v1/reason", response_model=ReasoningResponse)
 async def reasoning_engine(req: ReasonRequest):
     logger.info(f"Incoming from {req.user_id}: {req.text[:50]}...")
 
     try:
         # 1. PARSE SOUL CONFIG
-        steering_bias = _parse_vector_config(req.soul_config)
+        soul_positive, soul_negative = _parse_vector_config(req.soul_config)
         
         # 1.5 PERCEIVE (Sensory Input)
         bio_mem.perceive(req.text)
@@ -156,8 +185,8 @@ async def reasoning_engine(req: ReasonRequest):
         wm_context = bio_mem.retrieve_context(skill_vec)
 
         # 4. VECTOR COMPOSITION
-        # Final = Skill + UserResonance + SoulBias
-        final_vec = _compose_vectors(skill_vec, user_vec, steering_bias)
+        # Final = Skill + UserResonance + SoulBias - AntiBias
+        final_vec = _compose_vectors(skill_vec, user_vec, soul_positive, soul_negative)
         
         # Auto-tune strength (mock logic for now)
         strength = 1.5
@@ -318,19 +347,60 @@ async def describe_media(
 # ============================================================================
 
 def _parse_vector_config(text):
-    # logic to parse [GCA_CONFIG] tags
-    # For now return None or a placeholder vector
-    return None
+    if not text:
+        return None, None
+    try:
+        # Assume text is the content of SOUL.md which is YAML
+        data = yaml.safe_load(text)
+        if isinstance(data, dict):
+            return data.get("base_vector_mix"), data.get("anti_vectors")
+    except Exception as e:
+        logger.warning(f"Failed to parse soul config: {e}")
+    return None, None
 
-def _compose_vectors(skill, user, soul):
-    # Vector addition logic
-    # Ensure they are on same device and shape
-    # For now, just return skill or user if skill is None
+def _compose_vectors(skill, user, soul_pos_config, soul_neg_config):
+    # Start with skill vector
+    final = None
+    device = glassbox.device
+
     if skill is not None:
-        return skill
+        final = skill.to(device)
+
+    # Add User
     if user is not None:
-        return user
-    return None
+        user = user.to(device)
+        if final is None:
+            final = user
+        else:
+            final += user
+
+    # Add Soul Positive
+    if soul_pos_config:
+        for item in soul_pos_config:
+            name = item.get("skill")
+            weight = float(item.get("weight", 1.0))
+            vec = memory.get_vector(name)
+            if vec is not None:
+                vec = vec.to(device)
+                if final is None:
+                    final = vec * weight
+                else:
+                    final += vec * weight
+
+    # Subtract Soul Negative
+    if soul_neg_config:
+        for item in soul_neg_config:
+            name = item.get("skill")
+            weight = float(item.get("weight", 1.0))
+            vec = memory.get_vector(name)
+            if vec is not None:
+                vec = vec.to(device)
+                if final is None:
+                    final = -vec * weight
+                else:
+                    final -= vec * weight
+
+    return final
 
 def _parse_tool_from_text(text: str, available_tools: List[str]) -> Optional[Dict[str, Any]]:
     text_lower = text.lower()

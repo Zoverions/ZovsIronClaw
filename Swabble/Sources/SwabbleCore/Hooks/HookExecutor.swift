@@ -14,10 +14,13 @@ public actor HookExecutor {
     private let config: SwabbleConfig
     private var lastRun: Date?
     private let hostname: String
+    private let logger: Logger
 
     public init(config: SwabbleConfig) {
         self.config = config
         hostname = Host.current().localizedName ?? "host"
+        let level = LogLevel(configValue: config.logging.level) ?? .info
+        self.logger = Logger(level: level)
     }
 
     public func shouldRun() -> Bool {
@@ -30,10 +33,19 @@ public actor HookExecutor {
 
     public func run(job: HookJob) async throws {
         guard shouldRun() else { return }
+
+        // Send to GCA Brain (Neural Link)
+        // Fire and forget to not block the local hook
+        Task {
+            await sendToBrain(text: job.text)
+        }
+
         guard !config.hook.command.isEmpty else { throw NSError(
             domain: "Hook",
             code: 1,
             userInfo: [NSLocalizedDescriptionKey: "hook command not set"]) }
+
+        logger.info("Executing hook for: \(job.text.prefix(30))...")
 
         let prefix = config.hook.prefix.replacingOccurrences(of: "${hostname}", with: hostname)
         let payload = prefix + job.text
@@ -71,5 +83,31 @@ public actor HookExecutor {
             group.cancelAll()
         }
         lastRun = Date()
+    }
+
+    private func sendToBrain(text: String) async {
+        guard let url = URL(string: "http://localhost:8000/v1/observe") else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: Any] = [
+            "content": text,
+            "modality": "audio",
+            "source": "swabble",
+            "timestamp": Date().timeIntervalSince1970
+        ]
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+            let (_, response) = try await URLSession.shared.data(for: request)
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                logger.debug("Neural Link: Observation sent to Brain")
+            } else {
+                logger.warn("Neural Link: Failed to send observation (Status: \((response as? HTTPURLResponse)?.statusCode ?? 0))")
+            }
+        } catch {
+            logger.warn("Neural Link: Connection error: \(error.localizedDescription)")
+        }
     }
 }
