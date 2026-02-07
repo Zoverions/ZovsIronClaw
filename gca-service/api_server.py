@@ -341,10 +341,13 @@ async def observe_user(
              bio_mem.perceive(state_desc)
 
         # 4. Check for Intervention against Goal
-        # Load Goal (Mock for now, or from memory if available)
-        # Ideally, we fetch this from a persistent source
-        goal_text = "I want to be a stoic, high-output coder"
-        # In future, fetch via: memory.get_goal()
+        # Load Goal from .agent/prompts/GOAL.md
+        goal_path = Path(__file__).parent.parent / ".agent" / "prompts" / "GOAL.md"
+        if goal_path.exists():
+            with open(goal_path, "r") as f:
+                goal_text = f.read().strip()
+        else:
+            goal_text = "I want to be a stoic, high-output coder" # Fallback
 
         alignment = observer.check_goal_alignment(analysis['state'], goal_text)
 

@@ -266,7 +266,7 @@ export class NeuralLink extends LitElement {
         @click=${this.toggleLink}
         title="Toggle Observer Module"
       >
-        <span class="${this.isActive ? "icon-pulse" : ""}">${icons.camera}</span>
+        <span class="${this.isActive ? "icon-pulse" : ""}" style="width: 1.25em; height: 1.25em; display: inline-flex;">${icons.ironClaw}</span>
         <span>${this.isActive ? "NEURAL LINK: ACTIVE" : "OBSERVER: OFFLINE"}</span>
       </button>
 
