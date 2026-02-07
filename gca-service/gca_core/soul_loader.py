@@ -23,6 +23,7 @@ class SoulTemplate:
         self.entropy_tolerance = data.get("entropy_tolerance", "MEDIUM")
         self.risk_tolerance = data.get("risk_tolerance", 0.3)
         self.traits = data.get("traits", [])
+        self.anti_vectors = data.get("anti_vectors", [])
         self.communication = data.get("communication", {})
         self.tool_preferences = data.get("tool_preferences", {})
         self.metadata = data.get("metadata", {})
@@ -39,6 +40,19 @@ class SoulTemplate:
         """
         composition = {}
         for item in self.base_vector_mix:
+            skill = item.get("skill")
+            weight = item.get("weight", 1.0)
+            if skill:
+                composition[skill] = weight
+        return composition
+
+    def get_anti_vector_composition(self) -> Dict[str, float]:
+        """
+        Get the anti-vector composition as a dictionary of skill names to weights.
+        These are traits to be subtracted.
+        """
+        composition = {}
+        for item in self.anti_vectors:
             skill = item.get("skill")
             weight = item.get("weight", 1.0)
             if skill:
@@ -216,11 +230,20 @@ class SoulLoader:
         
         # Blend vector compositions
         blended_vectors = {}
+        blended_anti_vectors = {}
+
         for soul, weight in zip(loaded_souls, weights):
+            # Positive Vectors
             for skill, skill_weight in soul.get_vector_composition().items():
                 if skill not in blended_vectors:
                     blended_vectors[skill] = 0.0
                 blended_vectors[skill] += skill_weight * weight
+
+            # Anti Vectors
+            for skill, skill_weight in soul.get_anti_vector_composition().items():
+                if skill not in blended_anti_vectors:
+                    blended_anti_vectors[skill] = 0.0
+                blended_anti_vectors[skill] += skill_weight * weight
                 
         # Create composite data
         composite_data = {
@@ -229,6 +252,10 @@ class SoulLoader:
             "base_vector_mix": [
                 {"skill": skill, "weight": weight}
                 for skill, weight in blended_vectors.items()
+            ],
+            "anti_vectors": [
+                {"skill": skill, "weight": weight}
+                for skill, weight in blended_anti_vectors.items()
             ],
             "qpt_defaults": loaded_souls[0].qpt_defaults,  # Use first soul's QPT
             "entropy_tolerance": loaded_souls[0].entropy_tolerance,
