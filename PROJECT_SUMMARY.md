@@ -355,6 +355,7 @@ GCA_RISK_TOLERANCE=0.5
 - [x] Enhanced soul composition and blending (v4.6)
 - [x] Multi-agent coordination with shared moral kernel (v4.7)
 - [x] Proactive "Pulse" system for entropy monitoring (v4.8)
+- [x] OpenAI-compatible Tool Integration: Exposes native OpenClaw capabilities to GCA via `/v1/chat/completions`
 
 ### Planned Features (v4.9+)
 - [ ] Vector visualization and debugging tools
