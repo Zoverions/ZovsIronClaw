@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -e
+set -o pipefail
 
 # ZovsIronClaw Local Installation Script
 
@@ -9,6 +10,12 @@ echo "=== ZovsIronClaw Installer ==="
 command -v node >/dev/null 2>&1 || { echo >&2 "Node.js is required but not installed. Aborting."; exit 1; }
 command -v python3 >/dev/null 2>&1 || { echo >&2 "Python 3 is required but not installed. Aborting."; exit 1; }
 command -v pnpm >/dev/null 2>&1 || { echo >&2 "pnpm is required but not installed. Aborting."; exit 1; }
+
+# Check for ffmpeg (Optional but recommended)
+if ! command -v ffmpeg >/dev/null 2>&1; then
+    echo "Warning: ffmpeg is not installed. Audio/Video features may fail."
+    echo "Please install ffmpeg via your package manager (brew, apt, choco)."
+fi
 
 echo "Prerequisites checked."
 
@@ -49,25 +56,52 @@ if [ ! -f ".env" ]; then
             TOKEN="change_me_$(date +%s)"
         fi
 
-        # Update token using sed (handling macOS diffs)
-        if [[ "$OSTYPE" == "darwin"* ]]; then
-            sed -i '' "s/OPENCLAW_GATEWAY_TOKEN=.*/OPENCLAW_GATEWAY_TOKEN=$TOKEN/" .env
-            # If the token line didn't exist (e.g. .env.example), append it
-            if ! grep -q "OPENCLAW_GATEWAY_TOKEN=" .env; then
-                echo "OPENCLAW_GATEWAY_TOKEN=$TOKEN" >> .env
+        # Update/Append Environment Variables
+
+        # Helper function to append or update env var
+        update_env() {
+            local key=$1
+            local value=$2
+            if grep -q "^${key}=" .env; then
+                # Variable exists, update it (macOS compatible sed)
+                if [[ "$OSTYPE" == "darwin"* ]]; then
+                     sed -i '' "s|^${key}=.*|${key}=${value}|" .env
+                else
+                     sed -i "s|^${key}=.*|${key}=${value}|" .env
+                fi
+            else
+                # Variable missing, append it
+                echo "${key}=${value}" >> .env
             fi
-        else
-            sed -i "s/OPENCLAW_GATEWAY_TOKEN=.*/OPENCLAW_GATEWAY_TOKEN=$TOKEN/" .env
-            if ! grep -q "OPENCLAW_GATEWAY_TOKEN=" .env; then
-                echo "OPENCLAW_GATEWAY_TOKEN=$TOKEN" >> .env
-            fi
+        }
+
+        update_env "OPENCLAW_GATEWAY_TOKEN" "$TOKEN"
+        # Match src/providers/gca-bridge.ts expectation (GCA_SERVICE_URL)
+        update_env "GCA_SERVICE_URL" "http://localhost:8000"
+        update_env "ENABLED_EXTENSIONS" "gca-brain,voice-call"
+
+        # Set State Dir to Config Dir (Default to ~/.openclaw if not set)
+        # We read OPENCLAW_CONFIG_DIR from .env if it exists, else default
+        CONFIG_DIR=$(grep "^OPENCLAW_CONFIG_DIR=" .env | cut -d '=' -f2-)
+        if [ -z "$CONFIG_DIR" ]; then
+            CONFIG_DIR="$HOME/.openclaw"
         fi
-        echo "Generated OPENCLAW_GATEWAY_TOKEN in .env"
+        update_env "OPENCLAW_STATE_DIR" "$CONFIG_DIR"
+
+        echo "Configured .env with local settings."
     else
         echo "Warning: No .env template found. Please create .env manually."
     fi
 else
     echo ".env already exists. Skipping generation."
+
+    # Check if critical vars are present, warn if not
+    if ! grep -q "GCA_SERVICE_URL=" .env; then
+        echo "Warning: GCA_SERVICE_URL is missing in .env. Recommend setting it to http://localhost:8000"
+    fi
+    if ! grep -q "OPENCLAW_STATE_DIR=" .env; then
+        echo "Warning: OPENCLAW_STATE_DIR is missing in .env. Recommend setting it to match OPENCLAW_CONFIG_DIR."
+    fi
 fi
 
 # Ensure assets directory exists

@@ -19,6 +19,12 @@ IF %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
+WHERE ffmpeg >nul 2>nul
+IF %ERRORLEVEL% NEQ 0 (
+    echo Warning: ffmpeg is not installed. Audio/Video features may fail.
+    echo Please install ffmpeg via choco or winget.
+)
+
 echo Prerequisites checked.
 
 echo Installing Node.js dependencies...
@@ -43,6 +49,13 @@ if not exist ".env" (
     ) else if exist ".env.example" (
         copy .env.example .env
     )
+
+    echo Appending local settings to .env...
+    echo. >> .env
+    echo # Local Config >> .env
+    echo GCA_SERVICE_URL=http://localhost:8000 >> .env
+    echo ENABLED_EXTENSIONS=gca-brain,voice-call >> .env
+    echo OPENCLAW_STATE_DIR=%%USERPROFILE%%\.openclaw >> .env
 
     echo NOTE: Please verify .env has OPENCLAW_GATEWAY_TOKEN set.
 ) else (
