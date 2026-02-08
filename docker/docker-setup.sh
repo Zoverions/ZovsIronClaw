@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
-EXTRA_COMPOSE_FILE="$ROOT_DIR/docker-compose.extra.yml"
+# ROOT_DIR is the project root (parent of docker dir)
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DOCKER_DIR="$ROOT_DIR/docker"
+COMPOSE_FILE="$DOCKER_DIR/docker-compose.yml"
+EXTRA_COMPOSE_FILE="$DOCKER_DIR/docker-compose.extra.yml"
 IMAGE_NAME="${OPENCLAW_IMAGE:-openclaw:local}"
 EXTRA_MOUNTS="${OPENCLAW_EXTRA_MOUNTS:-}"
 HOME_VOLUME_NAME="${OPENCLAW_HOME_VOLUME:-}"
@@ -174,7 +176,7 @@ echo "==> Building Docker image: $IMAGE_NAME"
 docker build \
   --build-arg "OPENCLAW_DOCKER_APT_PACKAGES=${OPENCLAW_DOCKER_APT_PACKAGES}" \
   -t "$IMAGE_NAME" \
-  -f "$ROOT_DIR/Dockerfile" \
+  -f "$DOCKER_DIR/Dockerfile" \
   "$ROOT_DIR"
 
 echo ""

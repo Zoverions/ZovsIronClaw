@@ -4,16 +4,17 @@ services:
   # --- THE BRAIN (Python GCA) ---
   gca-service:
     build:
-      context: ./gca-service
+      context: ../gca-service
+      dockerfile: ../docker/Dockerfile.gca-service
     image: openclaw-gca-brain
     container_name: gca-brain
     restart: unless-stopped
     ports:
       - "8000:8000"
     volumes:
-      - ./gca-service/gca_assets:/app/gca_assets
+      - ../gca-service/gca_assets:/app/gca_assets
       - claw_state:/app/openclaw_state
-      - ./.agent:/.agent
+      - ../.agent:/.agent
     environment:
       - PYTHONUNBUFFERED=1
       # Local Qwen model doesn't strictly need API key but keeping structure
@@ -32,7 +33,9 @@ services:
 
   # --- THE BODY (OpenClaw / Gateway) ---
   gateway:
-    build: .  # Uses the root Dockerfile
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     image: openclaw-gateway
     container_name: openclaw-gateway
     restart: unless-stopped
@@ -48,8 +51,8 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./.agent:/app/.agent
-      - ./extensions:/app/extensions
+      - ../.agent:/app/.agent
+      - ../extensions:/app/extensions
       - claw_state:/home/node/.openclaw
     networks:
       - claw-net

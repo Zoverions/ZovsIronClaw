@@ -58,7 +58,7 @@ profiles:
 geometry:
   layer_idx: 12       # The specific layer where we inject steering vectors (might need per-model tuning)
   basis_size: 32      # Dimensionality of the thought space
-  assets_dir: "/app/gca_assets" # Inside the container
+  assets_dir: "./gca_assets" # Local path
 
 safety:
   max_divergence: 5.0      # Hallucination threshold
