@@ -26,7 +26,7 @@ class GlassBox:
     
     def __init__(self, model_name: Optional[str] = None, device: Optional[str] = None, config: Optional[Dict[str, Any]] = None):
         """
-        Initialize the GlassBox with a specific model.
+        Initialize the GlassBox with configuration but defer model loading.
         Args:
             model_name: Override model ID.
             device: Override device.
@@ -47,10 +47,37 @@ class GlassBox:
 
         self.model_name = model_name or self.cfg.get('system', {}).get('model_id')
         self.device = device or self.cfg.get('system', {}).get('device', 'cpu')
-        dtype_str = self.cfg.get('system', {}).get('dtype', 'float32')
-        self.dtype = getattr(torch, dtype_str)
 
-        logger.info(f"Loading model: {self.model_name} on {self.device} ({dtype_str})")
+        # Determine dtype logic (will be applied during load)
+        dtype_str = self.cfg.get('system', {}).get('dtype', 'auto')
+        if dtype_str == 'auto':
+            # Auto-optimize based on device if not specified
+            if "cuda" in self.device:
+                self.dtype = torch.float16
+            elif "mps" in self.device:
+                self.dtype = torch.float16
+            else:
+                self.dtype = torch.float32
+        else:
+            self.dtype = getattr(torch, dtype_str)
+
+        self.layer_idx = self.cfg.get('geometry', {}).get('layer_idx', 12)
+
+        # Lazy Loading State
+        self.model = None
+        self.tokenizer = None
+        self.activation_cache = {}
+
+        logger.info(f"GlassBox initialized (Lazy Mode). Model: {self.model_name} on {self.device}")
+
+    def _ensure_model_loaded(self):
+        """
+        Loads the model and tokenizer if they are not already loaded.
+        """
+        if self.model is not None and self.tokenizer is not None:
+            return
+
+        logger.info(f"Loading model: {self.model_name} on {self.device} (dtype={self.dtype})")
 
         # Quantization Logic
         quantization_type = self.cfg.get('system', {}).get('quantization', 'none')
@@ -96,13 +123,12 @@ class GlassBox:
         if self.device != "auto" and quantization_config is None and self.device not in str(self.model.device):
              self.model.to(self.device)
 
-        self.layer_idx = self.cfg.get('geometry', {}).get('layer_idx', 12)
-        self.activation_cache = {}
-        logger.info(f"GlassBox initialized. Steering layer: {self.layer_idx}")
+        logger.info(f"GlassBox Model Loaded. Steering layer: {self.layer_idx}")
 
     @lru_cache(maxsize=1024)
     def _cached_activation(self, text: str, layer_idx: int) -> torch.Tensor:
         """Internal cached activation method to avoid re-computation."""
+        self._ensure_model_loaded()
         target_layer = layer_idx
 
         activations = []
@@ -131,6 +157,7 @@ class GlassBox:
         """
         Extract activation vectors from the model for given text.
         """
+        # _cached_activation calls _ensure_model_loaded
         target_layer = layer_idx if layer_idx is not None else self.layer_idx
         return self._cached_activation(text, target_layer)
 
@@ -146,6 +173,7 @@ class GlassBox:
         Generate text with geometric steering applied via forward hook.
         Handles DeepSeek-R1 "Thought" separation.
         """
+        self._ensure_model_loaded()
         handle = None
         if steering_vec is not None:
             steering_vec = steering_vec.to(self.device).to(self.dtype)
@@ -214,6 +242,7 @@ class GlassBox:
         return None, text
 
     def _get_layer(self, idx):
+        self._ensure_model_loaded()
         if hasattr(self.model, "model"):
             if hasattr(self.model.model, "layers"):
                 return self.model.model.layers[idx]
@@ -228,12 +257,30 @@ class GlassBox:
         return modules[-1]
 
     def compute_vector_difference(self, text_a: str, text_b: str) -> torch.Tensor:
+        # get_activation handles lazy loading
         vec_a = self.get_activation(text_a)
         vec_b = self.get_activation(text_b)
         return vec_b - vec_a
         
     def project_onto_axis(self, text: str, axis_vector: torch.Tensor) -> float:
+        # get_activation handles lazy loading
         activation = self.get_activation(text)
         activation_norm = activation / (activation.norm() + 1e-8)
         axis_norm = axis_vector / (axis_vector.norm() + 1e-8)
         return torch.dot(activation_norm, axis_norm).item()
+
+    def get_hidden_size(self) -> int:
+        """
+        Get the hidden size of the model without fully loading it if possible.
+        """
+        if self.model is not None:
+             return self.model.config.hidden_size
+
+        # Load config only
+        from transformers import AutoConfig
+        try:
+            config = AutoConfig.from_pretrained(self.model_name, trust_remote_code=True)
+            return config.hidden_size
+        except Exception as e:
+            logger.warning(f"Could not load AutoConfig for {self.model_name}: {e}. Defaulting to 1024.")
+            return 1024
