@@ -22,6 +22,7 @@ from collections import Counter
 sys.path.insert(0, str(Path(__file__).parent))
 
 from gca_core.glassbox import GlassBox
+from gca_core.resource_manager import ResourceManager
 from gca_core.moral import MoralKernel, Action, EntropyClass
 from gca_core.optimizer import GCAOptimizer
 from gca_core.memory import IsotropicMemory
@@ -44,13 +45,11 @@ logging.basicConfig(
 # We will use ReflectiveLogger as the main logger for GCA core logic
 base_logger = logging.getLogger("IronClaw")
 
-# Load Config
+# Load Config via Resource Manager
 config_path = "config.yaml"
-if os.path.exists(config_path):
-    with open(config_path) as f:
-        CFG = yaml.safe_load(f)
-else:
-    CFG = {}
+resource_manager = ResourceManager(config_path=config_path)
+CFG = resource_manager.get_active_config()
+logger.info(f"Loaded Profile: {CFG.get('active_profile', 'unknown').upper()}")
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -69,7 +68,7 @@ app.add_middleware(
 
 # --- INIT CORE COMPONENTS ---
 logger.info("Booting IronClaw Core...")
-glassbox = GlassBox() # Uses config.yaml
+glassbox = GlassBox(config=CFG)
 memory = IsotropicMemory(glassbox.device, storage_path="./gca_assets")
 bio_mem = BiomimeticMemory(glassbox, memory)
 dreamer = DeepDreamer(bio_mem)
@@ -78,7 +77,7 @@ optimizer = GCAOptimizer(glassbox, memory)
 moral_kernel = MoralKernel(risk_tolerance=0.3)
 resonance = ResonanceEngine(glassbox, memory)
 qpt = QuaternionArchitect()
-perception = PerceptionSystem()
+perception = PerceptionSystem(config=CFG)
 observer = Observer(glassbox)
 causal_engine = CausalFlowEngine(glassbox)
 
@@ -187,6 +186,7 @@ class ObservationResponse(BaseModel):
 async def health():
     return {
         "status": "healthy",
+        "profile": CFG.get("active_profile"),
         "model": glassbox.model_name,
         "device": glassbox.device,
         "vectors_loaded": len(memory.list_vectors()),
