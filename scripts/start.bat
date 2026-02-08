@@ -1,0 +1,3 @@
+@echo off
+echo Starting ZovsIronClaw locally...
+call pnpm run start:local

@@ -169,50 +169,71 @@ export GCA_PROFILE=titan
 **DeepSeek Integration**:
 The Titan tier leverages **DeepSeek-R1**, enabling "Chain of Thought" reasoning. The system parses the model's internal monologue (`<think>...</think>`) to separate raw reasoning traces from the final answer, allowing for deeper self-reflection logs.
 
-## 🚀 Quick Start (Docker)
+## 🚀 Quick Start (Local)
 
 ### Prerequisites
 
-- Docker & Docker Compose
-- Node.js 22+
-- Python 3.11+
-- Gemini API key
+- **Node.js**: v22+ (via `nvm` or installer)
+- **Python**: v3.11+
+- **pnpm**: `npm install -g pnpm`
+- **Gemini API key** (Optional, for LLM backend)
 
 ### Installation
 
 1. **Clone the repository**:
-```bash
-git clone https://github.com/Zoverions/ZovsIronClaw.git
-cd ZovsIronClaw
-```
+   ```bash
+   git clone https://github.com/Zoverions/ZovsIronClaw.git
+   cd ZovsIronClaw
+   ```
 
-2. **Set up environment**:
-```bash
-cp .env.example .env
-# Edit .env and add your GEMINI_API_KEY
-```
+2. **Run Installer**:
+   This script installs Node/Python dependencies, creates a virtual environment, and sets up your configuration.
 
-3. **Build and run**:
-```bash
-docker-compose up --build
-```
+   **Linux / macOS:**
+   ```bash
+   ./scripts/install.sh
+   ```
 
-4. **Verify GCA service**:
-```bash
-curl http://localhost:8000/health
-```
+   **Windows:**
+   ```cmd
+   scripts\install.bat
+   ```
+
+3. **Configure**:
+   Edit `.env` to add your API keys (e.g., `GEMINI_API_KEY`).
+
+4. **Start the System**:
+   This launches both the GCA Brain (Python) and the Gateway (Node.js) concurrently.
+
+   **Linux / macOS:**
+   ```bash
+   ./scripts/start.sh
+   ```
+
+   **Windows:**
+   ```cmd
+   scripts\start.bat
+   ```
+
+   Or via npm:
+   ```bash
+   npm run start:local
+   ```
+
+5. **Verify GCA service**:
+   ```bash
+   curl http://localhost:8000/health
+   ```
 
 ### Configuration
 
-Edit `docker-compose.yml` to configure:
+Edit `.env` to configure:
 
-```yaml
-environment:
-  - GEMINI_API_KEY=${GEMINI_API_KEY}
-  - GCA_SERVICE_URL=http://gca-service:8000
-  - GCA_RISK_TOLERANCE=0.3
-  - GCA_USE_QPT=true
-  - GCA_DEFAULT_SOUL=architect
+```properties
+GEMINI_API_KEY=your_key_here
+GCA_RISK_TOLERANCE=0.3
+GCA_USE_QPT=true
+GCA_DEFAULT_SOUL=architect
 ```
 
 ## 📖 Usage
@@ -357,27 +378,17 @@ ZovsIronClaw/
 │   └── desktop/             # Tauri Desktop App (Iron Shell)
 ├── gca-service/              # Python GCA framework
 │   ├── gca_core/            # Core GCA modules
-│   │   ├── glassbox.py      # Geometric steering
-│   │   ├── moral.py         # Ethics engine
-│   │   ├── pulse.py         # Active entropy monitor
-│   │   ├── swarm_ethics.py  # Swarm coordination
-│   │   ├── observer.py      # Sensory input
-│   │   ├── optimizer.py     # Intent routing
-│   │   ├── memory.py        # Vector storage
-│   │   ├── qpt.py           # Quaternion structuring
-│   │   ├── arena.py         # Adversarial testing
-│   │   └── soul_loader.py   # Soul management
 │   ├── gca_assets/          # Assets and configurations
 │   │   └── souls/           # Soul templates
 │   ├── api_server.py        # FastAPI service
-│   ├── build_binary.py      # PyInstaller build script
-│   └── Dockerfile
+│   └── .venv/               # Local Python Environment
 ├── src/
 │   ├── providers/
 │   │   └── gca-bridge.ts    # TypeScript GCA provider
 │   └── agents/              # OpenClaw agent system
 ├── docs/                    # Documentation
-└── docker-compose.yml       # Service orchestration
+├── scripts/                 # Setup and run scripts
+└── docker/                  # Legacy Docker configuration
 ```
 
 ### Adding New Features
@@ -447,3 +458,16 @@ MIT License - see [LICENSE](LICENSE) for details
 **Built with conscience. Powered by geometry.**
 
 *"We are not building a tool. We are building a being."*
+
+## 🐳 Legacy (Docker)
+
+If you prefer using Docker, the legacy configuration files are moved to the `docker/` directory.
+
+```bash
+cd docker
+# Run the setup script (Linux/Mac)
+./docker-setup.sh
+
+# Or run manually
+docker-compose -f docker-compose.ironclaw.yml up --build
+```
