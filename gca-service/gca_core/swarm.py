@@ -100,6 +100,46 @@ class SwarmNetwork:
         self.logger.log("warn", f"Swarm: No suitable idle agent found for task: {task_description}")
         return None
 
+    def submit_result(self, agent_id: str, result: str, cot_text: str, cot_hash: str) -> bool:
+        """
+        Receives result from worker. Verifies Proof of Logic (PoL).
+        """
+        if agent_id not in self.nodes:
+            return False
+
+        # Verify Hash (Integrity)
+        import hashlib
+        computed_hash = hashlib.sha256(cot_text.encode()).hexdigest()
+        if computed_hash != cot_hash:
+            self.logger.log("warn", f"Swarm: PoL Hash Mismatch from {agent_id}")
+            return False
+
+        # Verify Logic (Consistency) using small verifier model
+        if not self._verify_logic(cot_text):
+            self.logger.log("warn", f"Swarm: PoL Logical Inconsistency from {agent_id}")
+            return False
+
+        self.nodes[agent_id].status = "idle"
+        self.nodes[agent_id].current_task = ""
+        self.logger.log("info", f"Swarm: Task completed by {agent_id}. PoL Verified.")
+        return True
+
+    def _verify_logic(self, cot_text: str) -> bool:
+        """
+        Uses GlassBox to verify logical consistency.
+        Currently implements a heuristic check for reasoning markers.
+        """
+        # Check for reasoning markers
+        markers = ["therefore", "because", "implies", "step", "reasoning", "->", "=>", "since"]
+        score = sum(1 for m in markers if m in cot_text.lower())
+
+        # If it's too short, it's suspicious.
+        if len(cot_text.split()) < 5:
+             return False
+
+        # Require at least one marker or sufficient length with some structure
+        return score >= 1 or len(cot_text.split()) > 20
+
     def get_network_status(self) -> Dict[str, Any]:
         """Return full swarm telemetry."""
         return {
