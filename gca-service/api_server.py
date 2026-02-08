@@ -272,7 +272,11 @@ async def chat_completions(req: ChatCompletionRequest):
 
         # If tools are present, append instructions
         if tool_names:
-            structured_prompt += f"\n\nAVAILABLE TOOLS: {', '.join(tool_names)}\nTo use a tool, reply with: TOOL_CALL: <tool_name> <arguments>"
+            # v4.9: Native Tool Integration - Use Optimizer to select and format tools
+            relevant_tools = optimizer.select_relevant_tools(user_text, tool_names)
+            tool_definitions = "\n".join([t.format_prompt() for t in relevant_tools])
+
+            structured_prompt += f"\n\n[AVAILABLE TOOLS]\n{tool_definitions}\nTo use a tool, output: TOOL_CALL: <tool_name> <arguments>"
 
         # Generate
         response_text = glassbox.generate_steered(
@@ -434,6 +438,14 @@ async def reasoning_engine(req: ReasonRequest):
             working_memory=wm_context,
             causal_analysis=causal_metrics
         )
+
+        # 5.5 TOOL INJECTION
+        if req.tools_available:
+            # v4.9: Native Tool Integration - Use Optimizer to select and format tools
+            relevant_tools = optimizer.select_relevant_tools(req.text, req.tools_available)
+            tool_definitions = "\n".join([t.format_prompt() for t in relevant_tools])
+
+            structured_prompt += f"\n\n[AVAILABLE TOOLS]\n{tool_definitions}\nTo use a tool, output: TOOL_CALL: <tool_name> <arguments>"
 
         # 6. THINKING (Generation)
         response_text = glassbox.generate_steered(

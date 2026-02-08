@@ -6,6 +6,7 @@ Routes user intents to appropriate skill vectors and manages cognitive flow.
 import torch
 from typing import Optional, Dict, List
 import logging
+from .tools import ToolRegistry, Tool
 
 logger = logging.getLogger("GCA.Optimizer")
 
@@ -27,8 +28,34 @@ class GCAOptimizer:
         self.glassbox = glassbox
         self.memory = memory
         self.intent_cache = {}
+        self.tool_registry = ToolRegistry()
         logger.info("GCA Optimizer initialized")
         
+    def select_relevant_tools(self, user_input: str, available_tool_names: List[str]) -> List[Tool]:
+        """
+        Select relevant tools based on user input and intent.
+        Prioritizes tools that match the detected intent vector.
+        """
+        intent = self.route_intent(user_input)
+        relevant_tools = []
+
+        for name in available_tool_names:
+            tool = self.tool_registry.get(name)
+            if not tool:
+                # If tool is not in registry, create a generic one so we don't drop it
+                tool = Tool(name=name, description="External tool", parameters={}, intent_vector="GENERAL")
+
+            # Weigh GCA components heavily:
+            # If the tool's intent vector matches the routed intent, it's highly relevant.
+            if tool.intent_vector == intent:
+                relevant_tools.insert(0, tool) # Prioritize
+            elif tool.intent_vector == "GENERAL":
+                relevant_tools.append(tool)
+            else:
+                relevant_tools.append(tool)
+
+        return relevant_tools
+
     def route_intent(self, user_input: str) -> str:
         """
         Analyze user input and route to appropriate skill vector.
