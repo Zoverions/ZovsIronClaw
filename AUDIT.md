@@ -62,7 +62,10 @@ The audit revealed a robust core architecture but identified critical bugs in me
 
 - **Encryption:** Uses `cryptography.fernet` (AES-128-CBC + HMAC). Keys are stored in `~/.ironclaw/secure/key.bin` with 600 permissions. This is good.
 - **Path Traversal:** The Rust backend (`lib.rs`) implements `is_safe_filename` to sanitize inputs. This is good.
-- **API:** The `gca-service` binds to `0.0.0.0`. This exposes the API to the local network. Ensure firewall rules are in place or bind to `127.0.0.1` if remote access is not intended.
+- **API:** The `gca-service` previously bound to `0.0.0.0`. This has been updated to bind to `127.0.0.1` by default to prevent network exposure.
+- **CORS:** The API allowed all origins (`*`). This has been restricted to `localhost` and Tauri origins.
+- **Tauri Security:** The desktop app had `csp: null`. This has been updated to a strict CSP.
+- **Model Downloads:** The desktop app allowed downloading arbitrary URLs. This has been restricted to trusted domains (e.g., Hugging Face).
 
 ## 6. Recommendations for v5.0.0
 
@@ -70,6 +73,10 @@ The audit revealed a robust core architecture but identified critical bugs in me
 2.  **Enhance Pulse:** Make it "Active" rather than just a monitor.
 3.  **Upgrade Memory:** Move to a hierarchical structure.
 4.  **Swarm Consensus:** Implement a lightweight proof-of-work/logic for the Iron Swarm.
+5.  **Authentication:** Implement API Key or Token-based authentication for the GCA service to prevent unauthorized local access.
+6.  **Model Signing:** Implement cryptographic verification of downloaded models.
+
+For detailed implementation recommendations and novel security insights, see [SECURITY_RECOMMENDATIONS.md](./SECURITY_RECOMMENDATIONS.md).
 
 ---
-**Status:** Audit Complete. Proceeding with fixes.
+**Status:** Audit Complete. Critical security fixes applied.

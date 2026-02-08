@@ -32,6 +32,19 @@ fn check_model_exists(filename: &str) -> bool {
 // Download model file
 #[tauri::command]
 async fn download_model(url: &str, filename: &str, window: tauri::Window) -> Result<(), String> {
+    // Validate URL against trusted domains
+    let trusted_domains = vec![
+        "https://huggingface.co/",
+        "https://cdn-lfs.huggingface.co/",
+        "https://modelscope.cn/",
+        "https://ollama.com/"
+    ];
+
+    let is_trusted = trusted_domains.iter().any(|&domain| url.starts_with(domain));
+    if !is_trusted {
+        return Err(format!("URL not allowed. Must start with one of: {:?}", trusted_domains));
+    }
+
     if !is_safe_filename(filename) {
         return Err("Invalid filename".to_string());
     }
