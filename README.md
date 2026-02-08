@@ -4,7 +4,7 @@
 
 **A fork of OpenClaw with deep integration of the GCA (Geometric Conscience Architecture) framework.**
 
-![Version](https://img.shields.io/badge/version-4.6.0-blue)
+![Version](https://img.shields.io/badge/version-4.8.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.11-blue)
 ![TypeScript](https://img.shields.io/badge/typescript-5.0-blue)
