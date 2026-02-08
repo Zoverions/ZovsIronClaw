@@ -3,8 +3,8 @@ import json
 import time
 import os
 import threading
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional
+from dataclasses import dataclass, field, asdict
+from typing import List, Dict, Optional, Any
 import logging
 from pathlib import Path
 import numpy as np
@@ -90,10 +90,7 @@ class BiomimeticMemory:
         self._load_insights()
 
         # Ensure basis exists
-        input_dim = 1024 # Default fallback
-        if hasattr(self.gb.model, "config"):
-             input_dim = self.gb.model.config.hidden_size
-
+        input_dim = self.gb.get_hidden_size()
         self.basis = self.base_mem.get_or_create_basis(input_dim, self.basis_size)
 
     def perceive(self, text: str, env_context: Optional[str] = None):

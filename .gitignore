@@ -108,3 +108,4 @@ apps/desktop/src-tauri/target/
 build/
 dist/
 *.spec
+__pycache__/
