@@ -29,8 +29,11 @@ class CronReader:
         """
         Returns a list of jobs scheduled to run within the next `window_minutes`.
         """
-        if not self.cron_path.exists():
-            logger.debug(f"Cron store not found at {self.cron_path}")
+        if not self.cron_path.exists() or not self.cron_path.is_file():
+            # Silent fail for missing file is expected during startup
+            # But debug log it
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Cron store not accessible at {self.cron_path}")
             return []
 
         try:
@@ -62,8 +65,14 @@ class CronReader:
 
             return upcoming
 
+        except json.JSONDecodeError as e:
+            logger.warning(f"Cron store JSON corrupt: {e}")
+            return []
+        except OSError as e:
+            logger.error(f"Failed to read cron store (IO): {e}")
+            return []
         except Exception as e:
-            logger.error(f"Failed to read cron store: {e}")
+            logger.error(f"Unexpected error reading cron store: {e}")
             return []
 
     def _format_job(self, job: Dict, next_run_ms: float) -> Dict:

@@ -12,13 +12,12 @@ services:
       - "8000:8000"
     volumes:
       - ./gca-service/gca_assets:/app/gca_assets
-      - claw_state:/app/openclaw_state
-      - ./.agent:/.agent
+      - claw_state:/app/openclaw_state:ro
+      - ./.agent:/app/.agent
     environment:
       - PYTHONUNBUFFERED=1
       # Local Qwen model doesn't strictly need API key but keeping structure
       - GCA_LOG_LEVEL=INFO
-      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
       - OPENCLAW_STATE_DIR=/app/openclaw_state
     networks:
       - claw-net
