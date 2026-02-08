@@ -27,6 +27,105 @@ class Engram:
     creation_time: float = field(default_factory=time.time)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
+class SensoryBuffer:
+    """
+    Tier 1: Transient sensory input (Milliseconds/Seconds).
+    Rapid decay. Stores raw inputs before processing.
+    """
+    def __init__(self, decay_rate=0.5):
+        self.buffer: List[Engram] = []
+        self.decay_rate = decay_rate
+
+    def add(self, engram: Engram):
+        self.buffer.append(engram)
+        self._decay()
+
+    def _decay(self):
+        # Remove items older than X seconds or keeping only last N items
+        # For simplicity, keep last 3 items
+        if len(self.buffer) > 3:
+            self.buffer.pop(0)
+
+    def flush(self) -> List[Engram]:
+        """Move items to next tier."""
+        items = list(self.buffer)
+        self.buffer.clear()
+        return items
+
+class EpisodicHippocampus:
+    """
+    Tier 2: Short-term / Working Memory (Days/Sessions).
+    Capacity limited (7 +/- 2). Handles rehearsal and consolidation.
+    """
+    def __init__(self, capacity=WORKING_MEMORY_CAPACITY):
+        self.capacity = capacity
+        self.engrams: List[Engram] = []
+        self.lock = threading.Lock()
+
+    def add(self, engram: Engram) -> Optional[Engram]:
+        """
+        Adds engram. Returns dropped engram if full.
+        """
+        with self.lock:
+             # Check for existing (Rehearsal)
+            for existing in self.engrams:
+                sim = torch.nn.functional.cosine_similarity(existing.vector, engram.vector, dim=0)
+                if sim > 0.85:
+                    existing.activation_count += 1
+                    existing.last_accessed = time.time()
+                    if engram.content not in existing.content:
+                        existing.content = f"{existing.content} -> {engram.content}"
+                    return None
+
+            self.engrams.append(engram)
+
+            if len(self.engrams) > self.capacity:
+                # Evict LRU
+                self.engrams.sort(key=lambda x: x.last_accessed, reverse=True)
+                return self.engrams.pop() # Return dropped item
+            return None
+
+    def retrieve(self, query_vector: torch.Tensor, threshold=0.6) -> List[Engram]:
+        results = []
+        with self.lock:
+            for engram in self.engrams:
+                sim = torch.dot(engram.vector, query_vector)
+                if sim > threshold:
+                    results.append(engram)
+                    engram.last_accessed = time.time()
+        return results
+
+class SemanticNeocortex:
+    """
+    Tier 3: Long-term abstract concepts (Lifetime).
+    Stores consolidated patterns.
+    """
+    def __init__(self, secure_storage, storage_path):
+        self.secure_storage = secure_storage
+        self.storage_path = storage_path
+
+    def consolidate(self, engram: Engram):
+        """
+        Store permanently.
+        """
+        try:
+            # Change extension to .enc to signify encryption
+            memory_file = self.storage_path / "memories.enc"
+            entry = {
+                "content": engram.content,
+                "activation_count": engram.activation_count,
+                "created_at": engram.creation_time,
+                "consolidated_at": time.time(),
+                # Store vector as list for JSON serialization if needed
+                "vector_preview": engram.vector.tolist()[:5],
+                "metadata": engram.metadata
+            }
+
+            self.secure_storage.append_jsonl(memory_file, entry)
+            logger.info(f"Saved encrypted memory to {memory_file}")
+        except Exception as e:
+            logger.error(f"Failed to save long term memory: {e}")
+
 @dataclass
 class UserInsight:
     """Tracks the user's Causal Signature and patterns."""
@@ -82,12 +181,15 @@ class BiomimeticMemory:
         # Initialize Hebbian Network
         self.hebbian = HebbianNetwork(basis_size=self.basis_size, device=self.gb.device)
 
-        # The Workbench (Short Term / Working Memory)
-        self.working_memory: List[Engram] = []
-        self.lock = threading.Lock()
-
         # Initialize Secure Storage for LTM
         self.secure_storage = SecureStorage()
+
+        # Hierarchy Initialization
+        self.sensory = SensoryBuffer()
+        self.episodic = EpisodicHippocampus(capacity=WORKING_MEMORY_CAPACITY)
+        self.semantic = SemanticNeocortex(self.secure_storage, self.base_mem.storage_path)
+
+        self.lock = threading.Lock() # Global lock for now
 
         # User Modeling
         self.user_insights: Dict[str, UserInsight] = {}
@@ -98,14 +200,14 @@ class BiomimeticMemory:
         input_dim = self.gb.get_hidden_size()
         self.basis = self.base_mem.get_or_create_basis(input_dim, self.basis_size)
 
+    @property
+    def working_memory(self) -> List[Engram]:
+        """Backward compatibility: exposes Episodic Hippocampus engrams."""
+        return self.episodic.engrams
+
     def perceive(self, text: str, env_context: Optional[str] = None):
         """
-        Sensory Input -> Working Memory.
-        If WM is full, the oldest/least-used item is pushed out (Forgotten or Consolidated).
-
-        Args:
-            text: The main input text.
-            env_context: Optional string describing environment (weather, news, location).
+        Sensory Input -> Sensory Buffer -> Episodic Hippocampus.
         """
         if not text:
             return
@@ -123,36 +225,39 @@ class BiomimeticMemory:
         metadata = {"has_env_context": bool(env_context)}
         engram = Engram(content=text, vector=concept_vector, metadata=metadata)
 
-        # If specific environmental context exists, add it as a separate context engram too
+        # 1. Sensory Buffer
+        self.sensory.add(engram)
+
+        # If specific environmental context exists
         if env_context:
             env_vec = torch.matmul(self.gb.get_activation(env_context), basis)
             env_vec = torch.nn.functional.normalize(env_vec, dim=0)
             env_engram = Engram(content=f"[ENV] {env_context}", vector=env_vec)
-            # Add environment directly to WM (bypass rehearsal check for now)
-            self.working_memory.append(env_engram)
+            self.sensory.add(env_engram)
 
-        with self.lock:
-            # Check if relevant to existing WM (Rehearsal)
-            for existing in self.working_memory:
-                sim = torch.nn.functional.cosine_similarity(existing.vector, concept_vector, dim=0)
-                if sim > 0.85:
-                    existing.activation_count += 1
-                    existing.last_accessed = time.time()
-                    # Update content with new detail (Refinement)
-                    # Avoid infinite growth if it's just a repetition
-                    if text not in existing.content:
-                        existing.content = f"{existing.content} -> {text}"
+        # Flush Sensory to Episodic immediately for now (assuming attention pays attention to all)
+        # In future, attention mechanism filters what moves from Sensory to Episodic
+        items = self.sensory.flush()
 
-                    # Hebbian Learning: Fire together
-                    self.hebbian.fire(existing.vector, concept_vector)
-                    return
+        for item in items:
+            self._process_into_episodic(item)
 
-            # Add to WM
-            self.working_memory.append(engram)
+    def _process_into_episodic(self, engram: Engram):
+        dropped = self.episodic.add(engram)
 
-            # Enforce Capacity Limits (Cognitive Load Management)
-            if len(self.working_memory) > WORKING_MEMORY_CAPACITY:
-                self._evict_or_consolidate()
+        if dropped:
+             # Hebbian Learning on dropped item (last chance to associate)
+             # (Simplified)
+             pass
+
+             # Consolidate or Forget
+             self._evict_or_consolidate(dropped)
+
+        # Fire Hebbian for current items in episodic
+        with self.lock: # Use simple lock for hebbian update
+            for existing in self.episodic.engrams:
+                if existing != engram:
+                    self.hebbian.fire(existing.vector, engram.vector)
 
     def track_user_pattern(self, user_id: str, complexity_score: float, intent: str):
         """
@@ -191,19 +296,13 @@ class BiomimeticMemory:
         except Exception as e:
             logger.error(f"Failed to save user insights: {e}")
 
-    def _evict_or_consolidate(self):
+    def _evict_or_consolidate(self, dropped: Engram):
         """
         Decides if an item dropping out of WM is worth saving to LTM.
         """
-        # Sort by last accessed (LRU)
-        # reverse=True means largest timestamp (most recent) is at index 0.
-        # pop() removes the last item (least recent).
-        self.working_memory.sort(key=lambda x: x.last_accessed, reverse=True)
-        dropped = self.working_memory.pop()
-
         if dropped.activation_count >= CONSOLIDATION_THRESHOLD:
             logger.info(f"[🧠] Consolidating to LTM: {dropped.content[:30]}...")
-            self._save_long_term(dropped)
+            self.semantic.consolidate(dropped)
         else:
             logger.info(f"[🗑️] Forgetting: {dropped.content[:30]}...")
 
@@ -219,40 +318,17 @@ class BiomimeticMemory:
         current_thought_vector = torch.matmul(current_thought_vector_raw, basis)
         current_thought_vector = torch.nn.functional.normalize(current_thought_vector, dim=0)
 
-        relevant_context = []
-        with self.lock:
-            for engram in self.working_memory:
-                sim = torch.dot(engram.vector, current_thought_vector)
-                if sim > 0.6:
-                    relevant_context.append(engram.content)
-                    # Rehearsal: Reset decay timer
-                    engram.last_accessed = time.time()
+        # Delegate to Episodic
+        engrams = self.episodic.retrieve(current_thought_vector, threshold=0.6)
+        relevant_context = [e.content for e in engrams]
 
         return "\n".join(relevant_context)
 
     def get_working_memory_snapshot(self) -> List[Engram]:
         """Thread-safe copy of working memory."""
         with self.lock:
-            return list(self.working_memory)
+            return list(self.episodic.engrams)
 
     def _save_long_term(self, engram):
-        """
-        Save consolidated memory to an encrypted file.
-        """
-        try:
-            # Change extension to .enc to signify encryption
-            memory_file = self.base_mem.storage_path / "memories.enc"
-            entry = {
-                "content": engram.content,
-                "activation_count": engram.activation_count,
-                "created_at": engram.creation_time,
-                "consolidated_at": time.time(),
-                # Store vector as list for JSON serialization if needed
-                "vector_preview": engram.vector.tolist()[:5],
-                "metadata": engram.metadata
-            }
-
-            self.secure_storage.append_jsonl(memory_file, entry)
-            logger.info(f"Saved encrypted memory to {memory_file}")
-        except Exception as e:
-            logger.error(f"Failed to save long term memory: {e}")
+        """Deprecated: Use semantic.consolidate"""
+        self.semantic.consolidate(engram)

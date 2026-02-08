@@ -4,6 +4,7 @@ import time
 import torch
 from pathlib import Path
 from typing import Callable, Optional
+from .active_inference import GenerativeModel, ActiveInferenceLoop
 
 logger = logging.getLogger("GCA.Pulse")
 
@@ -25,6 +26,10 @@ class PulseSystem:
         self.cached_goal_text = "Focus, productivity, code generation, precision."
         self._load_goal()
 
+        # Initialize Active Inference Components
+        self.gen_model = GenerativeModel(self.glassbox, self.cached_goal_text)
+        self.active_loop = ActiveInferenceLoop(self.gen_model)
+
     def _load_goal(self):
         """Loads goal text from file if available."""
         if self.goal_path.exists():
@@ -39,6 +44,10 @@ class PulseSystem:
                 logger.error(f"[💓] Failed to load goal file: {e}")
         else:
             logger.warning(f"[💓] Goal file not found at {self.goal_path}. Using default.")
+
+        # Update Generative Model if initialized
+        if hasattr(self, 'gen_model'):
+            self.gen_model.update_goal(self.cached_goal_text)
 
     def start(self):
         """Starts the background heartbeat."""
@@ -70,70 +79,47 @@ class PulseSystem:
 
     def _check_vitals(self):
         """
-        1. Measure current cognitive entropy (User State vs Goal).
-        2. Trigger intervention if divergence is high.
+        1. Measure Free Energy (User State vs Goal).
+        2. Trigger intervention if necessary.
         """
         # 1. Get current user state vector from Short Term Memory
-        # The bio_mem might not have 'working_memory' attribute directly if it's the advanced version.
-        # Let's check compatibility. Assuming standard interface or list access.
         if not hasattr(self.memory, "working_memory") or not self.memory.working_memory:
             return # Mind is empty
 
-        # Get the latest thought vector.
-        # If working_memory is a list of objects with .vector attribute:
         try:
-            current_thought = self.memory.working_memory[-1].vector
-        except (IndexError, AttributeError):
+            # Check if it's new list-based memory or legacy
+            if isinstance(self.memory.working_memory, list):
+                 current_thought = self.memory.working_memory[-1].vector
+            else:
+                 # Assume it's the new EpisodicHippocampus which might expose a method or property
+                 # For now, fallback to last item if iterable
+                 current_thought = list(self.memory.working_memory)[-1].vector
+        except (IndexError, AttributeError, TypeError):
             return
 
         if current_thought is None:
             return
 
-        # Ensure tensor is on correct device
-        device = self.glassbox.device
-        current_thought = current_thought.to(device)
+        # 2. Compute Free Energy
+        fe_state = self.active_loop.compute_free_energy(current_thought)
+        self.current_entropy = fe_state.value
 
-        # 2. Get Goal Vector
-        # Refresh goal periodically? For now, use cached.
-        goal_vec = self.glassbox.get_activation(self.cached_goal_text).to(device)
+        # 3. Intervention Logic
+        if fe_state.mode != "homeostatic":
+            logger.warning(f"[💓] Free Energy High ({fe_state.value:.2f} | {fe_state.mode}). Triggering Active Inference.")
+            self._trigger_intervention(fe_state)
 
-        # 3. Calculate Divergence (Cosine Distance)
-        # Cosine Sim: 1.0 = aligned, 0.0 = orthogonal, -1.0 = opposite
-        # We need normalized vectors for dot product to be cosine similarity,
-        # or use cosine_similarity function.
-        sim = torch.nn.functional.cosine_similarity(current_thought, goal_vec, dim=0).item()
-
-        # Entropy definition: 1.0 - sim.
-        # If sim is 1.0 (perfect), entropy is 0.0.
-        # If sim is 0.0 (orthogonal), entropy is 1.0.
-        # If sim is -1.0 (opposite), entropy is 2.0.
-        entropy = 1.0 - sim
-
-        self.current_entropy = entropy
-        logger.debug(f"[💓] Vital Check: Entropy {entropy:.3f}")
-
-        # 4. Intervention Logic
-        if entropy > 0.6: # Threshold
-            logger.warning(f"[💓] HIGH ENTROPY DETECTED ({entropy:.2f}). Triggering Active Inference.")
-            self._trigger_intervention(entropy)
-
-    def _trigger_intervention(self, entropy_score):
+    def _trigger_intervention(self, fe_state):
         """
         Injects a correction vector via callback using Active Inference principles.
-        Minimizing free energy -> maximizing alignment with the goal.
         """
         if self.intervention_callback:
-            # Active Inference: The correction is not just a warning, but a restatement of the goal
-            # weighted by the deviation (entropy).
-
-            # We construct a 'Correction' Soul Prompt
-            # In a full vector system, we would calculate the difference vector.
-            # Here, we reinforce the semantic goal.
+            prefix = "Reflexive Correction" if fe_state.mode == "reflexive" else "STRATEGIC RE-PLANNING REQUIRED"
 
             correction_msg = (
-                f"[SYSTEM PULSE | Entropy: {entropy_score:.2f}] "
-                f"Active Inference Intervention: Re-align with Goal:\n"
-                f"\"{self.cached_goal_text[:200]}...\""
+                f"[SYSTEM PULSE | FreeEnergy: {fe_state.value:.2f}] "
+                f"Active Inference ({prefix}): Re-align with Goal:\n"
+                f"\"{self.cached_goal_text[:300]}...\""
             )
             try:
                 self.intervention_callback(correction_msg)
