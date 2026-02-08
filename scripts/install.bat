@@ -31,10 +31,10 @@ echo Installing Node.js dependencies...
 call pnpm install
 
 echo Setting up Python environment...
-cd gca-service
+cd apps\gca-service
 if not exist ".venv" (
     python -m venv .venv
-    echo Created virtual environment in gca-service\.venv
+    echo Created virtual environment in apps\gca-service\.venv
 )
 
 call .venv\Scripts\activate
@@ -62,7 +62,7 @@ if not exist ".env" (
     echo .env already exists. Skipping.
 )
 
-if not exist "gca-service\gca_assets" mkdir "gca-service\gca_assets"
+if not exist "apps\gca-service\gca_assets" mkdir "apps\gca-service\gca_assets"
 
 echo === Installation Complete ===
 echo Run 'scripts\start.bat' to start the system.

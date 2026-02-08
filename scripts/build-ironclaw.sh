@@ -38,7 +38,7 @@ echo ""
 echo "======================================"
 echo "Building GCA Service"
 echo "======================================"
-cd gca-service
+cd apps/gca-service
 docker build -t ironclaw-gca:latest .
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ GCA Service built successfully${NC}"

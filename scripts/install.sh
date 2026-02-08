@@ -25,10 +25,10 @@ pnpm install
 
 # 3. Setup Python Environment
 echo "Setting up Python environment..."
-cd gca-service
+cd apps/gca-service
 if [ ! -d ".venv" ]; then
     python3 -m venv .venv
-    echo "Created virtual environment in gca-service/.venv"
+    echo "Created virtual environment in apps/gca-service/.venv"
 fi
 
 # Activate venv
@@ -105,7 +105,7 @@ else
 fi
 
 # Ensure assets directory exists
-mkdir -p gca-service/gca_assets
+mkdir -p apps/gca-service/gca_assets
 
 echo "=== Installation Complete ==="
 echo "Run './scripts/start.sh' (or 'npm run start:local') to start the system."

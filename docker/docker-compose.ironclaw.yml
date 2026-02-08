@@ -4,7 +4,7 @@ services:
   # --- THE BRAIN (Python GCA) ---
   gca-service:
     build:
-      context: ../gca-service
+      context: ../apps/gca-service
       dockerfile: ../docker/Dockerfile.gca-service
     image: openclaw-gca-brain
     container_name: gca-brain
@@ -12,7 +12,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ../gca-service/gca_assets:/app/gca_assets
+      - ../apps/gca-service/gca_assets:/app/gca_assets
       - claw_state:/app/openclaw_state
       - ../.agent:/.agent
     environment:
