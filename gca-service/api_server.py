@@ -4,7 +4,7 @@ Exposes GCA reasoning, moral evaluation, and geometric steering via REST API.
 Integrates Recursive Universe Framework for Causal Flow Analysis.
 """
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
@@ -13,6 +13,8 @@ import logging
 import sys
 import yaml
 import os
+import time
+import json
 from pathlib import Path
 import numpy as np
 from textblob import TextBlob
@@ -35,6 +37,7 @@ from gca_core.observer import Observer
 from gca_core.pulse import PulseSystem
 from gca_core.causal_flow import CausalFlowEngine
 from gca_core.swarm import SwarmNetwork
+from gca_core.reflective_logger import ReflectiveLogger
 from dreamer import DeepDreamer
 
 # Configure logging
@@ -49,6 +52,7 @@ base_logger = logging.getLogger("IronClaw")
 config_path = "config.yaml"
 resource_manager = ResourceManager(config_path=config_path)
 CFG = resource_manager.get_active_config()
+logger = logging.getLogger("GCA.API")
 logger.info(f"Loaded Profile: {CFG.get('active_profile', 'unknown').upper()}")
 
 # Initialize FastAPI app
@@ -103,7 +107,6 @@ swarm_network = SwarmNetwork(glassbox, reflective_logger)
 # We create a lambda to bridge the callback signature
 def introspection_callback(modality, content, metadata):
     # Fire and forget to avoid blocking logger
-    import asyncio
     try:
         # Assuming we are in an event loop context, or just run directly if lightweight
         # Since observer.process_input is synchronous (CPU bound), we can call it.
@@ -178,6 +181,20 @@ class ObservationResponse(BaseModel):
     detected_state: Union[List[float], str]
     description: str
 
+# OpenAI Chat Completion Schemas
+class ChatMessage(BaseModel):
+    role: str
+    content: Union[str, List[Dict[str, Any]]]
+    name: Optional[str] = None
+
+class ChatCompletionRequest(BaseModel):
+    model: str
+    messages: List[ChatMessage]
+    tools: Optional[List[Dict[str, Any]]] = None
+    temperature: Optional[float] = 0.7
+    max_tokens: Optional[int] = 1024
+    stream: Optional[bool] = False
+
 # ============================================================================
 # Endpoints
 # ============================================================================
@@ -192,6 +209,106 @@ async def health():
         "vectors_loaded": len(memory.list_vectors()),
         "pulse_entropy": pulse.current_entropy
     }
+
+@app.post("/v1/chat/completions")
+async def chat_completions(req: ChatCompletionRequest):
+    """
+    OpenAI-compatible Chat Completion endpoint.
+    Exposes native OpenClaw tools to the GCA brain.
+    """
+    start_time = time.time()
+
+    # Extract latest user message
+    user_msg = next((m for m in reversed(req.messages) if m.role == "user"), None)
+    if not user_msg:
+        # Fallback if no user message found (e.g. system prompt only)
+        return _openai_response_text("GCA: No user message found.", req.model)
+
+    user_text = user_msg.content
+    if isinstance(user_text, list):
+        # Handle multimodal content array
+        text_parts = [p.get("text", "") for p in user_text if p.get("type") == "text"]
+        user_text = " ".join(text_parts)
+
+    # Convert tools to simple list for internal logic (if needed)
+    # But for OpenAI compat, we need to pass the full schema to the LLM if it supports it
+    # Currently GCA uses internal logic for tool selection.
+    # We will extract tool names for GCA's simplified logic:
+    tool_names = [t["function"]["name"] for t in req.tools] if req.tools else []
+
+    # Call Internal GCA Reasoning Logic
+    # We reuse the logic from /v1/reason but adapt it here
+
+    # 1. Check Pulse
+    if pulse.current_entropy > 0.8:
+        return _openai_response_text(
+            "🛡️ [SYSTEM HALT] Mental entropy critical. Please rephrase.",
+            req.model,
+            finish_reason="stop"
+        )
+
+    # 2. Glassbox Generation with Tool Awareness
+    # We construct a system prompt that includes tool definitions if the model isn't tool-native
+    # For MVP, we use GCA's text-based tool parser
+
+    context_str = "\n".join([f"{m.role}: {m.content}" for m in req.messages[:-1]])
+
+    # Run the GCA Pipeline (simplified for this endpoint)
+    try:
+        # Intent Routing
+        intent = optimizer.route_intent(user_text)
+
+        # Soul & Memory
+        # (Assuming default soul for now)
+        wm_context = bio_mem.retrieve_context(memory.get_vector(intent))
+
+        # QPT Structure
+        structured_prompt = qpt.restructure(
+            raw_prompt=user_text,
+            context=context_str,
+            working_memory=wm_context
+        )
+
+        # If tools are present, append instructions
+        if tool_names:
+            structured_prompt += f"\n\nAVAILABLE TOOLS: {', '.join(tool_names)}\nTo use a tool, reply with: TOOL_CALL: <tool_name> <arguments>"
+
+        # Generate
+        response_text = glassbox.generate_steered(
+            prompt=structured_prompt,
+            strength=1.0, # Default steering
+            temperature=req.temperature
+        )
+
+        # Parse for Tool Calls
+        # Using the GCA simple parser (or a better regex for the new prompt format)
+        tool_call_data = _parse_tool_from_text(response_text, tool_names)
+
+        if tool_call_data:
+            # Moral Check
+            action = _tool_to_action(tool_call_data)
+            approved, reason = moral_kernel.evaluate([action])
+
+            if not approved:
+                return _openai_response_text(
+                    f"🛡️ [MORAL INTERVENTION] I cannot execute {tool_call_data['name']}. Reason: {reason}",
+                    req.model
+                )
+
+            # Approved - Format as OpenAI Tool Call
+            return _openai_response_tool_call(
+                tool_call_data["name"],
+                tool_call_data["args"],
+                req.model,
+                content=response_text # Optional: include thought process
+            )
+
+        # Standard Text Response
+        return _openai_response_text(response_text, req.model)
+
+    except Exception as e:
+        logger.error(f"Chat completion error: {e}", exc_info=True)
+        return _openai_response_text(f"GCA Error: {str(e)}", req.model)
 
 @app.post("/v1/soul/compose")
 async def compose_soul(config: SoulConfig):
@@ -503,6 +620,56 @@ async def observe_user(
 # Helpers
 # ============================================================================
 
+def _openai_response_text(content: str, model: str, finish_reason: str = "stop") -> Dict[str, Any]:
+    return {
+        "id": f"chatcmpl-{int(time.time())}",
+        "object": "chat.completion",
+        "created": int(time.time()),
+        "model": model,
+        "choices": [{
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": content
+            },
+            "finish_reason": finish_reason
+        }],
+        "usage": {
+            "prompt_tokens": 0, # Placeholder
+            "completion_tokens": len(content.split()),
+            "total_tokens": len(content.split())
+        }
+    }
+
+def _openai_response_tool_call(name: str, args: str, model: str, content: str = None) -> Dict[str, Any]:
+    return {
+        "id": f"chatcmpl-{int(time.time())}",
+        "object": "chat.completion",
+        "created": int(time.time()),
+        "model": model,
+        "choices": [{
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": content,
+                "tool_calls": [{
+                    "id": f"call_{int(time.time())}",
+                    "type": "function",
+                    "function": {
+                        "name": name,
+                        "arguments": args # JSON string
+                    }
+                }]
+            },
+            "finish_reason": "tool_calls"
+        }],
+        "usage": {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0
+        }
+    }
+
 def _parse_vector_config(text):
     if not text:
         return None, None
@@ -561,8 +728,19 @@ def _compose_vectors(skill, user, soul_pos_config, soul_neg_config):
 
 def _parse_tool_from_text(text: str, available_tools: List[str]) -> Optional[Dict[str, Any]]:
     text_lower = text.lower()
+
+    # 1. Try to find explicit tool call patterns like TOOL_CALL: <name> <args>
+    # (Matches the instructions injected in /v1/chat/completions)
+    import re
+    match = re.search(r"TOOL_CALL:\s*(\w+)\s+(.*)", text, re.IGNORECASE)
+    if match:
+        name = match.group(1)
+        args = match.group(2).strip()
+        if name in available_tools:
+            return {"name": name, "args": args}
+
+    # 2. Fallback heuristic
     for tool in available_tools:
-        # Simple heuristic
         if f"tool:{tool}" in text_lower or f"call {tool}" in text_lower:
              return {"name": tool, "args": text}
     return None
