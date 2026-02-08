@@ -12,12 +12,13 @@ services:
       - "8000:8000"
     volumes:
       - ./gca-service/gca_assets:/app/gca_assets
-      - ${HOME}/.openclaw:/app/openclaw_state:ro
-      - ./.agent:/app/.agent
+      - claw_state:/app/openclaw_state
+      - ./.agent:/.agent
     environment:
       - PYTHONUNBUFFERED=1
       # Local Qwen model doesn't strictly need API key but keeping structure
       - GCA_LOG_LEVEL=INFO
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
       - OPENCLAW_STATE_DIR=/app/openclaw_state
     networks:
       - claw-net
@@ -30,32 +31,32 @@ services:
     #           capabilities: [gpu]
 
   # --- THE BODY (OpenClaw / Gateway) ---
-  # gateway:
-  #   build: .  # Uses the root Dockerfile
-  #   image: openclaw-gateway
-  #   container_name: openclaw-gateway
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - gca-service
-  #   environment:
-  #     - NODE_ENV=production
-  #     # This points the OpenClaw extension to the Docker container name
-  #     - GCA_API_URL=http://gca-brain:8000
-  #     - ENABLED_EXTENSIONS=gca-brain,voice-call
-  #     # OpenClaw required vars (from original ironclaw compose)
-  #     - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
-  #   ports:
-  #     - "3000:3000"
-  #   volumes:
-  #     - ./.agent:/app/.agent
-  #     - ./extensions:/app/extensions
-  #     - claw_state:/home/node/.openclaw
-  #   networks:
-  #     - claw-net
+  gateway:
+    build: .  # Uses the root Dockerfile
+    image: openclaw-gateway
+    container_name: openclaw-gateway
+    restart: unless-stopped
+    depends_on:
+      - gca-service
+    environment:
+      - NODE_ENV=production
+      # This points the OpenClaw extension to the Docker container name
+      - GCA_API_URL=http://gca-brain:8000
+      - ENABLED_EXTENSIONS=gca-brain,voice-call
+      # OpenClaw required vars (from original ironclaw compose)
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./.agent:/app/.agent
+      - ./extensions:/app/extensions
+      - claw_state:/home/node/.openclaw
+    networks:
+      - claw-net
 
 networks:
   claw-net:
     driver: bridge
 
-# volumes:
-#   claw_state:
+volumes:
+  claw_state:
