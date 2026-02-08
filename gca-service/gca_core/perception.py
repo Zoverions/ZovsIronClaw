@@ -8,28 +8,29 @@ import yaml
 import os
 import io
 import tempfile
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict, Any
 import numpy as np
 from pathlib import Path
-
-# Lazy imports to save startup time/memory if not used
-# from sentence_transformers import SentenceTransformer
-# from faster_whisper import WhisperModel
-# from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
 
 logger = logging.getLogger("GCA.Perception")
 
 config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.yaml")
-if os.path.exists(config_path):
-    with open(config_path) as f:
-        CFG = yaml.safe_load(f)
-else:
-    CFG = {}
 
 class PerceptionSystem:
-    def __init__(self):
-        self.cfg = CFG.get('perception', {})
-        self.device = CFG.get('system', {}).get('device', 'cpu')
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        if config:
+            self.cfg = config.get('perception', {})
+            self.system_cfg = config.get('system', {})
+        elif os.path.exists(config_path):
+            with open(config_path) as f:
+                full_cfg = yaml.safe_load(f)
+                self.cfg = full_cfg.get('perception', {})
+                self.system_cfg = full_cfg.get('system', {})
+        else:
+            self.cfg = {}
+            self.system_cfg = {}
+
+        self.device = self.system_cfg.get('device', 'cpu')
 
         # Sub-engines
         self.embedding_engine = None
