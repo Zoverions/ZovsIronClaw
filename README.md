@@ -140,6 +140,35 @@ Continuous adversarial testing to validate safety mechanisms:
 - Arbiter evaluates and logs results
 - Failed defenses inform retraining
 
+### 7. **Iron Swarm (v5.0)**
+
+A tiered resource management system that scales ZovsIronClaw from mobile devices to high-end workstations without code changes.
+
+**Hardware Profiles**:
+- **SPARK (Mobile/Edge)**: Ultra-lightweight perception.
+    - *LLM*: `Qwen2.5-0.5B` (CPU)
+    - *Vision*: `Moondream2`
+    - *Use Case*: IoT, Raspberry Pi, Older Laptops
+- **FORGE (Laptop)**: Balanced daily driver.
+    - *LLM*: `GLM-4-9B` (4-bit Quantized)
+    - *Vision*: `Qwen2-VL-2B`
+    - *Use Case*: MacBook Air/Pro, Gaming Laptops
+- **TITAN (Workstation)**: Maximum reasoning power.
+    - *LLM*: `DeepSeek-R1-Distill-Qwen-32B` (Reasoning/Thinking Model)
+    - *Vision*: `Qwen2-VL-7B`
+    - *Use Case*: Desktop PC with 24GB+ VRAM, Mac Studio
+
+**Configuration**:
+Set the `GCA_PROFILE` environment variable to force a specific tier, or let the system auto-detect based on RAM/VRAM.
+
+```bash
+# Force Titan Profile
+export GCA_PROFILE=titan
+```
+
+**DeepSeek Integration**:
+The Titan tier leverages **DeepSeek-R1**, enabling "Chain of Thought" reasoning. The system parses the model's internal monologue (`<think>...</think>`) to separate raw reasoning traces from the final answer, allowing for deeper self-reflection logs.
+
 ## 🚀 Quick Start (Docker)
 
 ### Prerequisites
