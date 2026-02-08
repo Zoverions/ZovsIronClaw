@@ -63,9 +63,16 @@ app = FastAPI(
     version="4.5.1"
 )
 
+# Restrict CORS to local development and Tauri origins
+origins = [
+    "http://localhost:5173",
+    "tauri://localhost",
+    "https://tauri.localhost",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -129,8 +136,8 @@ class SoulConfig(BaseModel):
     blend_weights: List[float] = [] # [0.3, 0.2]
 
 class ReasonRequest(BaseModel):
-    user_id: str
-    text: str
+    user_id: str = Field(..., max_length=100)
+    text: str = Field(..., max_length=100000)
     soul_config: Optional[str] = ""
     soul_object: Optional[SoulConfig] = None # v4.6 Dynamic Soul
     input_modality: Optional[str] = "text" # 'text' or 'voice'
@@ -171,7 +178,7 @@ class DescribeResponse(BaseModel):
     text: str
 
 class ObservationRequest(BaseModel):
-    content: str
+    content: str = Field(..., max_length=5000)
     modality: str = "text" # text, audio, vision
     source: Optional[str] = "unknown"
     timestamp: Optional[float] = None
@@ -805,8 +812,19 @@ def _generate_signature(tool: Dict[str, Any], user_id: str) -> str:
     import hashlib
     import json
     import base64
+    import secrets
     
-    secret = os.environ.get("GCA_HMAC_SECRET", "dev-secret-do-not-use-in-prod").encode()
+    env_secret = os.environ.get("GCA_HMAC_SECRET")
+    if not env_secret:
+        # Generate a random secret if not provided in environment
+        # Note: This means signatures won't persist across restarts unless secret is set.
+        # This is a security trade-off for safety by default.
+        logger.warning("GCA_HMAC_SECRET not set. Using random ephemeral secret.")
+        if not hasattr(_generate_signature, "_ephemeral_secret"):
+            _generate_signature._ephemeral_secret = secrets.token_bytes(32)
+        secret = _generate_signature._ephemeral_secret
+    else:
+        secret = env_secret.encode()
 
     # Create payload
     payload = {
@@ -825,4 +843,6 @@ def _generate_signature(tool: Dict[str, Any], user_id: str) -> str:
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Default to localhost for security
+    host = os.environ.get("GCA_HOST", "127.0.0.1")
+    uvicorn.run(app, host=host, port=8000)
