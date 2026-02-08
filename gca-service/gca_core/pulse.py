@@ -5,6 +5,7 @@ import torch
 from pathlib import Path
 from typing import Callable, Optional
 from .active_inference import GenerativeModel, ActiveInferenceLoop
+from .cron_reader import CronReader
 
 logger = logging.getLogger("GCA.Pulse")
 
@@ -29,6 +30,9 @@ class PulseSystem:
         # Initialize Active Inference Components
         self.gen_model = GenerativeModel(self.glassbox, self.cached_goal_text)
         self.active_loop = ActiveInferenceLoop(self.gen_model)
+
+        # Initialize Cron Reader for Automation Awareness
+        self.cron_reader = CronReader()
 
     def _load_goal(self):
         """Loads goal text from file if available."""
@@ -80,8 +84,22 @@ class PulseSystem:
     def _check_vitals(self):
         """
         1. Measure Free Energy (User State vs Goal).
-        2. Trigger intervention if necessary.
+        2. Check Schedule (Automation Awareness).
+        3. Trigger intervention if necessary.
         """
+        # 0. Check Schedule
+        try:
+            upcoming = self.cron_reader.get_upcoming_jobs()
+            if upcoming:
+                for job in upcoming:
+                    minutes_due = int((job['next_run_ms'] - (time.time() * 1000)) / 60000)
+                    msg = f"[SCHEDULE] Upcoming Task: '{job['name']}' due in {minutes_due} minutes."
+                    logger.info(f"[💓] {msg}")
+                    # Perceive the schedule
+                    self.memory.perceive(text=msg)
+        except Exception as e:
+            logger.error(f"[💓] Schedule check failed: {e}")
+
         # 1. Get current user state vector from Short Term Memory
         if not hasattr(self.memory, "working_memory") or not self.memory.working_memory:
             return # Mind is empty
