@@ -2,6 +2,7 @@ import logging
 import threading
 import time
 import torch
+from pathlib import Path
 from typing import Callable, Optional
 
 logger = logging.getLogger("GCA.Pulse")
@@ -15,6 +16,29 @@ class PulseSystem:
         self.current_entropy = 0.0
         self.intervention_callback: Optional[Callable] = None
         self.thread = None
+
+        # Determine Goal Path
+        # Typically run from gca-service/api_server.py, so parent is gca-service
+        # We need to find .agent/prompts/GOAL.md relative to project root
+        # If __file__ is gca-service/gca_core/pulse.py -> ../../../.agent/prompts/GOAL.md
+        self.goal_path = Path(__file__).parents[2] / ".agent" / "prompts" / "GOAL.md"
+        self.cached_goal_text = "Focus, productivity, code generation, precision."
+        self._load_goal()
+
+    def _load_goal(self):
+        """Loads goal text from file if available."""
+        if self.goal_path.exists():
+            try:
+                with open(self.goal_path, 'r') as f:
+                    content = f.read()
+                    # Simple heuristic: Use the whole file as context
+                    # or extract specific sections. For now, use the whole file.
+                    self.cached_goal_text = content.strip()
+                logger.info(f"[💓] Goal loaded from {self.goal_path}")
+            except Exception as e:
+                logger.error(f"[💓] Failed to load goal file: {e}")
+        else:
+            logger.warning(f"[💓] Goal file not found at {self.goal_path}. Using default.")
 
     def start(self):
         """Starts the background heartbeat."""
@@ -69,11 +93,9 @@ class PulseSystem:
         device = self.glassbox.device
         current_thought = current_thought.to(device)
 
-        # 2. Get Goal Vector (Assuming loaded in Memory LTM or Config)
-        # For MVP, we synthesize "Productivity" if not available elsewhere
-        # Ideally this comes from GOAL.md or similar, but per instructions:
-        goal_text = "Focus, productivity, code generation, precision."
-        goal_vec = self.glassbox.get_activation(goal_text).to(device)
+        # 2. Get Goal Vector
+        # Refresh goal periodically? For now, use cached.
+        goal_vec = self.glassbox.get_activation(self.cached_goal_text).to(device)
 
         # 3. Calculate Divergence (Cosine Distance)
         # Cosine Sim: 1.0 = aligned, 0.0 = orthogonal, -1.0 = opposite
@@ -92,16 +114,27 @@ class PulseSystem:
 
         # 4. Intervention Logic
         if entropy > 0.6: # Threshold
-            logger.warning(f"[💓] HIGH ENTROPY DETECTED ({entropy:.2f}). Triggering Intervention.")
-            self._trigger_intervention()
+            logger.warning(f"[💓] HIGH ENTROPY DETECTED ({entropy:.2f}). Triggering Active Inference.")
+            self._trigger_intervention(entropy)
 
-    def _trigger_intervention(self):
+    def _trigger_intervention(self, entropy_score):
         """
-        Injects a correction vector via callback.
+        Injects a correction vector via callback using Active Inference principles.
+        Minimizing free energy -> maximizing alignment with the goal.
         """
         if self.intervention_callback:
+            # Active Inference: The correction is not just a warning, but a restatement of the goal
+            # weighted by the deviation (entropy).
+
             # We construct a 'Correction' Soul Prompt
-            correction_msg = "[SYSTEM PULSE] You are drifting. Re-align with the primary objective: Precision and Safety."
+            # In a full vector system, we would calculate the difference vector.
+            # Here, we reinforce the semantic goal.
+
+            correction_msg = (
+                f"[SYSTEM PULSE | Entropy: {entropy_score:.2f}] "
+                f"Active Inference Intervention: Re-align with Goal:\n"
+                f"\"{self.cached_goal_text[:200]}...\""
+            )
             try:
                 self.intervention_callback(correction_msg)
             except Exception as e:

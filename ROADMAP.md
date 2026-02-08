@@ -1,55 +1,51 @@
-# ZovsIronClaw Deep Hill Plan
+# ZovsIronClaw v5.0.0 Roadmap: "The Recursive Horizon"
 
-This roadmap tracks the transition from "Placeholder" to "Production" for the ZovsIronClaw system. It follows the Hill Chart methodology: Figure it Out (Uphill) -> Get it Done (Downhill).
+**Target Release:** Q3 2025
+**Theme:** Active Inference & Swarm Intelligence
 
-## Hill 1: The Sensorium (Critical Path)
-*Goal: Give the system eyes and ears.*
+## 1. Core Cognition: Active Inference & LNNs
 
-### Swabble (The Body) - Swift Daemon
-- [x] **Logging & Visibility**: Ensure all placeholder functions emit structured logs (WARN/ERROR) instead of silent failures.
-- [x] **Neural Link (HookExecutor)**: Implement HTTP POST loop to send captured audio/screen frames to `http://localhost:8000/v1/observe`.
-- [x] **Health Check (StatusCommand)**: Ping the GCA health endpoint (`/health`) to verify "brain" connectivity.
+### 1.1 From Entropy to Free Energy
+Currently, the **Pulse System** (v4.8) triggers interventions based on simple entropy thresholds.
+**v5.0 Goal:** Implement a full **Active Inference Loop**.
+- **Generative Model:** The agent maintains a probabilistic model of the user's state.
+- **Free Energy Minimization:** The agent selects actions (text, tool calls) specifically to minimize the divergence between expected state (Goal) and perceived state (Reality).
+- **Reflexive Control:** Fast, low-level loops for immediate corrections (like the current Pulse) and slow, high-level loops for strategic planning.
 
-### GCA Service (The Senses) - Python
-- [x] **Observer Module**: Create `gca-service/gca_core/observer.py`.
-    - [x] Input: Accept raw Audio/Image bytes.
-    - [x] Process: Project into Latent Space using `GlassBox.get_activation`.
-    - [x] Output: Generate "User State Vector" (e.g., `[0.1, 0.4, -0.2]` for "Stressed/Busy").
+### 1.2 Liquid Neural Networks (LNN) for Time-Series
+The current **Biomimetic Memory** uses discrete time steps.
+**v5.0 Goal:** Integrate **Liquid Time-Constant Networks (LTCs)**.
+- **Why?** To model continuous temporal dynamics (user mood shifts, workflow velocity) with far fewer parameters than RNNs.
+- **Implementation:** Use `ncps` (Neural Circuit Policies) torch library to create a "Temporal Lobe" for the agent.
+
+## 2. Memory Architecture: The Hierarchical Stack
+
+### 2.1 The Three-Tier System
+Replace the flat `IsotropicMemory` with a biological hierarchy:
+1.  **Sensory Buffer (Milliseconds):** Raw input stream (audio/vision). Decays rapidly.
+2.  **Episodic Hippocampus (Days):** Compressed narrative of events. (Current implementation).
+3.  **Semantic Neocortex (Lifetime):** Abstracted concepts and skills, consolidated from episodes via Hebbian learning.
+
+### 2.2 Quantum Probability Trust
+**Concept:** Model trust not as a scalar (0.0 to 1.0) but as a complex amplitude.
+- **Interference:** Trust signals can constructively or destructively interfere.
+- **Application:** Use this for evaluating tool safety and source credibility in the **Moral Kernel**.
+
+## 3. The Iron Swarm: Distributed Consensus
+
+### 3.1 Proof of Logic (PoL)
+When delegating tasks in the **Swarm Network**:
+- **Mechanism:** The worker agent must provide a "Chain of Thought" hash along with the result.
+- **Verification:** The delegator verifies the logical consistency of the chain using a small verifier model (e.g., Qwen 0.5B).
+- **Benefit:** Prevents hallucination propagation in multi-agent systems.
+
+### 3.2 Swarm Tuning
+- Allow dynamic "Soul Composition" across the swarm. One agent can be the "Critic" (High Z-axis bias), another the "Creative" (High Y-axis bias).
+
+## 4. Infrastructure
+
+- **Vulkan Support:** Optimize `GlassBox` for AMD/Intel GPUs using Vulkan backend for wider hardware support.
+- **Voice-Native Mode:** Move STT/TTS from cloud/hybrid to fully local `faster-whisper` and `parler-tts` pipelines running on the `gca-brain` sidecar.
 
 ---
-
-## Hill 2: The Proactive Mind (Planned Features)
-*Goal: Make the system act without prompting.*
-
-### The Pulse System (v4.8)
-- [x] **Background Loop**: Implement `gca-service/gca_core/pulse.py` loop (every 5m).
-- [x] **Logic**: Compare **User State Vector** (from Observer/WorkingMemory) vs. **Goal Vector** (from `GOAL.md`).
-- [x] **Trigger**: `if distance(User, Goal) > Threshold: Trigger_Intervention()`.
-- [x] **Active Intervention**: Pulse injects correction prompts when entropy is high.
-- [x] **API Guard**: `/v1/reason` blocks requests if system entropy is critical.
-
-### Soul Composition (v4.6)
-- [x] **Anti-Vectors**: Update `SOUL.md` parsing in `gca-service/gca_core/soul_loader.py`.
-- [x] **Implementation**: Allow definition of traits to avoid, subtracting them from the steering tensor.
-- [x] **API Compose**: `/v1/soul/compose` endpoint for blending vectors on the fly.
-- [x] **Reasoning Integration**: `/v1/reason` accepts dynamic soul objects.
-
----
-
-## Hill 3: The Collective Conscience (Swarm & Ethics)
-*Goal: Enable safe, multi-agent coordination.*
-
-### Swarm Ethics (v4.7)
-- [x] **Decentralized Conscience**: Implement `DecentralizedConscience` wrapper for `MoralKernel` in `gca-service/gca_core/swarm_ethics.py`.
-- [x] **Delegation Vetting**: Agents check ethics before requesting help.
-
----
-
-## Execution Log
-
-- **Phase 1: Analysis & Logging**: Identified key files and missing components.
-- **Phase 2: The Hill Climb**: Completed Swabble hooks, Observer logic, Pulse system, and Soul composition updates.
-- **Phase 3: Integration Sprint (v4.6 - v4.8)**:
-    - Implemented `PulseSystem` with active intervention and API blocking.
-    - Exposed Soul Composition via API (`/v1/soul/compose`).
-    - Created `DecentralizedConscience` for Swarm coordination.
+*Roadmap generated by Jules (AI Software Engineer) based on system audit.*

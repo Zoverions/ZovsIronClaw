@@ -9,6 +9,8 @@ import logging
 from pathlib import Path
 import numpy as np
 
+from gca_core.secure_storage import SecureStorage
+
 logger = logging.getLogger("GCA.MemoryAdvanced")
 
 # Tuning based on "The Magical Number Seven" (Miller, 1956)
@@ -83,6 +85,9 @@ class BiomimeticMemory:
         # The Workbench (Short Term / Working Memory)
         self.working_memory: List[Engram] = []
         self.lock = threading.Lock()
+
+        # Initialize Secure Storage for LTM
+        self.secure_storage = SecureStorage()
 
         # User Modeling
         self.user_insights: Dict[str, UserInsight] = {}
