@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
-const serviceDir = path.join(rootDir, "gca-service");
+const serviceDir = path.join(rootDir, "apps", "gca-service");
 
 // Detect Platform
 const isWin = process.platform === "win32";

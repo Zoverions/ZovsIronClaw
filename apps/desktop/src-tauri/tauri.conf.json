@@ -4,10 +4,10 @@
   "version": "4.8.0",
   "identifier": "com.zovs.ironclaw",
   "build": {
-    "beforeDevCommand": "node ../scripts/move-binary.js && pnpm --dir ../../../ui dev",
+    "beforeDevCommand": "node ../scripts/move-binary.js && pnpm --dir ../../ui dev",
     "devUrl": "http://localhost:5173",
-    "beforeBuildCommand": "node ../scripts/move-binary.js && pnpm --dir ../../../ui build",
-    "frontendDist": "../../../ui/dist"
+    "beforeBuildCommand": "node ../scripts/move-binary.js && pnpm --dir ../../ui build",
+    "frontendDist": "../../ui/dist"
   },
   "app": {
     "withGlobalTauri": true,

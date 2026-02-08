@@ -31,7 +31,7 @@ console.log(`Building for target: ${targetTriple}`);
 // Paths
 const rootDir = path.resolve(__dirname, '../../..');
 const desktopDir = path.resolve(__dirname, '..');
-const gcaServiceDir = path.join(rootDir, 'gca-service');
+const gcaServiceDir = path.join(rootDir, 'apps', 'gca-service');
 const tauriBinDir = path.join(desktopDir, 'src-tauri', 'binaries');
 
 // Source binary (built by PyInstaller)
