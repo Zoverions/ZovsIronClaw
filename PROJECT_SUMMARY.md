@@ -188,7 +188,7 @@ This prevents "lazy thinking" and ensures cognitive stability.
 - Composition support
 
 ### Documentation
-✅ **README_IRONCLAW.md**: Comprehensive project overview
+✅ **README.md**: Comprehensive project overview
 ✅ **SETUP.md**: Step-by-step setup guide
 ✅ **docs/gca-integration.md**: Technical integration guide
 ✅ **PROJECT_SUMMARY.md**: This document

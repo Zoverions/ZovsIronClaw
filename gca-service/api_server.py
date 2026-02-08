@@ -38,6 +38,7 @@ from gca_core.pulse import PulseSystem
 from gca_core.causal_flow import CausalFlowEngine
 from gca_core.swarm import SwarmNetwork
 from gca_core.reflective_logger import ReflectiveLogger
+from gca_core.soul_loader import get_soul_loader
 from dreamer import DeepDreamer
 
 # Configure logging
@@ -316,13 +317,39 @@ async def compose_soul(config: SoulConfig):
     v4.6: Dynamic Vector Blending.
     Returns the vector statistics of the new composite soul.
     """
-    # Logic to mix vectors from registry (Mock for confirmation)
-    # In a real scenario, we would use soul_loader.create_composite_soul
+    loader = get_soul_loader()
+
+    # Construct blending parameters
+    # Base soul is always included
+    base_souls = [config.base_style] + config.blend_styles
+
+    # Weights
+    # If blend_weights are provided, we assume 1.0 for base and then the rest
+    if config.blend_weights:
+        weights = [1.0] + config.blend_weights
+    else:
+        weights = None # soul_loader will equal-weight them
+
+    try:
+        composite = loader.create_composite_soul(
+            name=f"{config.base_style}-Composite",
+            base_souls=base_souls,
+            weights=weights
+        )
+    except Exception as e:
+        logger.error(f"Error composing soul: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if not composite:
+        raise HTTPException(status_code=404, detail="One or more souls not found.")
+
     return {
         "status": "composed",
-        "name": f"{config.base_style}-Custom",
+        "name": composite.name,
         "vector_norm": 1.0,
-        "components": config.blend_styles
+        "components": base_souls,
+        "weights": weights,
+        "traits": composite.traits
     }
 
 @app.post("/v1/observe")

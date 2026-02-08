@@ -66,7 +66,7 @@ ZovsIronClaw includes a self-contained desktop application powered by **Tauri v2
 Prerequisites:
 - **Rust** (stable)
 - **Node.js** (v20+) & **pnpm**
-- **Python 3.12+** (for building the sidecar)
+- **Python 3.11+** (for building the sidecar)
 
 1. **Build the Brain**:
    Compile the Python service into a single binary.
