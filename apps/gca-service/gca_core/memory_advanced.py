@@ -324,6 +324,54 @@ class BiomimeticMemory:
 
         return "\n".join(relevant_context)
 
+    def inject_external(self, engrams_data: List[Dict[str, Any]]) -> int:
+        """
+        Injects engrams from external peers (Shared Consciousness).
+        Directly adds to Episodic Memory without triggering perception loops.
+        """
+        count = 0
+        for data in engrams_data:
+            try:
+                content = data.get("content")
+                vector_list = data.get("vector")
+                metadata = data.get("metadata", {}) or {}
+
+                if not content or not vector_list:
+                    continue
+
+                # Reconstruct Vector
+                # Handle nested list or flat list just in case
+                if isinstance(vector_list, list) and len(vector_list) > 0 and isinstance(vector_list[0], list):
+                    vector_list = vector_list[0]
+
+                vector = torch.tensor(vector_list, device=self.gb.device)
+
+                engram = Engram(
+                    content=content,
+                    vector=vector,
+                    metadata=metadata
+                )
+                # Mark as external in metadata if not present
+                if "source" not in engram.metadata:
+                    engram.metadata["source"] = "swarm_sync"
+
+                self.episodic.add(engram)
+                count += 1
+
+                # Trigger Hebbian learning with current context
+                with self.lock:
+                    for existing in self.episodic.engrams:
+                        if existing != engram:
+                            # Fire Hebbian: this connects the new thought to existing ones
+                            self.hebbian.fire(existing.vector, engram.vector)
+
+            except Exception as e:
+                logger.error(f"Failed to inject engram: {e}")
+
+        if count > 0:
+            logger.info(f"Synced {count} memories from swarm.")
+        return count
+
     def get_working_memory_snapshot(self) -> List[Engram]:
         """Thread-safe copy of working memory."""
         with self.lock:
