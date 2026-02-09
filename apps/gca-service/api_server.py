@@ -109,6 +109,16 @@ def pulse_correction(msg):
 pulse.set_intervention_callback(pulse_correction)
 pulse.start()
 
+# Initialize Security Manager
+# Use user home directory for persistent identity
+identity_path = os.path.expanduser("~/.gca/identity.pem")
+security_manager = SecurityManager(key_path=identity_path)
+
+if not security_manager.private_key:
+    logger.warning(f"No identity keys found at {identity_path}. Run setup to generate.")
+else:
+    logger.info(f"Identity keys loaded successfully from {identity_path}.")
+
 # Init Iron Swarm
 swarm_network = SwarmNetwork(glassbox, reflective_logger, profile=resource_manager.profile, port=8000)
 if security_manager.private_key:
@@ -129,16 +139,6 @@ def introspection_callback(modality, content, metadata):
 reflective_logger.bind_observer(introspection_callback)
 
 base_logger.info("GCA Service initialized successfully with Reflective Logger")
-
-# Initialize Security Manager
-# Use user home directory for persistent identity
-identity_path = os.path.expanduser("~/.gca/identity.pem")
-security_manager = SecurityManager(key_path=identity_path)
-
-if not security_manager.private_key:
-    logger.warning(f"No identity keys found at {identity_path}. Run setup to generate.")
-else:
-    logger.info(f"Identity keys loaded successfully from {identity_path}.")
 
 # ============================================================================
 # Models
@@ -301,6 +301,16 @@ async def get_current_soul():
     if soul:
         return soul.to_dict()
     return {"error": "No active soul found"}
+
+@app.get("/v1/soul/list")
+async def list_souls():
+    """Returns the list of available souls and their details."""
+    loader = get_soul_loader()
+    souls = loader.list_souls()
+    details = {}
+    for soul_name in souls:
+        details[soul_name] = loader.get_soul_info(soul_name)
+    return {"souls": souls, "details": details}
 
 @app.post("/v1/memory/sync")
 async def sync_memory(req: MemorySyncRequest):

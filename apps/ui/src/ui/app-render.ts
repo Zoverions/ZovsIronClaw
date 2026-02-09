@@ -77,6 +77,7 @@ import { renderNodes } from "./views/nodes.ts";
 import { renderOverview } from "./views/overview.ts";
 import { renderSessions } from "./views/sessions.ts";
 import { renderSkills } from "./views/skills.ts";
+import { renderSoul } from "./views/soul.ts";
 import { renderUsage } from "./views/usage.ts";
 import "./components/neural-link.ts";
 
@@ -609,6 +610,8 @@ export function renderApp(state: AppViewState) {
         }
 
         ${state.tab === "glassbox" ? renderGlassBox() : nothing}
+
+        ${state.tab === "soul" ? renderSoul() : nothing}
 
         ${
           state.tab === "agents"

@@ -23,6 +23,20 @@ export interface GCAResponse {
     tool_call?: { name: string, args: string };
 }
 
+export interface SoulConfig {
+    base_style: string;
+    blend_styles: string[];
+    blend_weights: number[];
+}
+
+export interface SoulInfo {
+    name: string;
+    description: string;
+    entropy_tolerance?: string;
+    risk_tolerance?: number;
+    traits?: string[];
+}
+
 const invoke = async (cmd: string, args?: any) => {
     if ((window as any).__TAURI__?.core) {
         return (window as any).__TAURI__.core.invoke(cmd, args);
@@ -83,6 +97,32 @@ export class GCAProvider {
                 content: "I'm having trouble connecting to my neural core. Is the service running?",
                 meta: { error: String(e) }
             };
+        }
+    }
+
+    async listSouls(): Promise<{ souls: string[], details: Record<string, SoulInfo> }> {
+        try {
+            const response = await fetch(`${this.config.serviceUrl}/v1/soul/list`);
+            if (!response.ok) throw new Error(`GCA Service Error: ${response.statusText}`);
+            return await response.json();
+        } catch (e) {
+            console.error("Failed to list souls", e);
+            throw e;
+        }
+    }
+
+    async composeSoul(config: SoulConfig): Promise<any> {
+        try {
+            const response = await fetch(`${this.config.serviceUrl}/v1/soul/compose`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            });
+            if (!response.ok) throw new Error(`GCA Service Error: ${response.statusText}`);
+            return await response.json();
+        } catch (e) {
+             console.error("Failed to compose soul", e);
+             throw e;
         }
     }
 }
