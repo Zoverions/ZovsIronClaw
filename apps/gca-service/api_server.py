@@ -39,6 +39,7 @@ from gca_core.causal_flow import CausalFlowEngine
 from gca_core.swarm import SwarmNetwork
 from gca_core.reflective_logger import ReflectiveLogger
 from gca_core.soul_loader import get_soul_loader
+from gca_core.security import SecurityManager
 from dreamer import DeepDreamer
 
 # Configure logging
@@ -110,6 +111,8 @@ pulse.start()
 
 # Init Iron Swarm
 swarm_network = SwarmNetwork(glassbox, reflective_logger, profile=resource_manager.profile, port=8000)
+if security_manager.private_key:
+    swarm_network.mesh.set_security_manager(security_manager)
 swarm_network.mesh.start()
 
 # Bind Introspection Loop: Logger -> Observer
@@ -127,9 +130,25 @@ reflective_logger.bind_observer(introspection_callback)
 
 base_logger.info("GCA Service initialized successfully with Reflective Logger")
 
+# Initialize Security Manager
+# Use user home directory for persistent identity
+identity_path = os.path.expanduser("~/.gca/identity.pem")
+security_manager = SecurityManager(key_path=identity_path)
+
+if not security_manager.private_key:
+    logger.warning(f"No identity keys found at {identity_path}. Run setup to generate.")
+else:
+    logger.info(f"Identity keys loaded successfully from {identity_path}.")
+
 # ============================================================================
 # Models
 # ============================================================================
+
+class SecurityInitResponse(BaseModel):
+    mnemonic: str
+
+class SecurityConfirmRequest(BaseModel):
+    mnemonic: str
 
 class SoulConfig(BaseModel):
     base_style: str  # e.g., "Architect"
@@ -224,8 +243,40 @@ async def health():
         "device": glassbox.device,
         "vectors_loaded": len(memory.list_vectors()),
         "pulse_entropy": pulse.current_entropy,
-        "mesh_peers": len(swarm_network.mesh.get_active_nodes())
+        "mesh_peers": len(swarm_network.mesh.get_active_nodes()),
+        "identity_secured": security_manager.private_key is not None
     }
+
+@app.post("/v1/setup/security/init", response_model=SecurityInitResponse)
+async def init_security():
+    """Generate a new 12-word mnemonic for the user."""
+    mnemonic = security_manager.generate_passphrase()
+    return SecurityInitResponse(mnemonic=mnemonic)
+
+@app.post("/v1/setup/security/confirm")
+async def confirm_security(req: SecurityConfirmRequest):
+    """Confirm mnemonic, derive keys, and save identity."""
+    try:
+        security_manager.derive_keys(req.mnemonic)
+
+        # Create directory if needed
+        identity_path = os.path.expanduser("~/.gca/identity.pem")
+        os.makedirs(os.path.dirname(identity_path), exist_ok=True)
+
+        security_manager.save_keys(identity_path)
+
+        # Reload mesh with new identity?
+        # Ideally, we should restart mesh, but updating key in memory is enough for now.
+        # We need to inject the security manager into the mesh if we haven't already.
+        # (This will be handled in the mesh update step)
+        if swarm_network and swarm_network.mesh:
+            swarm_network.mesh.set_security_manager(security_manager)
+
+        logger.info("Identity secured and saved.")
+        return {"status": "success", "message": "Identity established."}
+    except Exception as e:
+        logger.error(f"Security confirmation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/v1/swarm/task")
 async def handle_remote_task(req: SwarmTaskRequest):

@@ -224,6 +224,9 @@ export class SetupWizard extends LitElement {
     @state() private selectedSoul = '';
     @state() private modelExists = false;
     @state() private error = '';
+    @state() private mnemonic = ''; // Security Phrase
+    @state() private generatingMnemonic = false;
+    @state() private isImporting = false;
     @state() private permissions = {
         microphone: false,
         camera: false
@@ -264,7 +267,7 @@ export class SetupWizard extends LitElement {
     }
 
     private nextStep() {
-        if (this.step < 5) { // Increased steps from 4 to 5
+        if (this.step < 6) { // Increased steps from 5 to 6
             // If moving from step 2 (Hardware Check) to 3 (Download) and model exists, skip to 4 (Permissions)
             if (this.step === 2 && this.modelExists) {
                  this.step = 4;
@@ -335,6 +338,47 @@ export class SetupWizard extends LitElement {
         }
     }
 
+    private async generateMnemonic() {
+        if (this.generatingMnemonic || this.mnemonic) return;
+        this.generatingMnemonic = true;
+        try {
+            const res = await fetch('http://localhost:8000/v1/setup/security/init', { method: 'POST' });
+            if (res.ok) {
+                const data = await res.json();
+                this.mnemonic = data.mnemonic;
+            } else {
+                this.error = "Failed to generate security phrase. Is the Brain running?";
+            }
+        } catch (e) {
+            this.error = `Connection error: ${e}`;
+        } finally {
+            this.generatingMnemonic = false;
+        }
+    }
+
+    private isValidMnemonic() {
+        if (!this.mnemonic) return false;
+        return this.mnemonic.trim().split(/\s+/).length === 12;
+    }
+
+    private async confirmSecurity() {
+        if (!this.mnemonic) return;
+        try {
+            const res = await fetch('http://localhost:8000/v1/setup/security/confirm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mnemonic: this.mnemonic })
+            });
+            if (res.ok) {
+                this.nextStep();
+            } else {
+                this.error = "Failed to confirm security phrase.";
+            }
+        } catch (e) {
+             this.error = `Connection error: ${e}`;
+        }
+    }
+
     private selectSoul(soul: string) {
         this.selectedSoul = soul;
     }
@@ -345,7 +389,7 @@ export class SetupWizard extends LitElement {
                 ${this.renderStep()}
 
                 <div class="step-indicator">
-                    ${[1, 2, 3, 4, 5].map(i => html`
+                    ${[1, 2, 3, 4, 5, 6].map(i => html`
                         <div class="dot ${this.step === i ? 'active' : ''}"></div>
                     `)}
                 </div>
@@ -395,7 +439,7 @@ export class SetupWizard extends LitElement {
                         ` : nothing}
                     </div>
                 `;
-            case 4: // New Permissions Step
+            case 4: // Permissions Step
                 return html`
                     <h1>Permissions</h1>
                     <p>IronClaw needs access to your senses to perceive the world.</p>
@@ -421,7 +465,62 @@ export class SetupWizard extends LitElement {
                         <button class="btn-primary" @click=${() => this.nextStep()}>Continue</button>
                     </div>
                 `;
-            case 5: // Soul Selection moved to Step 5
+            case 5: // Security Step
+                if (!this.mnemonic && !this.isImporting) {
+                    this.generateMnemonic();
+                }
+                return html`
+                    <h1>Security Core</h1>
+                    <p>Your 12-word Identity Phrase. This secures your Mesh.</p>
+
+                    ${this.isImporting ? html`
+                        <textarea
+                            .value=${this.mnemonic}
+                            @input=${(e: any) => this.mnemonic = e.target.value}
+                            placeholder="Enter your 12 words here separated by spaces..."
+                            style="width: 100%; height: 100px; background: rgba(0,0,0,0.3); color: white; border: 1px solid #4facfe; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-family: monospace;"
+                        ></textarea>
+                        <div style="text-align: right; margin-bottom: 1rem;">
+                            <button class="btn-secondary" style="font-size: 0.8rem;" @click=${() => { this.isImporting = false; this.mnemonic = ''; this.generateMnemonic(); }}>Generate New Instead</button>
+                        </div>
+                    ` : html`
+                        <div style="
+                            background: rgba(0,0,0,0.3);
+                            padding: 1.5rem;
+                            border-radius: 8px;
+                            font-family: monospace;
+                            font-size: 1.2rem;
+                            margin-bottom: 1rem;
+                            display: grid;
+                            grid-template-columns: repeat(3, 1fr);
+                            gap: 0.5rem;
+                            text-align: center;
+                        ">
+                            ${this.mnemonic ? this.mnemonic.split(' ').map((word, i) => html`
+                                <span style="color: #4facfe;">${i+1}. ${word}</span>
+                            `) : html`<span>Generating...</span>`}
+                        </div>
+
+                        <div style="text-align: center; margin-bottom: 1.5rem;">
+                             <button class="btn-secondary" style="font-size: 0.8rem;" @click=${() => { this.isImporting = true; this.mnemonic = ''; }}>Import Existing Phrase</button>
+                        </div>
+
+                        <p style="font-size: 0.8rem; color: #ff6b6b;">
+                            ⚠️ This phrase secures your Mesh Identity. If lost, it cannot be recovered.
+                        </p>
+                    `}
+
+                    ${this.error ? html`<div class="error-message">${this.error}</div>` : nothing}
+
+                    <div class="actions">
+                         <button class="btn-secondary" @click=${() => this.step--}>Back</button>
+                         ${this.isImporting ?
+                            html`<button class="btn-primary" ?disabled=${!this.isValidMnemonic()} @click=${() => this.confirmSecurity()}>Recover Identity</button>` :
+                            html`<button class="btn-primary" ?disabled=${!this.mnemonic} @click=${() => this.confirmSecurity()}>I Have Saved It</button>`
+                         }
+                    </div>
+                `;
+            case 6: // Soul Selection (was 5)
                 return html`
                     <h1>Choose your Soul</h1>
                     <p>Select the personality for your assistant.</p>

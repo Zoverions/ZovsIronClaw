@@ -10,7 +10,7 @@ import json
 import logging
 import uuid
 from dataclasses import dataclass, asdict
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from .resource_manager import SystemProfile
 
 logger = logging.getLogger("GCA.Mesh")
@@ -41,6 +41,7 @@ class MeshNetwork:
         self.running = False
         self.nodes: Dict[str, MeshNode] = {}
         self.lock = threading.Lock()
+        self.security_manager: Any = None # Injected by API server
 
         # UDP Socket for Broadcasting
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -58,6 +59,11 @@ class MeshNetwork:
         except Exception as e:
             logger.warning(f"Failed to bind UDP port {BROADCAST_PORT}: {e}. Mesh discovery disabled.")
             self.sock = None
+
+    def set_security_manager(self, security_manager):
+        """Inject security manager for signing/verification."""
+        self.security_manager = security_manager
+        logger.info("Mesh security enabled.")
 
     def start(self):
         if not self.sock:
@@ -101,14 +107,27 @@ class MeshNetwork:
     def _broadcast_loop(self):
         while self.running:
             try:
-                payload = {
+                payload_data = {
                     "agent_id": self.agent_id,
                     "port": self.port,
                     "role": self.profile.value,
                     "capabilities": ["reasoning", "memory_sync"], # Basic set
                     "timestamp": time.time()
                 }
-                msg = json.dumps(payload).encode('utf-8')
+
+                # Canonicalize payload for signing (use raw json string as content)
+                payload_str = json.dumps(payload_data, sort_keys=True)
+
+                # Wrapped Message
+                message = {
+                    "p": payload_str,
+                    "s": None # signature
+                }
+
+                if self.security_manager and self.security_manager.private_key:
+                    message["s"] = self.security_manager.sign_message(payload_str)
+
+                msg = json.dumps(message).encode('utf-8')
                 self.sock.sendto(msg, ('<broadcast>', BROADCAST_PORT))
             except Exception as e:
                 logger.debug(f"Broadcast error: {e}")
@@ -118,7 +137,7 @@ class MeshNetwork:
     def _listen_loop(self):
         while self.running:
             try:
-                data, addr = self.sock.recvfrom(1024)
+                data, addr = self.sock.recvfrom(4096) # Larger buffer for signatures
                 self._handle_packet(data, addr)
             except Exception as e:
                 if self.running:
@@ -126,7 +145,36 @@ class MeshNetwork:
 
     def _handle_packet(self, data: bytes, addr):
         try:
-            payload = json.loads(data.decode('utf-8'))
+            wrapper = json.loads(data.decode('utf-8'))
+
+            # Determine Protocol Version
+            if isinstance(wrapper, dict) and "p" in wrapper and "s" in wrapper:
+                # Secured Protocol
+                payload_str = wrapper["p"]
+                signature = wrapper["s"]
+
+                # Verify Logic
+                if self.security_manager and self.security_manager.private_key:
+                    if not signature:
+                        # logger.debug(f"Mesh: Dropped unsigned packet from {addr}")
+                        return
+
+                    if not self.security_manager.verify_signature(payload_str, signature):
+                        logger.warning(f"Mesh: Invalid signature from {addr}")
+                        return
+
+                # Decode inner payload
+                payload = json.loads(payload_str)
+
+            elif isinstance(wrapper, dict) and "agent_id" in wrapper:
+                # Legacy Protocol
+                if self.security_manager and self.security_manager.private_key:
+                     # If we are secure, we ignore legacy insecure packets
+                     return
+                payload = wrapper
+            else:
+                return # Unknown format
+
             remote_id = payload.get("agent_id")
 
             if remote_id == self.agent_id:
