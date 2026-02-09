@@ -6,12 +6,15 @@ Provides cognitive orchestration for multi-agent swarms using GCA core.
 import logging
 import time
 import uuid
+import requests
 import torch
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from .glassbox import GlassBox
 from .reflective_logger import ReflectiveLogger
 from .moral import MoralKernel
+from .mesh import MeshNetwork, MeshNode
+from .resource_manager import SystemProfile
 
 logger = logging.getLogger("GCA.IronSwarm")
 
@@ -30,14 +33,19 @@ class SwarmNetwork:
     """
     The Hive Mind. Manages the topology and task distribution of the swarm.
     """
-    def __init__(self, glassbox: GlassBox, reflective_logger: ReflectiveLogger):
+    def __init__(self, glassbox: GlassBox, reflective_logger: ReflectiveLogger, profile: SystemProfile = SystemProfile.SPARK, port: int = 8000):
         self.glassbox = glassbox
         self.logger = reflective_logger
         self.nodes: Dict[str, SwarmNode] = {}
         self.tasks: List[Dict] = []
         self.swarm_id = str(uuid.uuid4())[:8]
 
-        self.logger.log("info", f"Iron Swarm initialized: {self.swarm_id}")
+        # Initialize Mesh Network
+        # Use a consistent ID for this node if possible, for now random per session
+        self.local_agent_id = f"{profile.value}-{self.swarm_id}"
+        self.mesh = MeshNetwork(self.local_agent_id, port, profile)
+
+        self.logger.log("info", f"Iron Swarm initialized: {self.swarm_id} (Mesh ID: {self.local_agent_id})")
 
     def register_node(self, agent_id: str, role: str, capabilities: List[str]) -> str:
         """Register a new agent into the swarm."""
@@ -97,7 +105,61 @@ class SwarmNetwork:
             self.logger.log("info", f"Swarm: Task delegated to {best_agent} (Score: {best_score:.2f})")
             return best_agent
 
+        # Fallback: Check Remote Mesh Nodes
+        remote_nodes = self.mesh.get_active_nodes()
+        if remote_nodes:
+            # Sort by role capability (Titan > Forge > Spark)
+            # Simple heuristic: Just pick the first Titan, then Forge
+            candidates = sorted(remote_nodes, key=lambda n: 2 if n.role == "titan" else (1 if n.role == "forge" else 0), reverse=True)
+
+            for node in candidates:
+                self.logger.log("info", f"Swarm: Offloading task to remote peer {node.agent_id} ({node.role})")
+                # For now, we return the remote agent ID. The caller needs to handle the actual execution dispatch if this returns a remote ID.
+                # But to make it seamless, we might want to just execute it here?
+                # The current method returns 'agent_id'.
+                # We'll return a special ID format "remote:<ip>:<port>"
+                return f"remote:{node.host}:{node.port}"
+
         self.logger.log("warn", f"Swarm: No suitable idle agent found for task: {task_description}")
+        return None
+
+    def execute_task(self, task_description: str) -> str:
+        """
+        Orchestrates task execution, either locally or remotely.
+        """
+        agent_id = self.delegate_task(task_description)
+
+        if not agent_id:
+            return "No agent available."
+
+        if agent_id.startswith("remote:"):
+            # remote:host:port
+            parts = agent_id.split(":")
+            host = parts[1]
+            port = int(parts[2])
+            return self.delegate_remote_task(host, port, task_description) or "Remote execution failed."
+        else:
+            # Local execution (simulated for now as SwarmNode just holds status)
+            # In reality, this would dispatch to an agent loop.
+            # For this MVP, we just return the assignment.
+            return f"Task assigned to local agent {agent_id}"
+
+    def delegate_remote_task(self, host: str, port: int, task_description: str) -> Optional[str]:
+        """
+        Executes the task on a remote node via API.
+        This is a blocking call.
+        """
+        url = f"http://{host}:{port}/v1/swarm/task"
+        try:
+            self.logger.log("info", f"Sending task to {url}...")
+            resp = requests.post(url, json={"task": task_description, "context": "delegated_from_mesh"}, timeout=60)
+            if resp.status_code == 200:
+                data = resp.json()
+                return data.get("content")
+            else:
+                self.logger.log("error", f"Remote task failed: {resp.status_code} - {resp.text}")
+        except Exception as e:
+            self.logger.log("error", f"Failed to call remote node: {e}")
         return None
 
     def submit_result(self, agent_id: str, result: str, cot_text: str, cot_hash: str) -> bool:

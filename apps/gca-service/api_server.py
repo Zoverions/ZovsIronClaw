@@ -109,7 +109,8 @@ pulse.set_intervention_callback(pulse_correction)
 pulse.start()
 
 # Init Iron Swarm
-swarm_network = SwarmNetwork(glassbox, reflective_logger)
+swarm_network = SwarmNetwork(glassbox, reflective_logger, profile=resource_manager.profile, port=8000)
+swarm_network.mesh.start()
 
 # Bind Introspection Loop: Logger -> Observer
 # We create a lambda to bridge the callback signature
@@ -189,6 +190,13 @@ class ObservationResponse(BaseModel):
     detected_state: Union[List[float], str]
     description: str
 
+class SwarmTaskRequest(BaseModel):
+    task: str
+    context: Optional[str] = None
+
+class MemorySyncRequest(BaseModel):
+    engrams: List[Dict[str, Any]]
+
 # OpenAI Chat Completion Schemas
 class ChatMessage(BaseModel):
     role: str
@@ -215,8 +223,43 @@ async def health():
         "model": glassbox.model_name,
         "device": glassbox.device,
         "vectors_loaded": len(memory.list_vectors()),
-        "pulse_entropy": pulse.current_entropy
+        "pulse_entropy": pulse.current_entropy,
+        "mesh_peers": len(swarm_network.mesh.get_active_nodes())
     }
+
+@app.post("/v1/swarm/task")
+async def handle_remote_task(req: SwarmTaskRequest):
+    """Executes a task delegated from the mesh."""
+    logger.info(f"Executing remote task: {req.task[:50]}...")
+
+    # Reuse glassbox for execution
+    prompt = f"Context: {req.context}\nTask: {req.task}\n\nExecute this task."
+    try:
+        response = glassbox.generate_steered(prompt, strength=1.0)
+        return {"status": "success", "content": response}
+    except Exception as e:
+        logger.error(f"Remote task error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/v1/soul/current")
+async def get_current_soul():
+    """Returns the active soul configuration for sync."""
+    loader = get_soul_loader()
+    # Assuming active soul is default 'Architect' or derived from config
+    soul = loader.get_soul("Architect")
+    if soul:
+        return soul.to_dict()
+    return {"error": "No active soul found"}
+
+@app.post("/v1/memory/sync")
+async def sync_memory(req: MemorySyncRequest):
+    """Receive memories from peers for Shared Consciousness."""
+    try:
+        count = bio_mem.inject_external(req.engrams)
+        return {"status": "synced", "count": count}
+    except Exception as e:
+        logger.error(f"Memory sync error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/v1/chat/completions")
 async def chat_completions(req: ChatCompletionRequest):
