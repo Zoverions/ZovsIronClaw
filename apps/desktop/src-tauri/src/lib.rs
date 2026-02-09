@@ -125,6 +125,29 @@ async fn save_soul_config(soul_name: &str) -> Result<(), String> {
     Ok(())
 }
 
+// Execute Shell Command (Computer Use)
+#[tauri::command]
+async fn execute_shell_command(command: String, app: tauri::AppHandle) -> Result<String, String> {
+    let shell = app.shell();
+
+    #[cfg(target_os = "windows")]
+    let (program, args) = ("cmd", vec!["/C", &command]);
+
+    #[cfg(not(target_os = "windows"))]
+    let (program, args) = ("sh", vec!["-c", &command]);
+
+    let output = shell.command(program)
+        .args(args)
+        .output()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if output.status.success() {
+        String::from_utf8(output.stdout).map_err(|e| e.to_string())
+    } else {
+        Err(String::from_utf8(output.stderr).unwrap_or_else(|_| "Unknown error".to_string()))
+    }
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -161,7 +184,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             check_model_exists,
             download_model,
-            save_soul_config
+            save_soul_config,
+            execute_shell_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

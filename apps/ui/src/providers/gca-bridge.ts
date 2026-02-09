@@ -20,7 +20,15 @@ export interface GCAResponse {
     status: string;
     content: string;
     meta?: any;
+    tool_call?: { name: string, args: string };
 }
+
+const invoke = async (cmd: string, args?: any) => {
+    if ((window as any).__TAURI__?.core) {
+        return (window as any).__TAURI__.core.invoke(cmd, args);
+    }
+    return null;
+};
 
 export class GCAProvider {
     config: GCAConfig;
@@ -46,7 +54,27 @@ export class GCAProvider {
                 throw new Error(`GCA Service Error: ${response.statusText}`);
             }
 
-            return await response.json();
+            const result: GCAResponse = await response.json();
+
+            // Handle Tool Execution (Computer Use)
+            if (this.isDesktop && result.tool_call && result.status !== "BLOCKED") {
+                const tool = result.tool_call;
+                // Check if tool is a shell command
+                if (['bash', 'sh', 'cmd', 'powershell'].includes(tool.name)) {
+                    try {
+                        console.log(`[GCA] Executing shell command: ${tool.args}`);
+                        const output = await invoke('execute_shell_command', { command: tool.args });
+
+                        // Append output to content so user sees the result
+                        result.content += `\n\n> [EXECUTION OUTPUT]\n${output}`;
+                    } catch (e) {
+                         console.error(`[GCA] Execution Error: ${e}`);
+                         result.content += `\n\n> [EXECUTION ERROR]\n${e}`;
+                    }
+                }
+            }
+
+            return result;
         } catch (e) {
             console.error("GCA Reasoning Failed", e);
             // Fallback Logic could go here (e.g., call Cloud LLM directly if local failed)

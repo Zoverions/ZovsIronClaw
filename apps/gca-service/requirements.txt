@@ -19,3 +19,5 @@ moviepy
 qwen-vl-utils
 networkx>=3.0.0
 requests>=2.31.0
+mnemonic
+cryptography
