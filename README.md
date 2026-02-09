@@ -59,7 +59,7 @@ ZovsIronClaw includes a self-contained desktop application powered by **Tauri v2
 
 - **Tauri App**: Located in `apps/desktop`. Acts as the "Shell" managing the system tray, windows, and background processes.
 - **Python Sidecar**: The `gca-service` (in `apps/gca-service`) is compiled into a standalone executable (`gca-brain`) using PyInstaller and launched automatically by the Tauri app.
-- **Setup Wizard**: A built-in onboarding flow that handles hardware checks, model downloading, and initial configuration.
+- **Setup Wizard**: A built-in onboarding flow that handles hardware checks, model downloading, identity generation (12-word phrase), and initial configuration.
 
 ### Building the Desktop App
 
@@ -140,7 +140,15 @@ Continuous adversarial testing to validate safety mechanisms:
 - Arbiter evaluates and logs results
 - Failed defenses inform retraining
 
-### 7. **Iron Swarm (v5.0)**
+### 7. **Secure Computer Use & Mesh Identity (v4.9)**
+
+ZovsIronClaw now bridges the digital and physical realms with military-grade security:
+
+- **Computer Use**: The agent can execute shell commands (`bash`, `sh`, `cmd`, `powershell`) locally on the host machine to perform complex tasks.
+- **Mesh Identity**: Every node in the swarm is secured by a unique **12-word Identity Phrase** (BIP39).
+- **Cryptographic Trust**: All mesh communication is signed with **Ed25519** keys derived from this identity. Only devices sharing the same identity phrase can command each other, preventing unauthorized access in local networks.
+
+### 8. **Iron Swarm (v5.0)**
 
 A tiered resource management system that scales ZovsIronClaw from mobile devices to high-end workstations without code changes.
 
