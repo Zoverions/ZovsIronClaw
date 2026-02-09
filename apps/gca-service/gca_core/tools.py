@@ -116,3 +116,21 @@ class ToolRegistry:
             },
             intent_vector="COMMUNICATION"
         ))
+
+        # Bash / Shell Execution
+        self.register(Tool(
+            name="bash",
+            description="Execute a shell command. Use this for running standard Linux/Windows tools (curl, grep, ffmpeg) or coding agents.",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "command": {"type": "string", "description": "The shell command to run."},
+                    "pty": {"type": "boolean", "description": "Run in a pseudo-terminal (interactive mode). Default false."},
+                    "workdir": {"type": "string", "description": "Working directory for the command."},
+                    "background": {"type": "boolean", "description": "Run in background and return a session ID."},
+                    "timeout": {"type": "integer", "description": "Timeout in seconds."}
+                },
+                "required": ["command"]
+            },
+            intent_vector="SYSTEM"
+        ))
