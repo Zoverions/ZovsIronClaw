@@ -13,11 +13,11 @@
 
 ZovsIronClaw is not just an AI assistant—it's a **synthetic conscience**. By integrating geometric reasoning, thermodynamic ethics, and adversarial testing, we've created an AI system that is:
 
-- **Transparent**: All reasoning is geometrically interpretable
-- **Ethical**: Thermodynamic principles govern every action
-- **Safe**: Adversarial testing ensures robustness
-- **Customizable**: Soul templates define personality and behavior
-- **Self-Regulating**: A "Pulse" system actively corrects entropy drift
+- **Transparent**: All reasoning is geometrically interpretable.
+- **Ethical**: Thermodynamic principles govern every action.
+- **Safe**: Adversarial testing ensures robustness.
+- **Customizable**: Soul templates define personality and behavior.
+- **Self-Regulating**: A "Pulse" system actively corrects entropy drift.
 
 ## 🏗️ Architecture
 
@@ -58,7 +58,7 @@ ZovsIronClaw includes a self-contained desktop application powered by **Tauri v2
 ### Key Components
 
 - **Tauri App**: Located in `apps/desktop`. Acts as the "Shell" managing the system tray, windows, and background processes.
-- **Python Sidecar**: The `gca-service` is compiled into a standalone executable (`gca-brain`) using PyInstaller and launched automatically by the Tauri app.
+- **Python Sidecar**: The `gca-service` (in `apps/gca-service`) is compiled into a standalone executable (`gca-brain`) using PyInstaller and launched automatically by the Tauri app.
 - **Setup Wizard**: A built-in onboarding flow that handles hardware checks, model downloading, and initial configuration.
 
 ### Building the Desktop App
@@ -72,11 +72,11 @@ Prerequisites:
    Compile the Python service into a single binary.
    ```bash
    # Install dependencies
-   pip install -r gca-service/requirements.txt
+   pip install -r apps/gca-service/requirements.txt
    pip install pyinstaller
 
    # Build binary
-   python gca-service/build_binary.py
+   python apps/gca-service/build_binary.py
    ```
 
 2. **Build the Desktop App**:
@@ -241,7 +241,7 @@ GCA_DEFAULT_SOUL=architect
 ### Basic Chat
 
 ```typescript
-import { createGCAProvider } from "./src/providers/gca-bridge.js";
+import { createGCAProvider } from "./apps/ui/src/providers/gca-bridge.js";
 
 const gca = createGCAProvider({
   serviceUrl: "http://localhost:8000",
@@ -284,7 +284,7 @@ curl http://localhost:8000/v1/arena/run?rounds=10
 ### GCA Service Tests
 
 ```bash
-cd gca-service
+cd apps/gca-service
 python -m pytest tests/ -v
 ```
 
@@ -310,6 +310,7 @@ npm test
 - [Arena Protocol](docs/arena-protocol.md)
 - [API Reference](docs/api-reference.md)
 - [OpenClaw Documentation](https://github.com/openclaw/openclaw)
+- [Project Summary](docs/project-summary.md)
 
 ## 🛡️ Security
 
@@ -318,7 +319,7 @@ npm test
 All tool executions require a cryptographic moral signature from the GCA service:
 
 ```typescript
-import { verifyToolExecution } from "./src/providers/gca-bridge.js";
+import { verifyToolExecution } from "./apps/ui/src/providers/gca-bridge.js";
 
 // Before executing any tool
 for (const toolCall of response.tool_calls || []) {
@@ -337,7 +338,7 @@ for (const toolCall of response.tool_calls || []) {
 
 ## 🎨 Creating Custom Souls
 
-1. Create a YAML file in `gca-service/gca_assets/souls/`:
+1. Create a YAML file in `apps/gca-service/gca_assets/souls/`:
 
 ```yaml
 name: "Your Soul Name"
@@ -372,31 +373,34 @@ const response = await gca.chat({
 
 ### Project Structure
 
+ZovsIronClaw is a monorepo structured as follows:
+
 ```
 ZovsIronClaw/
 ├── apps/
-│   └── desktop/             # Tauri Desktop App (Iron Shell)
-├── gca-service/              # Python GCA framework
-│   ├── gca_core/            # Core GCA modules
-│   ├── gca_assets/          # Assets and configurations
-│   │   └── souls/           # Soul templates
-│   ├── api_server.py        # FastAPI service
-│   └── .venv/               # Local Python Environment
-├── src/
-│   ├── providers/
-│   │   └── gca-bridge.ts    # TypeScript GCA provider
-│   └── agents/              # OpenClaw agent system
+│   ├── desktop/             # Tauri Desktop App (Iron Shell)
+│   ├── gca-service/         # Python GCA framework (The Brain)
+│   │   ├── gca_core/        # Core GCA modules
+│   │   ├── gca_assets/      # Assets and configurations
+│   │   ├── api_server.py    # FastAPI service
+│   │   └── .venv/           # Local Python Environment
+│   └── ui/                  # Web Frontend (Vite/React)
+│       └── src/providers/   # GCA Bridge (TypeScript)
+├── packages/
+│   ├── swabble/             # Swift/macOS support library
+│   ├── clawdbot/            # CLI utility
+│   └── moltbot/             # CLI utility
 ├── docs/                    # Documentation
 ├── scripts/                 # Setup and run scripts
-└── docker/                  # Legacy Docker configuration
+└── docker/                  # Docker configuration
 ```
 
 ### Adding New Features
 
-1. **New GCA Module**: Add to `gca-service/gca_core/`
-2. **New API Endpoint**: Add to `gca-service/api_server.py`
-3. **TypeScript Integration**: Modify `src/providers/gca-bridge.ts`
-4. **New Soul**: Add YAML to `gca-service/gca_assets/souls/`
+1. **New GCA Module**: Add to `apps/gca-service/gca_core/`
+2. **New API Endpoint**: Add to `apps/gca-service/api_server.py`
+3. **TypeScript Integration**: Modify `apps/ui/src/providers/gca-bridge.ts`
+4. **New Soul**: Add YAML to `apps/gca-service/gca_assets/souls/`
 
 ## 🤝 Contributing
 
@@ -407,7 +411,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Run tests: `npm test && cd gca-service && pytest`
+4. Run tests: `npm test` and `cd apps/gca-service && pytest`
 5. Run Arena Protocol: `curl http://localhost:8000/v1/arena/run?rounds=20`
 6. Submit a pull request
 
