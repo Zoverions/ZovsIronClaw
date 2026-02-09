@@ -6,12 +6,13 @@ export const TAB_GROUPS = [
     label: "Control",
     tabs: ["overview", "channels", "instances", "sessions", "usage", "cron", "glassbox"],
   },
-  { label: "Agent", tabs: ["agents", "skills", "nodes"] },
+  { label: "Agent", tabs: ["agents", "soul", "skills", "nodes"] },
   { label: "Settings", tabs: ["config", "debug", "logs"] },
 ] as const;
 
 export type Tab =
   | "agents"
+  | "soul"
   | "overview"
   | "channels"
   | "instances"
@@ -28,6 +29,7 @@ export type Tab =
 
 const TAB_PATHS: Record<Tab, string> = {
   agents: "/agents",
+  soul: "/soul",
   overview: "/overview",
   channels: "/channels",
   instances: "/instances",
@@ -128,6 +130,8 @@ export function iconForTab(tab: Tab): IconName {
   switch (tab) {
     case "agents":
       return "folder";
+    case "soul":
+      return "brain";
     case "chat":
       return "messageSquare";
     case "overview":
@@ -163,6 +167,8 @@ export function titleForTab(tab: Tab) {
   switch (tab) {
     case "agents":
       return "Agents";
+    case "soul":
+      return "Soul";
     case "overview":
       return "Overview";
     case "channels":
@@ -198,6 +204,8 @@ export function subtitleForTab(tab: Tab) {
   switch (tab) {
     case "agents":
       return "Manage agent workspaces, tools, and identities.";
+    case "soul":
+      return "Compose and manage conscience profiles.";
     case "overview":
       return "Gateway status, entry points, and a fast health read.";
     case "channels":
