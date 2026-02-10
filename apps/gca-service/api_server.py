@@ -98,7 +98,7 @@ causal_engine = CausalFlowEngine(glassbox)
 reflective_logger = ReflectiveLogger(glassbox, bio_mem, moral_kernel)
 
 # Pulse System (v4.8)
-pulse = PulseSystem(bio_mem, glassbox)
+pulse = PulseSystem(bio_mem, glassbox, causal_engine=causal_engine, qpt=qpt)
 
 # Pulse Intervention Hook
 def pulse_correction(msg):

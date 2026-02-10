@@ -11,9 +11,11 @@ from .horizon import HorizonScanner
 logger = logging.getLogger("GCA.Pulse")
 
 class PulseSystem:
-    def __init__(self, memory_system, glassbox, check_interval: int = 60):
+    def __init__(self, memory_system, glassbox, causal_engine=None, qpt=None, check_interval: int = 60):
         self.memory = memory_system
         self.glassbox = glassbox
+        self.causal_engine = causal_engine
+        self.qpt = qpt
         self.interval = check_interval
         self._stop_event = threading.Event()
         self.current_entropy = 0.0
@@ -35,7 +37,7 @@ class PulseSystem:
         self.active_loop = ActiveInferenceLoop(self.gen_model)
 
         # Initialize Horizon Scanner
-        self.horizon_scanner = HorizonScanner(self.glassbox)
+        self.horizon_scanner = HorizonScanner(self.glassbox, causal_engine=self.causal_engine, qpt=self.qpt)
         self._last_horizon_scan = 0
 
         # Initialize Cron Reader for Automation Awareness
