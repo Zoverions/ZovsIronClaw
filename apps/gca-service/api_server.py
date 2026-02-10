@@ -27,6 +27,7 @@ from gca_core.glassbox import GlassBox
 from gca_core.resource_manager import ResourceManager
 from gca_core.moral import MoralKernel, Action, EntropyClass
 from gca_core.optimizer import GCAOptimizer
+from gca_core.tools import Tool
 from gca_core.memory import IsotropicMemory
 from gca_core.resonance import ResonanceEngine
 from gca_core.qpt import QuaternionArchitect
@@ -342,14 +343,27 @@ async def chat_completions(req: ChatCompletionRequest):
         text_parts = [p.get("text", "") for p in user_text if p.get("type") == "text"]
         user_text = " ".join(text_parts)
 
-    # Convert tools to simple list for internal logic (if needed)
-    # But for OpenAI compat, we need to pass the full schema to the LLM if it supports it
-    # Currently GCA uses internal logic for tool selection.
-    # We will extract tool names for GCA's simplified logic:
-    tool_names = [t["function"]["name"] for t in req.tools] if req.tools else []
+    # 2. Dynamic Tool Handling (v4.9.5)
+    # Convert OpenAI schemas to GCA Tool objects
+    dynamic_tools = []
+    tool_names = []
+    if req.tools:
+        for t in req.tools:
+            if "function" in t:
+                func = t["function"]
+                name = func["name"]
+                tool_names.append(name)
+                # Create a dynamic Tool object
+                # Attempt to guess intent from description or name
+                # For now, default to 'EXTERNAL'
+                dynamic_tools.append(Tool(
+                    name=name,
+                    description=func.get("description", "External tool from OpenClaw"),
+                    parameters=func.get("parameters", {}),
+                    intent_vector="EXTERNAL"
+                ))
 
     # Call Internal GCA Reasoning Logic
-    # We reuse the logic from /v1/reason but adapt it here
 
     # 1. Check Pulse
     if pulse.current_entropy > 0.8:
@@ -359,45 +373,64 @@ async def chat_completions(req: ChatCompletionRequest):
             finish_reason="stop"
         )
 
-    # 2. Glassbox Generation with Tool Awareness
-    # We construct a system prompt that includes tool definitions if the model isn't tool-native
-    # For MVP, we use GCA's text-based tool parser
+    # 2. Soul Parsing from Model Name
+    soul_name = "Architect"  # Default
+    if req.model.lower().startswith("gca-"):
+        parts = req.model.split("-")
+        if len(parts) > 1:
+            soul_name = parts[1].capitalize()
+
+    loader = get_soul_loader()
+    soul = loader.get_soul(soul_name)
+    # Create a minimal soul config representation for QPT
+    soul_config_str = f"soul: {soul_name}"
+    if soul:
+        # If we could access vector mix, we would pass it.
+        # For now, we rely on QPT picking up the soul name in context.
+        pass
 
     context_str = "\n".join([f"{m.role}: {m.content}" for m in req.messages[:-1]])
 
-    # Run the GCA Pipeline (simplified for this endpoint)
+    # Run the GCA Pipeline
     try:
         # Intent Routing
         intent = optimizer.route_intent(user_text)
 
         # Soul & Memory
-        # (Assuming default soul for now)
-        wm_context = bio_mem.retrieve_context(memory.get_vector(intent))
+        skill_vec = memory.get_vector(intent)
+        wm_context = bio_mem.retrieve_context(skill_vec)
 
         # QPT Structure
         structured_prompt = qpt.restructure(
             raw_prompt=user_text,
+            soul_config=soul_config_str,
             context=context_str,
             working_memory=wm_context
         )
 
-        # If tools are present, append instructions
-        if tool_names:
-            # v4.9: Native Tool Integration - Use Optimizer to select and format tools
-            relevant_tools = optimizer.select_relevant_tools(user_text, tool_names)
+        # Tool Injection
+        if dynamic_tools:
+            # Use new prioritize_tools to sort by relevance to intent
+            relevant_tools = optimizer.prioritize_tools(dynamic_tools, user_text)
             tool_definitions = "\n".join([t.format_prompt() for t in relevant_tools])
 
+            # Inject tools into prompt
             structured_prompt += f"\n\n[AVAILABLE TOOLS]\n{tool_definitions}\nTo use a tool, output: TOOL_CALL: <tool_name> <arguments>"
 
-        # Generate
+        # Generate (Steering)
+        # Ideally, we'd compose vectors here: Skill + Soul
+        # But for now, we rely on GlassBox using the base model and skill vector if available.
+        # Note: If we had _compose_vectors exposed, we could use it.
+        # But logic is local to reasoning_engine.
+        # Let's just pass strength=1.0 for now.
+
         response_text = glassbox.generate_steered(
             prompt=structured_prompt,
-            strength=1.0, # Default steering
+            strength=1.0,
             temperature=req.temperature
         )
 
         # Parse for Tool Calls
-        # Using the GCA simple parser (or a better regex for the new prompt format)
         tool_call_data = _parse_tool_from_text(response_text, tool_names)
 
         if tool_call_data:
@@ -416,7 +449,7 @@ async def chat_completions(req: ChatCompletionRequest):
                 tool_call_data["name"],
                 tool_call_data["args"],
                 req.model,
-                content=response_text # Optional: include thought process
+                content=response_text # Include thought process in content
             )
 
         # Standard Text Response

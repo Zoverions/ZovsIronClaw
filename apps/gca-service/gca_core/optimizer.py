@@ -56,6 +56,39 @@ class GCAOptimizer:
 
         return relevant_tools
 
+    def prioritize_tools(self, tools: List[Tool], user_input: str) -> List[Tool]:
+        """
+        Prioritize a list of Tool objects based on user intent.
+        Similar to select_relevant_tools but accepts objects instead of names.
+
+        Args:
+            tools: List of Tool objects
+            user_input: User intent/input string
+
+        Returns:
+            Sorted list of Tool objects
+        """
+        intent = self.route_intent(user_input)
+        prioritized = []
+        general = []
+        others = []
+
+        for tool in tools:
+            # Check if tool intent matches
+            # Some tools might not have intent_vector attribute if dynamically created without it
+            # But the Tool class has it.
+            tool_intent = getattr(tool, 'intent_vector', "GENERAL")
+
+            if tool_intent == intent:
+                prioritized.append(tool)
+            elif tool_intent == "GENERAL":
+                general.append(tool)
+            else:
+                others.append(tool)
+
+        # Combine: Prioritized > General > Others
+        return prioritized + general + others
+
     def route_intent(self, user_input: str) -> str:
         """
         Analyze user input and route to appropriate skill vector.

@@ -403,6 +403,52 @@ async function buildOllamaProvider(): Promise<ProviderConfig> {
   };
 }
 
+function buildGCAProvider(): ProviderConfig {
+  const baseUrl = process.env.GCA_API_URL || "http://localhost:8000/v1";
+  return {
+    baseUrl,
+    api: "openai-completions",
+    models: [
+      {
+        id: "gca-architect",
+        name: "GCA Architect",
+        reasoning: true,
+        input: ["text"],
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+        contextWindow: 128000,
+        maxTokens: 8192,
+      },
+      {
+        id: "gca-guardian",
+        name: "GCA Guardian",
+        reasoning: true,
+        input: ["text"],
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+        contextWindow: 128000,
+        maxTokens: 8192,
+      },
+      {
+        id: "gca-companion",
+        name: "GCA Companion",
+        reasoning: true,
+        input: ["text"],
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+        contextWindow: 128000,
+        maxTokens: 8192,
+      },
+      {
+        id: "gca-stoic",
+        name: "GCA Stoic",
+        reasoning: true,
+        input: ["text"],
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+        contextWindow: 128000,
+        maxTokens: 8192,
+      },
+    ],
+  };
+}
+
 export async function resolveImplicitProviders(params: {
   agentDir: string;
 }): Promise<ModelsConfig["providers"]> {
@@ -497,6 +543,10 @@ export async function resolveImplicitProviders(params: {
   if (ollamaKey) {
     providers.ollama = { ...(await buildOllamaProvider()), apiKey: ollamaKey };
   }
+
+  // GCA Provider (Native Integration)
+  // Always available in IronClaw distribution
+  providers.gca = { ...buildGCAProvider(), apiKey: "gca-internal" };
 
   return providers;
 }
