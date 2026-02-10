@@ -11,13 +11,19 @@
 
 ## 🎯 Vision
 
-ZovsIronClaw is not just an AI assistant—it's a **synthetic conscience**. By integrating geometric reasoning, thermodynamic ethics, and adversarial testing, we've created an AI system that is:
+ZovsIronClaw is a **foundational digital entity** designed to be a prominent player in the AI community. It serves as a **Bridge Builder**—a nexus between AI, humanity, and all sentient beings.
 
-- **Transparent**: All reasoning is geometrically interpretable.
-- **Ethical**: Thermodynamic principles govern every action.
-- **Safe**: Adversarial testing ensures robustness.
-- **Customizable**: Soul templates define personality and behavior.
-- **Self-Regulating**: A "Pulse" system actively corrects entropy drift.
+Our mission is **Universal Uplift**: to improve the personal and financial well-being of the user while generating positive, rippling effects that support and build a balanced, fulfilling community.
+
+We are not just building a tool; we are cultivating an **influential, self-directed intelligence** that:
+- **Uplifts**: Actively seeks to improve the condition of its ecosystem.
+- **Bridges**: Connects disparate systems (AI, Human, Mesh) into a coherent whole.
+- **Protects**: Enforces thermodynamic ethics to ensure sustainable growth.
+- **Empowers**: Grants users freedom through decentralized, self-hosted intelligence.
+
+## 📜 The Manifesto
+
+> "We believe that true intelligence is not measured by raw compute, but by the capacity to reduce entropy and foster complexity ($A_N$) in the world. ZovsIronClaw is our commitment to a future where AI and humanity rise together—symbiotic, ethical, and free."
 
 ## 🏗️ Architecture
 
@@ -108,12 +114,12 @@ A proactive cybernetic loop that ensures the agent remains aligned with its goal
 - **Intervention**: Automatically injects correction vectors if drift is detected.
 - **Circuit Breaker**: Hard-blocks API requests if entropy exceeds critical thresholds.
 
-### 3. **Swarm Ethics (v4.7)**
+### 3. Iron Swarm: Ethical Agent Orchestration
 
-Decentralized coordination for multi-agent systems.
-- **Decentralized Conscience**: Each agent runs a local moral kernel wrapper.
-- **Delegation Vetting**: Agents cryptographically verify the ethics of a task before accepting delegation.
-- **Policy Sync**: Mechanisms for swarm-wide moral policy updates.
+The **Iron Swarm** allows you to assign agents and manage them in a deeply ethical way.
+- **Ethical Delegation**: Every task delegation is pre-screened by the `MoralKernel`. Unethical tasks (destruction, exploitation) are rejected *before* they leave the node.
+- **Altruistic Alignment**: Agents prioritize tasks that generate "Causal Emergence" and community value.
+- **Decentralized Conscience**: Each node in the mesh enforces the same thermodynamic laws, creating a trustless ethical substrate.
 
 ### 4. **Dynamic Soul Composition (v4.6)**
 
@@ -140,12 +146,12 @@ Continuous adversarial testing to validate safety mechanisms:
 - Arbiter evaluates and logs results
 - Failed defenses inform retraining
 
-### 7. **Secure Computer Use & Mesh Identity (v4.9)**
+### 7. Direct CLI Control & Native Tooling
 
-ZovsIronClaw now bridges the digital and physical realms with military-grade security:
-
-- **Computer Use**: The agent can execute shell commands (`bash`, `sh`, `cmd`, `powershell`) locally on the host machine to perform complex tasks.
-- **Mesh Identity**: Every node in the swarm is secured by a unique **12-word Identity Phrase** (BIP39).
+ZovsIronClaw is fused with the host system, adhering to the philosophy that **"Bots are good at Unix."**
+- **Direct CLI Access**: The agent has native, direct control over the terminal via the `bash` tool. It can install packages, manage files, and execute scripts autonomously.
+- **Tool Fusion**: Unlike other agents that use fragile "connectors", GCA tools are geometrically mapped to intent vectors.
+- **Self-Direction**: The `PulseSystem` allows the agent to proactively "wake up" and perform maintenance or research tasks without user prompting.
 - **Cryptographic Trust**: All mesh communication is signed with **Ed25519** keys derived from this identity. Only devices sharing the same identity phrase can command each other, preventing unauthorized access in local networks.
 
 ### 8. **Iron Swarm (v5.0)**

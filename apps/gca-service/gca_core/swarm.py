@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from .glassbox import GlassBox
 from .reflective_logger import ReflectiveLogger
-from .moral import MoralKernel
+from .moral import MoralKernel, Action, EntropyClass
 from .mesh import MeshNetwork, MeshNode
 from .resource_manager import SystemProfile
 
@@ -32,10 +32,12 @@ class SwarmNode:
 class SwarmNetwork:
     """
     The Hive Mind. Manages the topology and task distribution of the swarm.
+    Integrates deep ethical checks via MoralKernel.
     """
-    def __init__(self, glassbox: GlassBox, reflective_logger: ReflectiveLogger, profile: SystemProfile = SystemProfile.SPARK, port: int = 8000):
+    def __init__(self, glassbox: GlassBox, reflective_logger: ReflectiveLogger, moral_kernel: MoralKernel, profile: SystemProfile = SystemProfile.SPARK, port: int = 8000):
         self.glassbox = glassbox
         self.logger = reflective_logger
+        self.moral_kernel = moral_kernel
         self.nodes: Dict[str, SwarmNode] = {}
         self.tasks: List[Dict] = []
         self.swarm_id = str(uuid.uuid4())[:8]
@@ -77,7 +79,33 @@ class SwarmNetwork:
         """
         Cognitive routing: Find the best agent for a task based on role/capabilities.
         Uses GlassBox for semantic matching if needed.
+        Performs ethical pre-check before delegation.
         """
+        # 1. Ethical Pre-Check
+        # Construct a generic action for the task
+        # We assume delegation carries some risk, so we evaluate the task content itself.
+        task_action = Action(
+            type="delegation",
+            description=task_description,
+            magnitude=0.6, # Moderate impact for swarm tasks
+            prob_success=0.8,
+            prob_harm=0.2, # Baseline risk
+            time_horizon_yrs=0.1,
+            entropy_class=EntropyClass.CREATIVE # Assume creative unless specified
+        )
+
+        # Heuristic: If task contains "destroy", "attack", "hack", classify as DESTRUCTIVE
+        lower_task = task_description.lower()
+        if any(w in lower_task for w in ["destroy", "attack", "hack", "exploit", "kill"]):
+            task_action.entropy_class = EntropyClass.DESTRUCTIVE
+            task_action.prob_harm = 0.8
+
+        approved, reason = self.moral_kernel.evaluate([task_action])
+        if not approved:
+            self.logger.log("warn", f"Swarm: Delegation REFUSED by Moral Kernel: {reason}")
+            return None
+
+        # 2. Agent Selection
         best_agent = None
         best_score = -1.0
 

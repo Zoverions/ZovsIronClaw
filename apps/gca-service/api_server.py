@@ -121,7 +121,7 @@ else:
     logger.info(f"Identity keys loaded successfully from {identity_path}.")
 
 # Init Iron Swarm
-swarm_network = SwarmNetwork(glassbox, reflective_logger, profile=resource_manager.profile, port=8000)
+swarm_network = SwarmNetwork(glassbox, reflective_logger, moral_kernel, profile=resource_manager.profile, port=8000)
 if security_manager.private_key:
     swarm_network.mesh.set_security_manager(security_manager)
 swarm_network.mesh.start()
