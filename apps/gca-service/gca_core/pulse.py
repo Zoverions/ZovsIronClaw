@@ -6,13 +6,16 @@ from pathlib import Path
 from typing import Callable, Optional
 from .active_inference import GenerativeModel, ActiveInferenceLoop
 from .cron_reader import CronReader
+from .horizon import HorizonScanner
 
 logger = logging.getLogger("GCA.Pulse")
 
 class PulseSystem:
-    def __init__(self, memory_system, glassbox, check_interval: int = 60):
+    def __init__(self, memory_system, glassbox, causal_engine=None, qpt=None, check_interval: int = 60):
         self.memory = memory_system
         self.glassbox = glassbox
+        self.causal_engine = causal_engine
+        self.qpt = qpt
         self.interval = check_interval
         self._stop_event = threading.Event()
         self.current_entropy = 0.0
@@ -28,8 +31,14 @@ class PulseSystem:
         self._load_goal()
 
         # Initialize Active Inference Components
-        self.gen_model = GenerativeModel(self.glassbox, self.cached_goal_text)
+        # Pass memory basis if available (Biomimetic Memory) to ensure dimensions match
+        basis = getattr(self.memory, "basis", None)
+        self.gen_model = GenerativeModel(self.glassbox, self.cached_goal_text, projection_matrix=basis)
         self.active_loop = ActiveInferenceLoop(self.gen_model)
+
+        # Initialize Horizon Scanner
+        self.horizon_scanner = HorizonScanner(self.glassbox, causal_engine=self.causal_engine, qpt=self.qpt)
+        self._last_horizon_scan = 0
 
         # Initialize Cron Reader for Automation Awareness
         self.cron_reader = CronReader()
@@ -122,7 +131,32 @@ class PulseSystem:
         fe_state = self.active_loop.compute_free_energy(current_thought)
         self.current_entropy = fe_state.value
 
-        # 3. Intervention Logic
+        # 3. Horizon Scan (Detecting the Emergent Horizon)
+        memory_content = "Unknown Context"
+        try:
+             # Try to retrieve content from last engram
+             if hasattr(self.memory, "working_memory") and self.memory.working_memory:
+                 # Check if iterable/list
+                 wm = list(self.memory.working_memory)
+                 if wm:
+                     memory_content = wm[-1].content
+        except Exception:
+             pass
+
+        h_state = self.horizon_scanner.update(fe_state.value, memory_content)
+
+        if h_state.is_critical_variance:
+             current_time = time.time()
+             if current_time - self._last_horizon_scan > 300: # 5 min cooldown
+                 logger.warning("[HORIZON] Variance Alarm Active. Scanning for Geodesic...")
+                 prediction = self.horizon_scanner.predict_geodesic()
+                 self._last_horizon_scan = current_time
+
+                 logger.info(f"[HORIZON] Prediction: {prediction}")
+                 # Inject insight into memory
+                 self.memory.perceive(f"[HORIZON ALERT] System Variance Critical. Future Projection: {prediction}")
+
+        # 4. Intervention Logic
         if fe_state.mode != "homeostatic":
             logger.warning(f"[💓] Free Energy High ({fe_state.value:.2f} | {fe_state.mode}). Triggering Active Inference.")
             self._trigger_intervention(fe_state)
