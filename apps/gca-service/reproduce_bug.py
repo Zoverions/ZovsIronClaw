@@ -5,6 +5,8 @@ from unittest.mock import MagicMock
 
 # Mock EVERYTHING
 sys.modules['torch'] = MagicMock()
+sys.modules['torch.nn'] = MagicMock()
+sys.modules['torch.nn.functional'] = MagicMock()
 sys.modules['transformers'] = MagicMock()
 sys.modules['numpy'] = MagicMock()
 sys.modules['cryptography'] = MagicMock()

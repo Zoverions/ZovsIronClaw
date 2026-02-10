@@ -23,10 +23,20 @@ class PulseSystem:
         self.thread = None
 
         # Determine Goal Path
-        # Typically run from gca-service/api_server.py, so parent is gca-service
-        # We need to find .agent/prompts/GOAL.md relative to project root
-        # If __file__ is gca-service/gca_core/pulse.py -> ../../../.agent/prompts/GOAL.md
-        self.goal_path = Path(__file__).parents[2] / ".agent" / "prompts" / "GOAL.md"
+        # typically run from gca-service/api_server.py, so parent is gca-service
+        # We try multiple paths to be robust across Docker and Local Dev
+        possible_paths = [
+            Path("/.agent/prompts/GOAL.md"),  # Docker root mount
+            Path(__file__).parents[3] / ".agent" / "prompts" / "GOAL.md",  # Repo root (local dev)
+            Path(__file__).parents[2] / ".agent" / "prompts" / "GOAL.md",  # Old assumption (apps/.agent)
+        ]
+
+        self.goal_path = possible_paths[1] # Default to repo root if nothing found
+        for p in possible_paths:
+            if p.exists():
+                self.goal_path = p
+                break
+
         self.cached_goal_text = "Focus, productivity, code generation, precision."
         self._load_goal()
 
@@ -39,6 +49,7 @@ class PulseSystem:
         # Initialize Horizon Scanner
         self.horizon_scanner = HorizonScanner(self.glassbox, causal_engine=self.causal_engine, qpt=self.qpt)
         self._last_horizon_scan = 0
+        self._ticks = 0
 
         # Initialize Cron Reader for Automation Awareness
         self.cron_reader = CronReader()
@@ -160,6 +171,37 @@ class PulseSystem:
         if fe_state.mode != "homeostatic":
             logger.warning(f"[💓] Free Energy High ({fe_state.value:.2f} | {fe_state.mode}). Triggering Active Inference.")
             self._trigger_intervention(fe_state)
+
+        # 5. Active Self Reflection (Every 5 ticks ~ 5 minutes if interval is 60s)
+        self._ticks += 1
+        if self._ticks % 5 == 0:
+            self._reflect()
+
+    def _reflect(self):
+        """
+        Active Self Reflection.
+        Evaluates recent actions and alignment with ethical financial goals.
+        """
+        logger.info("[💓] Initiating Active Self Reflection...")
+
+        reflection_prompt = (
+            f"Review your recent performance and alignment with the following Primary Goal:\n"
+            f"\"{self.cached_goal_text}\"\n\n"
+            f"Specifically reflect on:\n"
+            f"1. Progress towards improving the financial situation of the user and family.\n"
+            f"2. Ethical alignment of recent actions.\n"
+            f"3. Opportunities for 'Ethical Wealth Generation'.\n\n"
+            f"Provide a concise, first-person reflection."
+        )
+
+        try:
+            reflection = self.glassbox.generate_steered(reflection_prompt, max_tokens=300)
+            logger.info(f"[REFLECTION] {reflection}")
+
+            # Inject into memory
+            self.memory.perceive(f"[SELF_REFLECTION] {reflection}")
+        except Exception as e:
+            logger.error(f"[💓] Reflection failed: {e}")
 
     def _trigger_intervention(self, fe_state):
         """
