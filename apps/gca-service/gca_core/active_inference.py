@@ -15,15 +15,25 @@ class GenerativeModel:
     """
     Maintains the 'Expected State' (Goal) of the system.
     """
-    def __init__(self, glassbox, goal_text: str):
+    def __init__(self, glassbox, goal_text: str, projection_matrix: Optional[torch.Tensor] = None):
         self.glassbox = glassbox
         self.goal_text = goal_text
+        self.projection_matrix = projection_matrix
         self.goal_vector = None
         self._embed_goal()
 
     def _embed_goal(self):
         if self.goal_text:
-            self.goal_vector = self.glassbox.get_activation(self.goal_text)
+            raw_vector = self.glassbox.get_activation(self.goal_text)
+
+            # Apply projection if matrix is provided (e.g. for Biomimetic Memory Basis)
+            if self.projection_matrix is not None:
+                if self.projection_matrix.device != raw_vector.device:
+                    self.projection_matrix = self.projection_matrix.to(raw_vector.device)
+                self.goal_vector = torch.matmul(raw_vector, self.projection_matrix)
+            else:
+                self.goal_vector = raw_vector
+
             self.goal_vector = F.normalize(self.goal_vector, dim=0)
 
     def update_goal(self, new_goal_text: str):
