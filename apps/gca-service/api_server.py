@@ -430,7 +430,8 @@ async def handle_remote_task(req: SwarmTaskRequest):
     # Reuse glassbox for execution
     prompt = f"Context: {req.context}\nTask: {req.task}\n\nExecute this task."
     try:
-        response = glassbox.generate_steered(prompt, strength=1.0)
+        # Run potentially blocking generation (API calls) in threadpool
+        response = await run_in_threadpool(glassbox.generate_steered, prompt, strength=1.0)
         return {"status": "success", "content": response}
     except Exception as e:
         logger.error(f"Remote task error: {e}", exc_info=True)
@@ -576,7 +577,9 @@ async def chat_completions(req: ChatCompletionRequest):
         # But logic is local to reasoning_engine.
         # Let's just pass strength=1.0 for now.
 
-        response_text = glassbox.generate_steered(
+        # Run generation in threadpool to prevent blocking event loop on API calls
+        response_text = await run_in_threadpool(
+            glassbox.generate_steered,
             prompt=structured_prompt,
             strength=1.0,
             temperature=req.temperature
@@ -753,7 +756,9 @@ async def reasoning_engine(req: ReasonRequest):
             structured_prompt += f"\n\n[AVAILABLE TOOLS]\n{tool_definitions}\nTo use a tool, output: TOOL_CALL: <tool_name> <arguments>"
 
         # 6. THINKING (Generation)
-        response_text = glassbox.generate_steered(
+        # Use threadpool to handle blocking API requests if model is remote
+        response_text = await run_in_threadpool(
+            glassbox.generate_steered,
             prompt=structured_prompt,
             steering_vec=final_vec,
             strength=strength

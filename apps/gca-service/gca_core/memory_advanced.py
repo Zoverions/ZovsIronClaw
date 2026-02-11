@@ -315,6 +315,8 @@ class BiomimeticMemory:
     def _is_significant(self, engram: Engram) -> bool:
         """Determines if a memory is worth teleporting to the Hive Mind."""
         c = engram.content.lower()
+        # Removed "password is" and "key is" to prevent accidental secret exfiltration
+        triggers = ["my favorite", "i prefer", "remember that", "important:", "note:", "the code is"]
         triggers = ["my favorite", "i prefer", "remember that", "important:", "note:", "the code is", "password is", "key is"]
         if any(t in c for t in triggers):
             # Exclude transient chat noise
