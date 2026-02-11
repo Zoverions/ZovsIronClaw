@@ -319,6 +319,7 @@ npm test
 
 ## 📚 Documentation
 
+- [Research & Comparison](docs/RESEARCH_COMPARISON.md)
 - [GCA Integration Guide](docs/gca-integration.md)
 - [Soul Templates Guide](docs/soul-templates.md)
 - [Arena Protocol](docs/arena-protocol.md)

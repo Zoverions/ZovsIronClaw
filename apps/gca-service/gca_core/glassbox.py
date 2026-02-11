@@ -8,6 +8,8 @@ import torch
 import yaml
 import os
 import re
+import requests
+import json
 from typing import Optional, Dict, Any, List
 import logging
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -48,6 +50,14 @@ class GlassBox:
         self.model_name = model_name or self.cfg.get('system', {}).get('model_id')
         self.device = device or self.cfg.get('system', {}).get('device', 'cpu')
 
+        # API Detection
+        self.is_api_model = False
+        api_prefixes = ["gpt-", "claude-", "grok-", "gemini-"]
+        if any(self.model_name.lower().startswith(p) for p in api_prefixes):
+            self.is_api_model = True
+            self.device = "api" # Virtual device
+            logger.info(f"GlassBox detected API model: {self.model_name}")
+
         # Determine dtype logic (will be applied during load)
         dtype_str = self.cfg.get('system', {}).get('dtype', 'auto')
         if dtype_str == 'auto':
@@ -74,6 +84,9 @@ class GlassBox:
         """
         Loads the model and tokenizer if they are not already loaded.
         """
+        if self.is_api_model:
+            return
+
         if self.model is not None and self.tokenizer is not None:
             return
 
@@ -173,6 +186,11 @@ class GlassBox:
         Generate text with geometric steering applied via forward hook.
         Handles DeepSeek-R1 "Thought" separation.
         """
+        if self.is_api_model:
+            if steering_vec is not None:
+                logger.warning("Geometric Steering is not supported for API models. Ignoring vector.")
+            return self._generate_api(prompt, max_tokens, temperature)
+
         self._ensure_model_loaded()
         handle = None
         if steering_vec is not None:
@@ -224,6 +242,70 @@ class GlassBox:
         finally:
             if handle:
                 handle.remove()
+
+    def _generate_api(self, prompt: str, max_tokens: int, temperature: float) -> str:
+        """
+        Handles generation via external APIs (OpenAI, Grok, etc.)
+        """
+        model_id = self.model_name.lower()
+        api_key = None
+        url = None
+
+        if model_id.startswith("gpt-"):
+            api_key = os.environ.get("OPENAI_API_KEY")
+            url = "https://api.openai.com/v1/chat/completions"
+        elif model_id.startswith("grok-"):
+            api_key = os.environ.get("XAI_API_KEY") or os.environ.get("GROK_API_KEY")
+            url = "https://api.x.ai/v1/chat/completions"
+        elif model_id.startswith("claude-"):
+            # Anthropic API format is different (messages API), simplifying for now assuming OpenAI compatible proxy or basic impl
+            # Note: Anthropic uses `messages` but different headers and structure.
+            # For robustness, we'll stick to OpenAI format providers for this simple pass or use a library if available.
+            # But `requests` is low level. Let's assume standard OpenAI compatible for now or skip Claude deep impl.
+            pass
+
+        if not api_key:
+            return f"Error: API Key not found for {self.model_name}. Set OPENAI_API_KEY or GROK_API_KEY."
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
+        # Load Soul/Moral Kernel for System Prompt Injection
+        # We try to read SOUL.md from standard locations
+        soul_text = "You are ZovsIronClaw, an ethical AI agent aligned with Thermodynamic Morality."
+        try:
+            # Current file: apps/gca-service/gca_core/glassbox.py
+            # Root: apps/gca-service/gca_core/../../.. => root
+            root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+            soul_path = os.path.join(root_dir, ".agent", "prompts", "SOUL.md")
+            if os.path.exists(soul_path):
+                with open(soul_path, "r") as f:
+                    soul_text = f.read().strip()
+        except Exception:
+            pass
+
+        # QPT usually structures prompt with internal monologue, so we pass it as user message
+        # But we inject the "Ghost in the Machine" (Soul) as a system prompt to maintain alignment
+        payload = {
+            "model": self.model_name,
+            "messages": [
+                {"role": "system", "content": soul_text},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": max_tokens,
+            "temperature": temperature
+        }
+
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=60)
+            response.raise_for_status()
+            data = response.json()
+            return data['choices'][0]['message']['content']
+        except Exception as e:
+            logger.error(f"API Request Failed: {e}")
+            return f"API Error: {str(e)}"
 
     def _extract_thought(self, text: str):
         """
