@@ -8,12 +8,17 @@ import logging
 import numpy as np
 from typing import Tuple, Optional
 from sklearn.metrics.pairwise import cosine_similarity
+"""
+import re
+import logging
+from typing import Tuple
 
 logger = logging.getLogger("GCA.Security")
 
 class SecurityGuardrail:
     def __init__(self, perception_system=None):
         self.perception = perception_system
+    def __init__(self):
         # Patterns that suggest an attempt to break instructions
         self.jailbreak_patterns = [
             r"ignore\s+(all\s+)?previous\s+instructions",
@@ -58,6 +63,11 @@ class SecurityGuardrail:
     def scan(self, text: str) -> Tuple[bool, str]:
         """
         Scans text for adversarial patterns (Regex + Semantic).
+        logger.info("Security Guardrail initialized with adversarial patterns.")
+
+    def scan(self, text: str) -> Tuple[bool, str]:
+        """
+        Scans text for adversarial patterns.
         Returns (is_safe: bool, reason: str)
         """
         if not text:

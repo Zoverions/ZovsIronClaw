@@ -317,6 +317,7 @@ class BiomimeticMemory:
         c = engram.content.lower()
         # Removed "password is" and "key is" to prevent accidental secret exfiltration
         triggers = ["my favorite", "i prefer", "remember that", "important:", "note:", "the code is"]
+        triggers = ["my favorite", "i prefer", "remember that", "important:", "note:", "the code is", "password is", "key is"]
         if any(t in c for t in triggers):
             # Exclude transient chat noise
             if len(c.split()) < 3: return False

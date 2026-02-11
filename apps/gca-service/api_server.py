@@ -100,6 +100,7 @@ causal_engine = CausalFlowEngine(glassbox)
 # Init Security Guardrail
 # Pass perception system for semantic scanning
 guardrail = SecurityGuardrail(perception_system=perception)
+guardrail = SecurityGuardrail()
 
 # Init Reflective Logger first so Pulse can use it
 reflective_logger = ReflectiveLogger(glassbox, bio_mem, moral_kernel)
