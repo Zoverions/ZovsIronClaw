@@ -9,8 +9,10 @@ Operationalizes the Zoverions philosophy:
 import numpy as np
 import logging
 import time
+import json
+from pathlib import Path
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import List, Optional, Deque, Dict, Any
 
 logger = logging.getLogger("GCA.Horizon")
@@ -56,6 +58,9 @@ class HorizonScanner:
 
         # Layer 2: Prediction Cache
         self.last_prediction: Optional[str] = None
+
+        # Load persisted state
+        self.load_state()
 
     def update(self, free_energy: float, context: str) -> HorizonState:
         """
@@ -117,6 +122,7 @@ class HorizonScanner:
              if np.random.rand() < 0.1:
                 logger.warning(f"[HORIZON] Critical Variance: {variance:.4f} (Threshold: {self.variance_threshold})")
 
+        self.save_state()
         return HorizonState(variance, is_critical, len(self.outliers))
 
     def predict_geodesic(self) -> str:
@@ -174,7 +180,66 @@ class HorizonScanner:
             # Use generate_steered (standard generation without steering vector)
             response = self.glassbox.generate_steered(prompt, max_tokens=300)
             self.last_prediction = response
+            self.save_state()
             return response
         except Exception as e:
             logger.error(f"Horizon prediction failed: {e}")
             return f"Prediction Error: {e}"
+
+    def get_status(self) -> Dict[str, Any]:
+        """
+        Returns the current status of the Horizon Scanner.
+        """
+        variance = 0.0
+        if len(self.history) > 1:
+            variance = float(np.var(list(self.history)))
+
+        return {
+            "variance": variance,
+            "is_critical": variance > self.variance_threshold,
+            "outliers_count": len(self.outliers),
+            "outliers": [asdict(o) for o in self.outliers],
+            "prediction": self.last_prediction
+        }
+
+    def save_state(self):
+        """Persists history and outliers to disk."""
+        try:
+            path = Path(__file__).parent.parent / "gca_assets" / "horizon_state.json"
+            path.parent.mkdir(parents=True, exist_ok=True)
+
+            state = {
+                "history": list(self.history),
+                "outliers": [asdict(o) for o in self.outliers],
+                "last_prediction": self.last_prediction
+            }
+
+            with open(path, "w") as f:
+                json.dump(state, f, indent=2)
+        except Exception as e:
+            logger.error(f"Failed to save horizon state: {e}")
+
+    def load_state(self):
+        """Loads state from disk."""
+        try:
+            path = Path(__file__).parent.parent / "gca_assets" / "horizon_state.json"
+            if path.exists():
+                with open(path, "r") as f:
+                    state = json.load(f)
+
+                if "history" in state:
+                    self.history = deque(state["history"], maxlen=self.window_size)
+
+                if "outliers" in state:
+                    self.outliers.clear()
+                    for o_data in state["outliers"]:
+                        # Handle potential schema changes gracefully
+                        try:
+                            self.outliers.append(Outlier(**o_data))
+                        except Exception:
+                            pass
+
+                self.last_prediction = state.get("last_prediction")
+                logger.info(f"Loaded Horizon State: {len(self.outliers)} outliers, {len(self.history)} history points.")
+        except Exception as e:
+            logger.error(f"Failed to load horizon state: {e}")
