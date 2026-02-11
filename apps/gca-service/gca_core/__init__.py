@@ -9,6 +9,7 @@ from .memory import IsotropicMemory
 from .optimizer import GCAOptimizer
 from .qpt import QuaternionArchitect
 from .arena import ArenaProtocol
+from .skillrl import SkillEvolutionEngine
 
 __version__ = "4.5.1"
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "GCAOptimizer",
     "QuaternionArchitect",
     "ArenaProtocol",
+    "SkillEvolutionEngine",
 ]
