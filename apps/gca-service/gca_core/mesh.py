@@ -12,6 +12,7 @@ import uuid
 from dataclasses import dataclass, asdict
 from typing import Dict, List, Optional, Any
 from .resource_manager import SystemProfile
+from .blockchain import Block, Transaction
 
 logger = logging.getLogger("GCA.Mesh")
 
@@ -42,6 +43,7 @@ class MeshNetwork:
         self.nodes: Dict[str, MeshNode] = {}
         self.lock = threading.Lock()
         self.security_manager: Any = None # Injected by API server
+        self.blockchain: Any = None # Injected by API server
 
         # UDP Socket for Broadcasting
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -64,6 +66,10 @@ class MeshNetwork:
         """Inject security manager for signing/verification."""
         self.security_manager = security_manager
         logger.info("Mesh security enabled.")
+
+    def set_blockchain(self, blockchain):
+        """Inject blockchain instance."""
+        self.blockchain = blockchain
 
     def start(self):
         if not self.sock:
@@ -143,6 +149,39 @@ class MeshNetwork:
                 if self.running:
                     logger.debug(f"Listen error: {e}")
 
+    def broadcast_block(self, block: Block):
+        """Broadcast a mined block to the network."""
+        payload = {
+            "type": "BLOCK",
+            "data": block.to_dict(),
+            "agent_id": self.agent_id
+        }
+        self._send_payload(payload)
+
+    def broadcast_transaction(self, tx: Transaction):
+        """Broadcast a new transaction."""
+        payload = {
+            "type": "TRANSACTION",
+            "data": tx.to_dict(),
+            "agent_id": self.agent_id
+        }
+        self._send_payload(payload)
+
+    def _send_payload(self, payload: Dict):
+        """Helper to sign and send payload."""
+        try:
+            payload_str = json.dumps(payload, sort_keys=True)
+            message = {"p": payload_str, "s": None}
+
+            if self.security_manager and self.security_manager.private_key:
+                message["s"] = self.security_manager.sign_message(payload_str)
+
+            msg = json.dumps(message).encode('utf-8')
+            if self.sock:
+                self.sock.sendto(msg, ('<broadcast>', BROADCAST_PORT))
+        except Exception as e:
+            logger.error(f"Failed to send payload: {e}")
+
     def _handle_packet(self, data: bytes, addr):
         try:
             wrapper = json.loads(data.decode('utf-8'))
@@ -175,6 +214,35 @@ class MeshNetwork:
             else:
                 return # Unknown format
 
+            # Check message type
+            msg_type = payload.get("type", "DISCOVERY")
+
+            if msg_type == "BLOCK":
+                if self.blockchain:
+                    block_data = payload.get("data")
+                    # Reconstruct Block object
+                    txs = [Transaction(**t) for t in block_data["transactions"]]
+                    block = Block(
+                        index=block_data["index"],
+                        timestamp=block_data["timestamp"],
+                        transactions=txs,
+                        previous_hash=block_data["previous_hash"],
+                        validator=block_data["validator"],
+                        signature=block_data["signature"],
+                        hash=block_data["hash"]
+                    )
+
+                    self.blockchain.receive_block(block)
+                return
+
+            if msg_type == "TRANSACTION":
+                if self.blockchain:
+                    tx_data = payload.get("data")
+                    tx = Transaction(**tx_data)
+                    self.blockchain.add_transaction(tx)
+                return
+
+            # Default: Discovery
             remote_id = payload.get("agent_id")
 
             if remote_id == self.agent_id:

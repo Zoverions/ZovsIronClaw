@@ -76,6 +76,10 @@ class SecurityManager:
         )
         return base64.b64encode(pub_bytes).decode('utf-8')
 
+    def get_wallet_address(self) -> str:
+        """Return the wallet address (public key base64)."""
+        return self.get_public_key_b64()
+
     def save_keys(self, path: str):
         """Save the private key to a file (encrypted/protected ideally, currently PEM)."""
         # In a real production scenario, this should use OS keychain or encryption.

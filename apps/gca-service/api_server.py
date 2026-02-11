@@ -41,6 +41,7 @@ from gca_core.swarm import SwarmNetwork
 from gca_core.reflective_logger import ReflectiveLogger
 from gca_core.soul_loader import get_soul_loader
 from gca_core.security import SecurityManager
+from gca_core.blockchain import Blockchain, Transaction
 from dreamer import DeepDreamer
 
 # Configure logging
@@ -120,10 +121,15 @@ if not security_manager.private_key:
 else:
     logger.info(f"Identity keys loaded successfully from {identity_path}.")
 
+# Init Blockchain
+blockchain = Blockchain()
+blockchain.set_security_manager(security_manager)
+
 # Init Iron Swarm
 swarm_network = SwarmNetwork(glassbox, reflective_logger, moral_kernel, profile=resource_manager.profile, port=8000)
 if security_manager.private_key:
     swarm_network.mesh.set_security_manager(security_manager)
+swarm_network.mesh.set_blockchain(blockchain)
 swarm_network.mesh.start()
 
 # Bind Introspection Loop: Logger -> Observer
@@ -217,6 +223,15 @@ class SwarmTaskRequest(BaseModel):
 class MemorySyncRequest(BaseModel):
     engrams: List[Dict[str, Any]]
 
+class ProposalRequest(BaseModel):
+    title: str
+    description: str
+    choices: List[str] = ["yes", "no"]
+
+class VoteRequest(BaseModel):
+    proposal_id: str
+    choice: str
+
 # OpenAI Chat Completion Schemas
 class ChatMessage(BaseModel):
     role: str
@@ -245,8 +260,89 @@ async def health():
         "vectors_loaded": len(memory.list_vectors()),
         "pulse_entropy": pulse.current_entropy,
         "mesh_peers": len(swarm_network.mesh.get_active_nodes()),
-        "identity_secured": security_manager.private_key is not None
+        "identity_secured": security_manager.private_key is not None,
+        "blockchain_height": len(blockchain.chain)
     }
+
+@app.get("/v1/chain")
+async def get_chain_status():
+    """Return blockchain status and latest block."""
+    return {
+        "height": len(blockchain.chain),
+        "latest_block": blockchain.get_last_block().to_dict(),
+        "pending_txs": len(blockchain.pending_transactions),
+        "governance": blockchain.get_governance_state()
+    }
+
+@app.post("/v1/chain/transaction/proposal")
+async def create_proposal(req: ProposalRequest):
+    """Submit a governance proposal transaction."""
+    if not security_manager.private_key:
+        raise HTTPException(status_code=401, detail="Identity required to propose.")
+
+    tx = Transaction(
+        id=f"prop-{int(time.time())}-{security_manager.get_wallet_address()[:8]}",
+        type="PROPOSAL",
+        sender=security_manager.get_wallet_address(),
+        recipient="GOVERNANCE",
+        payload=req.dict(),
+        timestamp=time.time()
+    )
+
+    # In a real system, we'd sign here. But we assume the tx creation is local and trusted or add sig logic.
+    # We should sign it actually if we want broadcast to verify it.
+    # Assuming Transaction structure, it has 'signature'.
+    # We can use security_manager to sign.
+
+    # Sign logic (similar to Blockchain.create_block signing but for TX)
+    tx_hash = tx.calculate_hash()
+    tx.signature = security_manager.sign_message(tx_hash)
+
+    blockchain.add_transaction(tx)
+    swarm_network.mesh.broadcast_transaction(tx)
+
+    return {"status": "submitted", "tx_id": tx.id}
+
+@app.post("/v1/chain/transaction/vote")
+async def cast_vote(req: VoteRequest):
+    """Cast a vote on a proposal."""
+    if not security_manager.private_key:
+        raise HTTPException(status_code=401, detail="Identity required to vote.")
+
+    tx = Transaction(
+        id=f"vote-{int(time.time())}-{security_manager.get_wallet_address()[:8]}",
+        type="VOTE",
+        sender=security_manager.get_wallet_address(),
+        recipient="GOVERNANCE",
+        payload=req.dict(),
+        timestamp=time.time()
+    )
+
+    tx_hash = tx.calculate_hash()
+    tx.signature = security_manager.sign_message(tx_hash)
+
+    blockchain.add_transaction(tx)
+    swarm_network.mesh.broadcast_transaction(tx)
+
+    return {"status": "voted", "tx_id": tx.id}
+
+@app.get("/v1/chain/governance")
+async def get_governance():
+    """Return active governance state."""
+    return blockchain.get_governance_state()
+
+@app.post("/v1/chain/mine")
+async def mine_block():
+    """Trigger manual mining of a block (Proof of Authority)."""
+    if not security_manager.private_key:
+        raise HTTPException(status_code=401, detail="Identity required to mine.")
+
+    block = blockchain.create_block()
+    if block:
+        swarm_network.mesh.broadcast_block(block)
+        return {"status": "mined", "block_index": block.index, "hash": block.hash}
+    else:
+        return {"status": "skipped", "message": "No transactions or error."}
 
 @app.post("/v1/setup/security/init", response_model=SecurityInitResponse)
 async def init_security():
