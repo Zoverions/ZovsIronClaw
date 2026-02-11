@@ -42,6 +42,7 @@ from gca_core.reflective_logger import ReflectiveLogger
 from gca_core.soul_loader import get_soul_loader
 from gca_core.security import SecurityManager
 from gca_core.blockchain import Blockchain, Transaction
+from gca_core.security_guardrail import SecurityGuardrail
 from dreamer import DeepDreamer
 
 # Configure logging
@@ -96,6 +97,9 @@ perception = PerceptionSystem(config=CFG)
 observer = Observer(glassbox)
 causal_engine = CausalFlowEngine(glassbox)
 
+# Init Security Guardrail
+guardrail = SecurityGuardrail()
+
 # Init Reflective Logger first so Pulse can use it
 reflective_logger = ReflectiveLogger(glassbox, bio_mem, moral_kernel)
 
@@ -141,7 +145,7 @@ if security_manager.private_key:
             type="REGISTER_DEVICE",
             sender=my_key,
             recipient="REGISTRY",
-            payload={"agent_id": my_id},
+            payload={"agent_id": str(my_id)},
             timestamp=time.time()
         )
         reg_tx.signature = security_manager.sign_message(reg_tx.calculate_hash())
@@ -300,7 +304,9 @@ async def health():
         "pulse_entropy": pulse.current_entropy,
         "mesh_peers": len(swarm_network.mesh.get_active_nodes()),
         "identity_secured": security_manager.private_key is not None,
-        "blockchain_height": len(blockchain.chain)
+        "blockchain_height": len(blockchain.chain),
+        "blockchain_sync_status": "synced" if len(blockchain.chain) > 1 else "genesis",
+        "pending_txs": len(blockchain.pending_transactions)
     }
 
 @app.get("/v1/chain")
@@ -500,6 +506,15 @@ async def chat_completions(req: ChatCompletionRequest):
 
     # Call Internal GCA Reasoning Logic
 
+    # 0. Check Security Guardrail
+    is_safe, reason = guardrail.scan(user_text)
+    if not is_safe:
+        return _openai_response_text(
+            f"🛡️ [SECURITY INTERVENTION] {reason}",
+            req.model,
+            finish_reason="stop"
+        )
+
     # 1. Check Pulse
     if pulse.current_entropy > 0.8:
         return _openai_response_text(
@@ -656,6 +671,15 @@ async def observe_environment(req: ObservationRequest):
 @app.post("/v1/reason", response_model=ReasoningResponse)
 async def reasoning_engine(req: ReasonRequest):
     reflective_logger.log("info", f"Incoming from {req.user_id}: {req.text[:50]}...")
+
+    # v4.9: Security Guardrail Check
+    is_safe, reason = guardrail.scan(req.text)
+    if not is_safe:
+        return ReasoningResponse(
+            status="BLOCKED",
+            content=f"🛡️ [SECURITY INTERVENTION] {reason}",
+            meta={"entropy_score": 0.0, "reason": reason}
+        )
 
     # v4.8: Pulse Check
     if pulse.current_entropy > 0.8:
