@@ -1,0 +1,372 @@
+/**
+ * OPERATION: EPISTEMIC CITADEL
+ * Popup Dashboard Styles
+ * 
+ * Visual Language: Signal prototype aesthetics
+ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 400px;
+  min-height: 500px;
+  max-height: 600px;
+  background-color: rgb(15, 23, 42); /* Slate-900 */
+  color: rgb(226, 232, 240); /* Slate-200 */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  overflow-y: auto;
+}
+
+.view {
+  display: block;
+}
+
+.view.hidden {
+  display: none;
+}
+
+/* Header */
+.header {
+  padding: 20px;
+  background: linear-gradient(135deg, rgb(30, 41, 59) 0%, rgb(15, 23, 42) 100%);
+  border-bottom: 1px solid rgb(51, 65, 85); /* Slate-700 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgb(96, 165, 250); /* Blue-400 */
+  margin: 0;
+}
+
+.header .subtitle {
+  font-size: 12px;
+  color: rgb(148, 163, 184); /* Slate-400 */
+  margin-top: 4px;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  color: rgb(148, 163, 184); /* Slate-400 */
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn:hover {
+  background-color: rgb(51, 65, 85);
+  color: rgb(96, 165, 250); /* Blue-400 */
+}
+
+/* Content */
+.content {
+  padding: 20px;
+}
+
+/* Info Box */
+.info-box {
+  background-color: rgb(30, 41, 59); /* Slate-800 */
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border-left: 3px solid rgb(96, 165, 250); /* Blue-400 */
+}
+
+.info-box h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgb(96, 165, 250); /* Blue-400 */
+  margin-bottom: 8px;
+}
+
+.info-box p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgb(203, 213, 225); /* Slate-300 */
+  margin: 0;
+}
+
+.info-box ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.info-box li {
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgb(203, 213, 225); /* Slate-300 */
+  margin-bottom: 8px;
+  padding-left: 20px;
+  position: relative;
+}
+
+.info-box li:before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: rgb(96, 165, 250); /* Blue-400 */
+}
+
+.info-box strong {
+  color: rgb(96, 165, 250); /* Blue-400 */
+}
+
+/* Form Group */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgb(148, 163, 184); /* Slate-400 */
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px 12px;
+  background-color: rgb(30, 41, 59); /* Slate-800 */
+  border: 1px solid rgb(51, 65, 85); /* Slate-700 */
+  border-radius: 6px;
+  color: rgb(226, 232, 240); /* Slate-200 */
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: rgb(96, 165, 250); /* Blue-400 */
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+}
+
+/* Buttons */
+.btn {
+  width: 100%;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  text-align: center;
+}
+
+.btn-primary {
+  background-color: rgb(96, 165, 250); /* Blue-400 */
+  color: rgb(15, 23, 42); /* Slate-900 */
+}
+
+.btn-primary:hover {
+  background-color: rgb(59, 130, 246); /* Blue-500 */
+  box-shadow: 0 0 16px rgba(96, 165, 250, 0.4);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Stats Card */
+.stats-card {
+  background-color: rgb(30, 41, 59); /* Slate-800 */
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-around;
+  border: 1px solid rgb(51, 65, 85); /* Slate-700 */
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: rgb(148, 163, 184); /* Slate-400 */
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: rgb(251, 191, 36); /* Amber-400 - Amber Glow */
+}
+
+/* Section */
+.section {
+  margin-bottom: 24px;
+}
+
+.section h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgb(96, 165, 250); /* Blue-400 */
+  margin-bottom: 8px;
+}
+
+.section-description {
+  font-size: 12px;
+  color: rgb(148, 163, 184); /* Slate-400 */
+  margin-bottom: 12px;
+}
+
+/* Stakes List */
+.stakes-list,
+.feed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stake-item,
+.feed-item {
+  background-color: rgb(30, 41, 59); /* Slate-800 */
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid rgb(51, 65, 85); /* Slate-700 */
+  transition: all 0.2s ease;
+}
+
+.stake-item:hover,
+.feed-item:hover {
+  border-color: rgb(96, 165, 250); /* Blue-400 */
+  box-shadow: 0 0 8px rgba(96, 165, 250, 0.2);
+}
+
+.stake-header,
+.feed-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.stake-amount {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgb(251, 191, 36); /* Amber-400 */
+}
+
+.stake-status {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.stake-status.active {
+  background-color: rgba(96, 165, 250, 0.2);
+  color: rgb(96, 165, 250); /* Blue-400 */
+}
+
+.stake-status.yielded {
+  background-color: rgba(34, 197, 94, 0.2);
+  color: rgb(34, 197, 94); /* Green-500 */
+}
+
+.stake-status.slashed {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: rgb(239, 68, 68); /* Red-500 */
+}
+
+.stake-info {
+  font-size: 12px;
+  color: rgb(203, 213, 225); /* Slate-300 */
+  line-height: 1.4;
+}
+
+.stake-metric {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.stake-metric-label {
+  color: rgb(148, 163, 184); /* Slate-400 */
+}
+
+.stake-metric-value {
+  color: rgb(226, 232, 240); /* Slate-200 */
+  font-weight: 500;
+}
+
+/* Feed Item */
+.feed-content {
+  font-size: 13px;
+  color: rgb(203, 213, 225); /* Slate-300 */
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.feed-metrics {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+}
+
+.feed-metric {
+  color: rgb(148, 163, 184); /* Slate-400 */
+}
+
+.feed-metric strong {
+  color: rgb(251, 191, 36); /* Amber-400 */
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: rgb(148, 163, 184); /* Slate-400 */
+  font-size: 13px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(15, 23, 42); /* Slate-900 */
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(51, 65, 85); /* Slate-700 */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(71, 85, 105); /* Slate-600 */
+}
+
+/* Amber Glow Animation */
+@keyframes amberGlow {
+  0%, 100% {
+    text-shadow: 0 0 8px rgba(251, 191, 36, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 16px rgba(251, 191, 36, 0.6);
+  }
+}
+
+.amber-glow {
+  animation: amberGlow 2s ease-in-out infinite;
+}

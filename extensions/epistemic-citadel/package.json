@@ -1,0 +1,26 @@
+{
+  "name": "epistemic-citadel",
+  "version": "1.0.0",
+  "description": "A Class III communications protocol designed to filter high-frequency noise and amplify low-frequency wisdom",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": [
+    "chrome-extension",
+    "twitter",
+    "reputation",
+    "filtering",
+    "signal-processing"
+  ],
+  "author": "Zoverions",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/chrome": "^0.0.254",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  }
+}

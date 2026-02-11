@@ -1,0 +1,277 @@
+/**
+ * OPERATION: EPISTEMIC CITADEL
+ * Content Script Styles
+ * 
+ * Visual Language: Signal prototype aesthetics
+ * - Slate-900 background
+ * - Blue-400 text
+ * - No red notification dots
+ * - Amber glow for slow-burning updates
+ */
+
+/* Shield Button */
+.epistemic-shield-button {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.epistemic-shield-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  color: rgb(96, 165, 250); /* Blue-400 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.epistemic-shield-btn:hover {
+  background-color: rgba(96, 165, 250, 0.1);
+  box-shadow: 0 0 12px rgba(96, 165, 250, 0.3);
+}
+
+.epistemic-shield-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Acoustic Filter - Blurred Tweets */
+.epistemic-filtered {
+  position: relative;
+  opacity: 0.3;
+  filter: blur(2px);
+  transition: all 0.3s ease;
+}
+
+.epistemic-filtered:hover {
+  opacity: 0.6;
+  filter: blur(1px);
+}
+
+.epistemic-filter-tooltip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgb(15, 23, 42); /* Slate-900 */
+  color: rgb(96, 165, 250); /* Blue-400 */
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgb(96, 165, 250);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.epistemic-filtered:hover .epistemic-filter-tooltip {
+  opacity: 1;
+}
+
+/* Modal Overlay */
+.epistemic-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal */
+.epistemic-modal {
+  background-color: rgb(15, 23, 42); /* Slate-900 */
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgb(51, 65, 85); /* Slate-700 */
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Modal Header */
+.epistemic-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgb(51, 65, 85); /* Slate-700 */
+}
+
+.epistemic-modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: rgb(96, 165, 250); /* Blue-400 */
+}
+
+.epistemic-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: rgb(148, 163, 184); /* Slate-400 */
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.epistemic-modal-close:hover {
+  background-color: rgb(51, 65, 85);
+  color: rgb(248, 250, 252); /* Slate-50 */
+}
+
+/* Modal Body */
+.epistemic-modal-body {
+  padding: 24px;
+  color: rgb(226, 232, 240); /* Slate-200 */
+}
+
+.epistemic-modal-body p {
+  margin: 0 0 20px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.epistemic-form-group {
+  margin-bottom: 20px;
+}
+
+.epistemic-form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgb(148, 163, 184); /* Slate-400 */
+}
+
+.epistemic-form-group input,
+.epistemic-form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background-color: rgb(30, 41, 59); /* Slate-800 */
+  border: 1px solid rgb(51, 65, 85); /* Slate-700 */
+  border-radius: 6px;
+  color: rgb(226, 232, 240); /* Slate-200 */
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.epistemic-form-group input:focus,
+.epistemic-form-group textarea:focus {
+  outline: none;
+  border-color: rgb(96, 165, 250); /* Blue-400 */
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+}
+
+.epistemic-info {
+  background-color: rgb(30, 41, 59); /* Slate-800 */
+  padding: 16px;
+  border-radius: 6px;
+  border-left: 3px solid rgb(251, 191, 36); /* Amber-400 - Amber Glow */
+}
+
+.epistemic-info p {
+  margin: 0;
+  font-size: 13px;
+  color: rgb(203, 213, 225); /* Slate-300 */
+}
+
+.epistemic-info p + p {
+  margin-top: 8px;
+}
+
+.epistemic-info strong {
+  color: rgb(251, 191, 36); /* Amber-400 */
+}
+
+/* Modal Footer */
+.epistemic-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid rgb(51, 65, 85); /* Slate-700 */
+}
+
+/* Buttons */
+.epistemic-btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.epistemic-btn-primary {
+  background-color: rgb(96, 165, 250); /* Blue-400 */
+  color: rgb(15, 23, 42); /* Slate-900 */
+}
+
+.epistemic-btn-primary:hover {
+  background-color: rgb(59, 130, 246); /* Blue-500 */
+  box-shadow: 0 0 16px rgba(96, 165, 250, 0.4);
+}
+
+.epistemic-btn-secondary {
+  background-color: rgb(51, 65, 85); /* Slate-700 */
+  color: rgb(226, 232, 240); /* Slate-200 */
+}
+
+.epistemic-btn-secondary:hover {
+  background-color: rgb(71, 85, 105); /* Slate-600 */
+}
+
+/* Amber Glow Animation */
+@keyframes amberGlow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(251, 191, 36, 0.6);
+  }
+}
+
+.epistemic-amber-glow {
+  animation: amberGlow 2s ease-in-out infinite;
+}
