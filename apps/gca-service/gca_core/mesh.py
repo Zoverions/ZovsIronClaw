@@ -12,6 +12,7 @@ import uuid
 from dataclasses import dataclass, asdict
 from typing import Dict, List, Optional, Any
 from .resource_manager import SystemProfile
+from .blockchain import Block, Transaction
 
 logger = logging.getLogger("GCA.Mesh")
 
@@ -42,6 +43,7 @@ class MeshNetwork:
         self.nodes: Dict[str, MeshNode] = {}
         self.lock = threading.Lock()
         self.security_manager: Any = None # Injected by API server
+        self.blockchain: Any = None # Injected by API server
 
         # UDP Socket for Broadcasting
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -64,6 +66,10 @@ class MeshNetwork:
         """Inject security manager for signing/verification."""
         self.security_manager = security_manager
         logger.info("Mesh security enabled.")
+
+    def set_blockchain(self, blockchain):
+        """Inject blockchain instance."""
+        self.blockchain = blockchain
 
     def start(self):
         if not self.sock:
@@ -107,11 +113,15 @@ class MeshNetwork:
     def _broadcast_loop(self):
         while self.running:
             try:
+                # Include sender's public key for signature verification
+                pub_key = self.security_manager.get_public_key_b64() if self.security_manager else ""
+
                 payload_data = {
                     "agent_id": self.agent_id,
                     "port": self.port,
                     "role": self.profile.value,
                     "capabilities": ["reasoning", "memory_sync"], # Basic set
+                    "pub_key": pub_key,
                     "timestamp": time.time()
                 }
 
@@ -143,6 +153,39 @@ class MeshNetwork:
                 if self.running:
                     logger.debug(f"Listen error: {e}")
 
+    def broadcast_block(self, block: Block):
+        """Broadcast a mined block to the network."""
+        payload = {
+            "type": "BLOCK",
+            "data": block.to_dict(),
+            "agent_id": self.agent_id
+        }
+        self._send_payload(payload)
+
+    def broadcast_transaction(self, tx: Transaction):
+        """Broadcast a new transaction."""
+        payload = {
+            "type": "TRANSACTION",
+            "data": tx.to_dict(),
+            "agent_id": self.agent_id
+        }
+        self._send_payload(payload)
+
+    def _send_payload(self, payload: Dict):
+        """Helper to sign and send payload."""
+        try:
+            payload_str = json.dumps(payload, sort_keys=True)
+            message = {"p": payload_str, "s": None}
+
+            if self.security_manager and self.security_manager.private_key:
+                message["s"] = self.security_manager.sign_message(payload_str)
+
+            msg = json.dumps(message).encode('utf-8')
+            if self.sock:
+                self.sock.sendto(msg, ('<broadcast>', BROADCAST_PORT))
+        except Exception as e:
+            logger.error(f"Failed to send payload: {e}")
+
     def _handle_packet(self, data: bytes, addr):
         try:
             wrapper = json.loads(data.decode('utf-8'))
@@ -153,18 +196,42 @@ class MeshNetwork:
                 payload_str = wrapper["p"]
                 signature = wrapper["s"]
 
+                # Decode inner payload first to get sender's public key
+                try:
+                    payload = json.loads(payload_str)
+                    sender_pub_key_b64 = payload.get("pub_key", "")
+                except Exception:
+                    logger.debug("Mesh: Malformed payload JSON")
+                    return
+
                 # Verify Logic
                 if self.security_manager and self.security_manager.private_key:
                     if not signature:
                         # logger.debug(f"Mesh: Dropped unsigned packet from {addr}")
                         return
 
-                    if not self.security_manager.verify_signature(payload_str, signature):
-                        logger.warning(f"Mesh: Invalid signature from {addr}")
+                    # Verify signature using sender's public key, not ours!
+                    import base64
+                    try:
+                        sender_pub_bytes = base64.b64decode(sender_pub_key_b64) if sender_pub_key_b64 else None
+                        if not sender_pub_bytes or not self.security_manager.verify_signature(payload_str, signature, public_key_bytes=sender_pub_bytes):
+                            logger.warning(f"Mesh: Invalid signature from {addr}")
+                            return
+                    except Exception as e:
+                        logger.debug(f"Mesh: Signature verification error: {e}")
                         return
 
-                # Decode inner payload
-                payload = json.loads(payload_str)
+                # Identity Verification against Blockchain
+                sender_id = payload.get("agent_id")
+                if self.blockchain and sender_id:
+                    if sender_id in self.blockchain.identities:
+                        if not self.blockchain.verify_identity(sender_id, sender_pub_key_b64):
+                            logger.warning(f"Mesh: SPOOFING DETECTED! {sender_id} uses wrong key. Dropping.")
+                            return
+                    else:
+                        # New identity. Allow for now, but maybe flag as UNVERIFIED?
+                        # For now we allow discovery so they can eventually register.
+                        pass
 
             elif isinstance(wrapper, dict) and "agent_id" in wrapper:
                 # Legacy Protocol
@@ -175,6 +242,35 @@ class MeshNetwork:
             else:
                 return # Unknown format
 
+            # Check message type
+            msg_type = payload.get("type", "DISCOVERY")
+
+            if msg_type == "BLOCK":
+                if self.blockchain:
+                    block_data = payload.get("data")
+                    # Reconstruct Block object
+                    txs = [Transaction(**t) for t in block_data["transactions"]]
+                    block = Block(
+                        index=block_data["index"],
+                        timestamp=block_data["timestamp"],
+                        transactions=txs,
+                        previous_hash=block_data["previous_hash"],
+                        validator=block_data["validator"],
+                        signature=block_data["signature"],
+                        hash=block_data["hash"]
+                    )
+
+                    self.blockchain.receive_block(block)
+                return
+
+            if msg_type == "TRANSACTION":
+                if self.blockchain:
+                    tx_data = payload.get("data")
+                    tx = Transaction(**tx_data)
+                    self.blockchain.add_transaction(tx)
+                return
+
+            # Default: Discovery
             remote_id = payload.get("agent_id")
 
             if remote_id == self.agent_id:
