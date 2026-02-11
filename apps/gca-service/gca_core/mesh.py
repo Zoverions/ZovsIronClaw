@@ -113,11 +113,15 @@ class MeshNetwork:
     def _broadcast_loop(self):
         while self.running:
             try:
+                # Include sender's public key for signature verification
+                pub_key = self.security_manager.get_public_key_b64() if self.security_manager else ""
+
                 payload_data = {
                     "agent_id": self.agent_id,
                     "port": self.port,
                     "role": self.profile.value,
                     "capabilities": ["reasoning", "memory_sync"], # Basic set
+                    "pub_key": pub_key,
                     "timestamp": time.time()
                 }
 
@@ -192,18 +196,42 @@ class MeshNetwork:
                 payload_str = wrapper["p"]
                 signature = wrapper["s"]
 
+                # Decode inner payload first to get sender's public key
+                try:
+                    payload = json.loads(payload_str)
+                    sender_pub_key_b64 = payload.get("pub_key", "")
+                except Exception:
+                    logger.debug("Mesh: Malformed payload JSON")
+                    return
+
                 # Verify Logic
                 if self.security_manager and self.security_manager.private_key:
                     if not signature:
                         # logger.debug(f"Mesh: Dropped unsigned packet from {addr}")
                         return
 
-                    if not self.security_manager.verify_signature(payload_str, signature):
-                        logger.warning(f"Mesh: Invalid signature from {addr}")
+                    # Verify signature using sender's public key, not ours!
+                    import base64
+                    try:
+                        sender_pub_bytes = base64.b64decode(sender_pub_key_b64) if sender_pub_key_b64 else None
+                        if not sender_pub_bytes or not self.security_manager.verify_signature(payload_str, signature, public_key_bytes=sender_pub_bytes):
+                            logger.warning(f"Mesh: Invalid signature from {addr}")
+                            return
+                    except Exception as e:
+                        logger.debug(f"Mesh: Signature verification error: {e}")
                         return
 
-                # Decode inner payload
-                payload = json.loads(payload_str)
+                # Identity Verification against Blockchain
+                sender_id = payload.get("agent_id")
+                if self.blockchain and sender_id:
+                    if sender_id in self.blockchain.identities:
+                        if not self.blockchain.verify_identity(sender_id, sender_pub_key_b64):
+                            logger.warning(f"Mesh: SPOOFING DETECTED! {sender_id} uses wrong key. Dropping.")
+                            return
+                    else:
+                        # New identity. Allow for now, but maybe flag as UNVERIFIED?
+                        # For now we allow discovery so they can eventually register.
+                        pass
 
             elif isinstance(wrapper, dict) and "agent_id" in wrapper:
                 # Legacy Protocol

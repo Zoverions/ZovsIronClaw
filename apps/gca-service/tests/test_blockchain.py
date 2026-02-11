@@ -169,3 +169,77 @@ def test_chain_validation(security_manager):
     block2.transactions[0].payload = {"hacked": True}
     # This invalidates the hash check
     assert chain2.receive_block(block2) == False
+
+def test_registry_and_transfer(security_manager):
+    chain = Blockchain()
+    chain.set_security_manager(security_manager)
+    sender = security_manager.get_wallet_address()
+    agent_id = "test-agent-01"
+
+    # 1. Register Device
+    reg_tx = Transaction(
+        id="reg1",
+        type="REGISTER_DEVICE",
+        sender=sender,
+        recipient="REGISTRY",
+        payload={"agent_id": agent_id},
+        timestamp=time.time()
+    )
+    reg_tx.signature = security_manager.sign_message(reg_tx.calculate_hash())
+    chain.add_transaction(reg_tx)
+
+    # Mine
+    chain.create_block()
+    assert chain.verify_identity(agent_id, sender) == True
+    assert chain.verify_identity(agent_id, "wrongkey") == False
+
+    # 2. Transfer (should fail with 0 balance)
+    tx_fail = Transaction(
+        id="tx_fail",
+        type="TRANSFER",
+        sender=sender,
+        recipient="receiver",
+        payload={"amount": 10},
+        timestamp=time.time()
+    )
+    tx_fail.signature = security_manager.sign_message(tx_fail.calculate_hash())
+    chain.add_transaction(tx_fail)
+    chain.create_block()
+
+    assert chain.get_balance(sender) == 0
+    # Transfer logic logs warning but updates balance? Wait, let's check implementation.
+    # Implementation checks: if sender_bal < amount and tx.type != "GENESIS": return
+    # So balance should remain 0
+    assert chain.get_balance("receiver") == 0
+
+    # 3. Genesis Transfer (Minting)
+    mint_tx = Transaction(
+        id="mint1",
+        type="GENESIS", # Allows creating money out of thin air
+        sender="SYSTEM",
+        recipient=sender,
+        payload={"amount": 100},
+        timestamp=time.time()
+    )
+    # We need to sign this? The code checks signature if type != GENESIS.
+    # So we can just add it.
+    chain.add_transaction(mint_tx)
+    chain.create_block()
+
+    assert chain.get_balance(sender) == 100
+
+    # 4. Valid Transfer
+    tx_ok = Transaction(
+        id="tx_ok",
+        type="TRANSFER",
+        sender=sender,
+        recipient="receiver",
+        payload={"amount": 50},
+        timestamp=time.time()
+    )
+    tx_ok.signature = security_manager.sign_message(tx_ok.calculate_hash())
+    chain.add_transaction(tx_ok)
+    chain.create_block()
+
+    assert chain.get_balance(sender) == 50
+    assert chain.get_balance("receiver") == 50

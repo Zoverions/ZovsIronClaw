@@ -76,6 +76,9 @@ class Blockchain:
         self.proposals: Dict[str, Dict] = {} # proposal_id -> details
         self.votes: Dict[str, Dict[str, str]] = {} # proposal_id -> {voter_id: vote}
 
+        self.identities: Dict[str, str] = {} # agent_id -> pub_key_b64
+        self.balances: Dict[str, float] = {} # pub_key_b64 -> amount
+
         # Create Genesis Block
         self.create_genesis_block()
 
@@ -225,6 +228,49 @@ class Blockchain:
                 self._handle_proposal(tx)
             elif tx.type == "VOTE":
                 self._handle_vote(tx)
+            elif tx.type == "REGISTER_DEVICE":
+                self._handle_register(tx)
+            elif tx.type == "TRANSFER" or tx.type == "GENESIS":
+                self._handle_transfer(tx)
+
+    def _handle_register(self, tx: Transaction):
+        """Register an agent ID to a public key."""
+        agent_id = tx.payload.get("agent_id")
+        pub_key = tx.sender
+
+        if not agent_id:
+            return
+
+        if agent_id in self.identities:
+            # Already registered. Allow update only if signed by SAME key?
+            # Or strict "first come first served"?
+            # For MVP, strict first come.
+            if self.identities[agent_id] != pub_key:
+                logger.warning(f"Identity conflict: {agent_id} already registered to different key.")
+                return
+
+        self.identities[agent_id] = pub_key
+        logger.info(f"Registered Device: {agent_id} -> {pub_key[:10]}...")
+
+    def _handle_transfer(self, tx: Transaction):
+        """Handle token transfer."""
+        amount = float(tx.payload.get("amount", 0))
+        if amount <= 0:
+            return
+
+        sender_bal = self.balances.get(tx.sender, 0.0)
+
+        # Check balance (if not GENESIS or SYSTEM minting)
+        if sender_bal < amount and tx.type != "GENESIS":
+            logger.warning(f"Transfer failed: Insufficient balance for {tx.sender[:8]}")
+            return
+
+        # Only deduct from sender if NOT Genesis/Minting
+        if tx.type != "GENESIS":
+            self.balances[tx.sender] = sender_bal - amount
+
+        self.balances[tx.recipient] = self.balances.get(tx.recipient, 0.0) + amount
+        logger.info(f"Transfer {amount} from {tx.sender[:8]} to {tx.recipient[:8]}")
 
     def _handle_proposal(self, tx: Transaction):
         prop_id = tx.payload.get("proposal_id") or tx.id
@@ -272,6 +318,15 @@ class Blockchain:
             "active_policies": self.active_policies,
             "proposals": self.proposals
         }
+
+    def verify_identity(self, agent_id: str, pub_key: str) -> bool:
+        """Verify if an agent ID claims the correct public key according to registry."""
+        if agent_id not in self.identities:
+            return False # Unknown
+        return self.identities[agent_id] == pub_key
+
+    def get_balance(self, pub_key: str) -> float:
+        return self.balances.get(pub_key, 0.0)
 
     def check_proposal_deadlines(self):
         """Check if any proposals have expired and should be enacted/rejected."""

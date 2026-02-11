@@ -129,8 +129,47 @@ blockchain.set_security_manager(security_manager)
 swarm_network = SwarmNetwork(glassbox, reflective_logger, moral_kernel, profile=resource_manager.profile, port=8000)
 if security_manager.private_key:
     swarm_network.mesh.set_security_manager(security_manager)
+
+    # AUTO-REGISTRATION: Check if we are on chain, if not, broadcast REGISTER tx
+    my_id = swarm_network.mesh.agent_id
+    my_key = security_manager.get_public_key_b64()
+
+    if not blockchain.verify_identity(my_id, my_key):
+        logger.info(f"Identity {my_id} not on chain. Broadcasting REGISTER_DEVICE...")
+        reg_tx = Transaction(
+            id=f"reg-{int(time.time())}",
+            type="REGISTER_DEVICE",
+            sender=my_key,
+            recipient="REGISTRY",
+            payload={"agent_id": my_id},
+            timestamp=time.time()
+        )
+        reg_tx.signature = security_manager.sign_message(reg_tx.calculate_hash())
+        blockchain.add_transaction(reg_tx)
+        # Note: We can't broadcast yet as mesh starts below, but add_transaction queues it.
+        # We need to ensure it gets mined or broadcasted.
+        # For now, let's just queue it. The mining loop (manual or auto) will pick it up.
+        # Wait, Mesh broadcasts PENDING txs? No, only broadcast_transaction call does.
+        # So we should broadcast it explicitly after start.
+
 swarm_network.mesh.set_blockchain(blockchain)
 swarm_network.mesh.start()
+
+# Late broadcast of registration if needed
+if security_manager.private_key:
+    # We re-check or just broadcast if we just created it.
+    # To keep it simple, we just broadcast the tx we created if any.
+    # Ideally we'd store the tx object.
+    # Let's just do a clean check again.
+    my_id = swarm_network.mesh.agent_id
+    my_key = security_manager.get_public_key_b64()
+    if not blockchain.verify_identity(my_id, my_key):
+         # Create again to broadcast (idempotent in logic if same ID, but unique TX ID avoids dupes)
+         # We already added to pending. We just need to find it and broadcast.
+         for tx in blockchain.pending_transactions:
+             if tx.type == "REGISTER_DEVICE" and tx.sender == my_key:
+                 swarm_network.mesh.broadcast_transaction(tx)
+                 break
 
 # Bind Introspection Loop: Logger -> Observer
 # We create a lambda to bridge the callback signature
