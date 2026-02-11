@@ -230,6 +230,38 @@ class SwarmNetwork:
         # Require at least one marker or sufficient length with some structure
         return score >= 1 or len(cot_text.split()) > 20
 
+    def broadcast_memory(self, engrams: List[Dict[str, Any]]) -> int:
+        """
+        Iron Mesh Memory Teleportation.
+        Sends new memories to all active peers for Hive Mind synchronization.
+        """
+        if not engrams:
+            return 0
+
+        peers = self.mesh.get_active_nodes()
+        if not peers:
+            self.logger.log("info", "No peers found for memory teleportation.")
+            return 0
+
+        success_count = 0
+        for peer in peers:
+            url = f"http://{peer.host}:{peer.port}/v1/memory/sync"
+            try:
+                # Add source metadata if missing
+                for e in engrams:
+                    if "source" not in e.get("metadata", {}):
+                        e.setdefault("metadata", {})["source"] = self.local_agent_id
+
+                resp = requests.post(url, json={"engrams": engrams}, timeout=5)
+                if resp.status_code == 200:
+                    success_count += 1
+            except Exception as e:
+                self.logger.log("warn", f"Memory sync to {peer.agent_id} failed: {e}")
+
+        if success_count > 0:
+            self.logger.log("info", f"Hive Mind: Teleported {len(engrams)} memories to {success_count} peers.")
+        return success_count
+
     def get_network_status(self) -> Dict[str, Any]:
         """Return full swarm telemetry."""
         return {

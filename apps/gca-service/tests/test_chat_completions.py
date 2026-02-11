@@ -71,23 +71,54 @@ pulse.current_entropy = 0.1
 moral_kernel.evaluate.return_value = (True, "Approved")
 
 from fastapi.testclient import TestClient
+from unittest.mock import patch
 
 client = TestClient(app)
 
 def test_chat_completions_basic():
-    # Setup mocks
+    # Setup mocks via patch to ensure we hit the right object in api_server
+    # Since we imported 'glassbox' and 'optimizer' from api_server, if they are module-level variables,
+    # modifying them *should* work if api_server uses them.
+    # But if api_server imported Tool class, we need to patch that differently?
+
     glassbox.generate_steered.return_value = "Hello! I am ready to help."
     optimizer.route_intent.return_value = "GREETING"
     optimizer.prioritize_tools.return_value = []
 
-    payload = {
-        "model": "gca-architect",
-        "messages": [
-            {"role": "user", "content": "Hello"}
-        ]
-    }
+    # Patch 'api_server.glassbox' etc?
+    # Actually, in api_server.py: `glassbox = GlassBox(...)`.
+    # So `from api_server import glassbox` gives us the object.
+    # Modifying `glassbox` here modifies the same object if it's mutable (Mock is).
+    # The issue with 'sequence item 0: expected str' suggests `Tool.format_prompt()` returned a Mock.
+    # `Tool` is imported in `api_server.py`.
+    # We mocked `gca_core.tools` in `sys.modules`.
+    # If `api_server` was imported *before* this test, it has the *real* Tool class (or whatever was mocked).
+    # Since `test_soul_api` ran before, maybe it loaded api_server?
+    # `test_soul_api` didn't mock `gca_core.tools`.
+    # So `api_server` has the *real* Tool class (which fails if parameters are mocks?).
+    # Or simply `MockTool` from this test file is NOT being used.
 
-    response = client.post("/v1/chat/completions", json=payload)
+    # We must patch `api_server.Tool` to use our MockTool.
+    # Or force reload api_server? No, patching is better.
+
+    # Actually, `dynamic_tools` are created inside `chat_completions` function:
+    # `dynamic_tools.append(Tool(...))`
+    # So it uses `Tool` class from `api_server` module scope.
+
+    class TestMockTool:
+        def __init__(self, name, description, parameters, intent_vector):
+            self.name = name
+        def format_prompt(self):
+            return f"Tool: {self.name}"
+
+    with patch("api_server.Tool", TestMockTool):
+        payload = {
+            "model": "gca-architect",
+            "messages": [
+                {"role": "user", "content": "Hello"}
+            ]
+        }
+        response = client.post("/v1/chat/completions", json=payload)
     assert response.status_code == 200
     data = response.json()
 
@@ -98,27 +129,33 @@ def test_chat_completions_basic():
 def test_chat_completions_with_tools():
     # Setup mocks
     glassbox.generate_steered.return_value = "I will use the tool.\nTOOL_CALL: bash echo 'hello'"
-    optimizer.prioritize_tools.side_effect = lambda tools, input: tools # Return passed tools
+    # optimizer.prioritize_tools needs to return a list of tools.
+    # The lambda side_effect `lambda tools, input: tools` works IF tools are valid.
+    optimizer.prioritize_tools.side_effect = lambda tools, input: tools
 
-    # We need to ensure _parse_tool_from_text works (it's imported/defined in api_server)
-    # Since api_server uses simple regex, it should match TOOL_CALL:
+    class TestMockTool:
+        def __init__(self, name, description, parameters, intent_vector):
+            self.name = name
+        def format_prompt(self):
+            return f"Tool: {self.name}"
 
-    payload = {
-        "model": "gca-architect",
-        "messages": [{"role": "user", "content": "Run echo"}],
-        "tools": [
-            {
-                "type": "function",
-                "function": {
-                    "name": "bash",
-                    "description": "Run shell",
-                    "parameters": {"type": "object"}
+    with patch("api_server.Tool", TestMockTool):
+        payload = {
+            "model": "gca-architect",
+            "messages": [{"role": "user", "content": "Run echo"}],
+            "tools": [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "bash",
+                        "description": "Run shell",
+                        "parameters": {"type": "object"}
+                    }
                 }
-            }
-        ]
-    }
+            ]
+        }
 
-    response = client.post("/v1/chat/completions", json=payload)
+        response = client.post("/v1/chat/completions", json=payload)
     assert response.status_code == 200
     data = response.json()
 

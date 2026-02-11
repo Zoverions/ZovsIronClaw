@@ -85,20 +85,27 @@ except Exception as e:
     sys.exit(1)
 
 from fastapi.testclient import TestClient
+from unittest.mock import patch
 
 client = TestClient(app)
 
 # --- 4. TESTS ---
 
 def test_list_souls():
-    # Setup the mock for get_soul_loader
+    # Since api_server.py imports get_soul_loader from gca_core.soul_loader,
+    # and we mocked sys.modules["gca_core.soul_loader"], api_server has a reference to that mock.
+    # We should configure that mock.
+    # However, if api_server imported BEFORE this test ran (cached), it might have an old mock.
+    # Patching api_server's imported name is safer.
+
     mock_loader_instance = MagicMock()
     mock_loader_instance.list_souls.return_value = ["Architect", "Stoic"]
     mock_loader_instance.get_soul_info.return_value = {"name": "Test", "description": "Test Soul"}
 
-    mock_soul_loader_module.get_soul_loader.return_value = mock_loader_instance
-
-    response = client.get("/v1/soul/list")
+    # Patch 'api_server.get_soul_loader' which is the function imported in api_server.py
+    with patch("api_server.get_soul_loader") as mock_get_loader:
+        mock_get_loader.return_value = mock_loader_instance
+        response = client.get("/v1/soul/list")
     assert response.status_code == 200
     data = response.json()
 
@@ -116,15 +123,16 @@ def test_compose_soul():
     mock_loader_instance.create_composite_soul.return_value.name = "Composite-Soul"
     mock_loader_instance.create_composite_soul.return_value.traits = ["Adaptable"]
 
-    mock_soul_loader_module.get_soul_loader.return_value = mock_loader_instance
+    with patch("api_server.get_soul_loader") as mock_get_loader:
+        mock_get_loader.return_value = mock_loader_instance
 
-    payload = {
-        "base_style": "Architect",
-        "blend_styles": ["Stoic"],
-        "blend_weights": [0.5]
-    }
+        payload = {
+            "base_style": "Architect",
+            "blend_styles": ["Stoic"],
+            "blend_weights": [0.5]
+        }
 
-    response = client.post("/v1/soul/compose", json=payload)
+        response = client.post("/v1/soul/compose", json=payload)
     assert response.status_code == 200
     data = response.json()
 

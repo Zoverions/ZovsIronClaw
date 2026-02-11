@@ -98,6 +98,8 @@ observer = Observer(glassbox)
 causal_engine = CausalFlowEngine(glassbox)
 
 # Init Security Guardrail
+# Pass perception system for semantic scanning
+guardrail = SecurityGuardrail(perception_system=perception)
 guardrail = SecurityGuardrail()
 
 # Init Reflective Logger first so Pulse can use it
@@ -759,6 +761,14 @@ async def reasoning_engine(req: ReasonRequest):
         
         # 6.5 PERCEIVE OUTPUT (Feedback Loop)
         bio_mem.perceive(response_text)
+
+        # 6.6 HIVE MIND SYNC (Memory Teleportation)
+        # Check if new significant memories were formed during this interaction
+        new_memories = bio_mem.get_flagged_memories()
+        if new_memories:
+            # Fire and forget sync in background (using threadpool for simplicity)
+            # In production, use BackgroundTasks
+            await run_in_threadpool(swarm_network.broadcast_memory, new_memories)
 
         # Causal Analysis of Response (Self-Reflection)
         response_metrics = causal_engine.calculate_causal_beta(response_text, response_text)

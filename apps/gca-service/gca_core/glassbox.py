@@ -272,6 +272,28 @@ class GlassBox:
             "Content-Type": "application/json"
         }
 
+        # Load Soul/Moral Kernel for System Prompt Injection
+        # We try to read SOUL.md from standard locations
+        soul_text = "You are ZovsIronClaw, an ethical AI agent aligned with Thermodynamic Morality."
+        try:
+            # Current file: apps/gca-service/gca_core/glassbox.py
+            # Root: apps/gca-service/gca_core/../../.. => root
+            root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+            soul_path = os.path.join(root_dir, ".agent", "prompts", "SOUL.md")
+            if os.path.exists(soul_path):
+                with open(soul_path, "r") as f:
+                    soul_text = f.read().strip()
+        except Exception:
+            pass
+
+        # QPT usually structures prompt with internal monologue, so we pass it as user message
+        # But we inject the "Ghost in the Machine" (Soul) as a system prompt to maintain alignment
+        payload = {
+            "model": self.model_name,
+            "messages": [
+                {"role": "system", "content": soul_text},
+                {"role": "user", "content": prompt}
+            ],
         # QPT usually structures prompt with internal monologue, so we pass it as user message
         payload = {
             "model": self.model_name,
