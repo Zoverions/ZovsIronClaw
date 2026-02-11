@@ -6,7 +6,8 @@ from unittest.mock import MagicMock
 # We mock these BEFORE importing api_server to avoid ImportError or heavy loading
 
 modules_to_mock = [
-    "torch", "transformers", "accelerate", "numpy", "scikit-learn",
+    "torch", "torch.nn", "torch.nn.functional",
+    "transformers", "accelerate", "numpy", "scikit-learn",
     "textblob", "sentence_transformers", "faster_whisper", "cv2",
     "PIL", "einops", "moviepy", "qwen_vl_utils", "networkx",
     "pydub", # Maybe needed
@@ -49,11 +50,18 @@ sys.modules["gca_core.pulse"] = MagicMock()
 # gca_core.causal_flow
 sys.modules["gca_core.causal_flow"] = MagicMock()
 # gca_core.swarm
-sys.modules["gca_core.swarm"] = MagicMock()
+mock_swarm = MagicMock()
+# Configure the mesh mock specifically to have a string agent_id property
+mock_mesh = MagicMock()
+mock_mesh.agent_id = "test_agent_id"
+mock_swarm.SwarmNetwork.return_value.mesh = mock_mesh
+sys.modules["gca_core.swarm"] = mock_swarm
 # gca_core.reflective_logger
 sys.modules["gca_core.reflective_logger"] = MagicMock()
 # gca_core.security
-sys.modules["gca_core.security"] = MagicMock()
+mock_security = MagicMock()
+mock_security.SecurityManager.return_value.get_public_key_b64.return_value = "test_pub_key"
+sys.modules["gca_core.security"] = mock_security
 # dreamer
 sys.modules["dreamer"] = MagicMock()
 
