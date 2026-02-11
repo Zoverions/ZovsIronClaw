@@ -294,10 +294,6 @@ class GlassBox:
                 {"role": "system", "content": soul_text},
                 {"role": "user", "content": prompt}
             ],
-        # QPT usually structures prompt with internal monologue, so we pass it as user message
-        payload = {
-            "model": self.model_name,
-            "messages": [{"role": "user", "content": prompt}],
             "max_tokens": max_tokens,
             "temperature": temperature
         }

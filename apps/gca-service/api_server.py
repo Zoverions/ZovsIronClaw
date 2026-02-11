@@ -277,6 +277,17 @@ class VoteRequest(BaseModel):
     proposal_id: str
     choice: str
 
+class MapResponse(BaseModel):
+    entropy: float
+    horizon: Dict[str, Any]
+    strong_skills: List[Dict[str, Any]]
+    divergence_events: List[Dict[str, Any]]
+    goal_alignment: float
+
+class RefineResponse(BaseModel):
+    status: str
+    prediction: str
+
 # OpenAI Chat Completion Schemas
 class ChatMessage(BaseModel):
     role: str
@@ -377,6 +388,44 @@ async def cast_vote(req: VoteRequest):
 async def get_governance():
     """Return active governance state."""
     return blockchain.get_governance_state()
+
+@app.get("/v1/map", response_model=MapResponse)
+async def get_system_map():
+    """
+    Returns the System Map: Entropy, Horizon State, Skill Strengths, and Divergence.
+    """
+    horizon_status = pulse.horizon_scanner.get_status()
+    entropy = pulse.current_entropy
+
+    # Analyze Skills
+    strong_skills = []
+    for name in memory.list_vectors():
+        meta = memory.metadata.get(name, {})
+        strength = meta.get('positive_count', 0)
+        strong_skills.append({"name": name, "strength": strength})
+
+    # Sort by strength descending
+    strong_skills.sort(key=lambda x: x['strength'], reverse=True)
+
+    return MapResponse(
+        entropy=entropy,
+        horizon=horizon_status,
+        strong_skills=strong_skills[:50],
+        divergence_events=horizon_status.get('outliers', []),
+        goal_alignment=1.0 - entropy
+    )
+
+@app.post("/v1/refine", response_model=RefineResponse)
+async def refine_system():
+    """
+    Triggers the Horizon Scanner to predict the Geodesic Path (Refine Strategy).
+    """
+    try:
+        prediction = await run_in_threadpool(pulse.horizon_scanner.predict_geodesic)
+        return RefineResponse(status="success", prediction=prediction)
+    except Exception as e:
+        logger.error(f"Refinement failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/v1/chain/mine")
 async def mine_block():
