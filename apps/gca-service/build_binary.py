@@ -29,12 +29,9 @@ import shutil
 # ============================================================================
 
 # Ensure we are in the gca-service directory
-if os.path.basename(os.getcwd()) != 'gca-service':
-    if os.path.exists('gca-service'):
-        os.chdir('gca-service')
-    else:
-        print("Error: Please run this script from the project root or gca-service directory.")
-        sys.exit(1)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+if os.getcwd() != script_dir:
+    os.chdir(script_dir)
 
 cwd = os.getcwd()
 print(f"Current working directory: {cwd}")

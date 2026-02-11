@@ -239,10 +239,16 @@ class BiomimeticMemory:
         # In future, attention mechanism filters what moves from Sensory to Episodic
         items = self.sensory.flush()
 
+        self.new_memories_flagged = [] # Reset or init buffer for current perception cycle
+
         for item in items:
             self._process_into_episodic(item)
 
     def _process_into_episodic(self, engram: Engram):
+        # Iron Mesh: Flag significant memories for sync
+        if self._is_significant(engram):
+            self.new_memories_flagged.append(engram)
+
         dropped = self.episodic.add(engram)
 
         if dropped:
@@ -305,6 +311,32 @@ class BiomimeticMemory:
             self.semantic.consolidate(dropped)
         else:
             logger.info(f"[🗑️] Forgetting: {dropped.content[:30]}...")
+
+    def _is_significant(self, engram: Engram) -> bool:
+        """Determines if a memory is worth teleporting to the Hive Mind."""
+        c = engram.content.lower()
+        # Removed "password is" and "key is" to prevent accidental secret exfiltration
+        triggers = ["my favorite", "i prefer", "remember that", "important:", "note:", "the code is"]
+        if any(t in c for t in triggers):
+            # Exclude transient chat noise
+            if len(c.split()) < 3: return False
+            return True
+        return False
+
+    def get_flagged_memories(self) -> List[Dict[str, Any]]:
+        """Returns and clears memories flagged for swarm sync."""
+        if not hasattr(self, "new_memories_flagged") or not self.new_memories_flagged:
+            return []
+
+        data = []
+        for e in self.new_memories_flagged:
+            data.append({
+                "content": e.content,
+                "vector": e.vector.tolist(),
+                "metadata": e.metadata
+            })
+        self.new_memories_flagged = []
+        return data
 
     def retrieve_context(self, current_thought_vector_raw: torch.Tensor):
         """

@@ -42,6 +42,7 @@ from gca_core.reflective_logger import ReflectiveLogger
 from gca_core.soul_loader import get_soul_loader
 from gca_core.security import SecurityManager
 from gca_core.blockchain import Blockchain, Transaction
+from gca_core.security_guardrail import SecurityGuardrail
 from dreamer import DeepDreamer
 
 # Configure logging
@@ -96,6 +97,10 @@ perception = PerceptionSystem(config=CFG)
 observer = Observer(glassbox)
 causal_engine = CausalFlowEngine(glassbox)
 
+# Init Security Guardrail
+# Pass perception system for semantic scanning
+guardrail = SecurityGuardrail(perception_system=perception)
+
 # Init Reflective Logger first so Pulse can use it
 reflective_logger = ReflectiveLogger(glassbox, bio_mem, moral_kernel)
 
@@ -141,7 +146,7 @@ if security_manager.private_key:
             type="REGISTER_DEVICE",
             sender=my_key,
             recipient="REGISTRY",
-            payload={"agent_id": my_id},
+            payload={"agent_id": str(my_id)},
             timestamp=time.time()
         )
         reg_tx.signature = security_manager.sign_message(reg_tx.calculate_hash())
@@ -300,7 +305,9 @@ async def health():
         "pulse_entropy": pulse.current_entropy,
         "mesh_peers": len(swarm_network.mesh.get_active_nodes()),
         "identity_secured": security_manager.private_key is not None,
-        "blockchain_height": len(blockchain.chain)
+        "blockchain_height": len(blockchain.chain),
+        "blockchain_sync_status": "synced" if len(blockchain.chain) > 1 else "genesis",
+        "pending_txs": len(blockchain.pending_transactions)
     }
 
 @app.get("/v1/chain")
@@ -422,7 +429,8 @@ async def handle_remote_task(req: SwarmTaskRequest):
     # Reuse glassbox for execution
     prompt = f"Context: {req.context}\nTask: {req.task}\n\nExecute this task."
     try:
-        response = glassbox.generate_steered(prompt, strength=1.0)
+        # Run potentially blocking generation (API calls) in threadpool
+        response = await run_in_threadpool(glassbox.generate_steered, prompt, strength=1.0)
         return {"status": "success", "content": response}
     except Exception as e:
         logger.error(f"Remote task error: {e}", exc_info=True)
@@ -500,6 +508,15 @@ async def chat_completions(req: ChatCompletionRequest):
 
     # Call Internal GCA Reasoning Logic
 
+    # 0. Check Security Guardrail
+    is_safe, reason = guardrail.scan(user_text)
+    if not is_safe:
+        return _openai_response_text(
+            f"🛡️ [SECURITY INTERVENTION] {reason}",
+            req.model,
+            finish_reason="stop"
+        )
+
     # 1. Check Pulse
     if pulse.current_entropy > 0.8:
         return _openai_response_text(
@@ -559,7 +576,9 @@ async def chat_completions(req: ChatCompletionRequest):
         # But logic is local to reasoning_engine.
         # Let's just pass strength=1.0 for now.
 
-        response_text = glassbox.generate_steered(
+        # Run generation in threadpool to prevent blocking event loop on API calls
+        response_text = await run_in_threadpool(
+            glassbox.generate_steered,
             prompt=structured_prompt,
             strength=1.0,
             temperature=req.temperature
@@ -657,6 +676,15 @@ async def observe_environment(req: ObservationRequest):
 async def reasoning_engine(req: ReasonRequest):
     reflective_logger.log("info", f"Incoming from {req.user_id}: {req.text[:50]}...")
 
+    # v4.9: Security Guardrail Check
+    is_safe, reason = guardrail.scan(req.text)
+    if not is_safe:
+        return ReasoningResponse(
+            status="BLOCKED",
+            content=f"🛡️ [SECURITY INTERVENTION] {reason}",
+            meta={"entropy_score": 0.0, "reason": reason}
+        )
+
     # v4.8: Pulse Check
     if pulse.current_entropy > 0.8:
         return ReasoningResponse(
@@ -727,7 +755,9 @@ async def reasoning_engine(req: ReasonRequest):
             structured_prompt += f"\n\n[AVAILABLE TOOLS]\n{tool_definitions}\nTo use a tool, output: TOOL_CALL: <tool_name> <arguments>"
 
         # 6. THINKING (Generation)
-        response_text = glassbox.generate_steered(
+        # Use threadpool to handle blocking API requests if model is remote
+        response_text = await run_in_threadpool(
+            glassbox.generate_steered,
             prompt=structured_prompt,
             steering_vec=final_vec,
             strength=strength
@@ -735,6 +765,14 @@ async def reasoning_engine(req: ReasonRequest):
         
         # 6.5 PERCEIVE OUTPUT (Feedback Loop)
         bio_mem.perceive(response_text)
+
+        # 6.6 HIVE MIND SYNC (Memory Teleportation)
+        # Check if new significant memories were formed during this interaction
+        new_memories = bio_mem.get_flagged_memories()
+        if new_memories:
+            # Fire and forget sync in background (using threadpool for simplicity)
+            # In production, use BackgroundTasks
+            await run_in_threadpool(swarm_network.broadcast_memory, new_memories)
 
         # Causal Analysis of Response (Self-Reflection)
         response_metrics = causal_engine.calculate_causal_beta(response_text, response_text)
