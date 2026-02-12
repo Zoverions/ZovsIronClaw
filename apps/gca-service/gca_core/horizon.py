@@ -59,6 +59,9 @@ class HorizonScanner:
         # Layer 2: Prediction Cache
         self.last_prediction: Optional[str] = None
 
+        # Update counter for IO throttling
+        self.update_count = 0
+
         # Load persisted state
         self.load_state()
 
@@ -122,7 +125,11 @@ class HorizonScanner:
              if np.random.rand() < 0.1:
                 logger.warning(f"[HORIZON] Critical Variance: {variance:.4f} (Threshold: {self.variance_threshold})")
 
-        self.save_state()
+        # Throttle IO: Save only if critical or every 10 updates
+        self.update_count += 1
+        if is_critical or (self.update_count % 10 == 0):
+            self.save_state()
+
         return HorizonState(variance, is_critical, len(self.outliers))
 
     def predict_geodesic(self) -> str:

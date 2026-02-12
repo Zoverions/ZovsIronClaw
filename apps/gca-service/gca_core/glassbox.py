@@ -156,14 +156,17 @@ class GlassBox:
         # Attach hook
         handle = self._get_layer(target_layer).register_forward_hook(hook)
 
-        inputs = self.tokenizer(text, return_tensors="pt").to(self.device)
-        with torch.no_grad():
-            self.model(**inputs)
-            
-        handle.remove()
+        try:
+            inputs = self.tokenizer(text, return_tensors="pt").to(self.device)
+            with torch.no_grad():
+                self.model(**inputs)
+        finally:
+            handle.remove()
         
         if activations:
-            return activations[0].squeeze()
+            res = activations[0].squeeze()
+            activations.clear()  # Avoid lingering references
+            return res
         return torch.zeros(1) # Should not happen
 
     def get_activation(self, text: str, layer_idx: Optional[int] = None) -> torch.Tensor:
