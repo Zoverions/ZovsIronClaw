@@ -101,7 +101,10 @@ class GCAOptimizer:
         """
         # Check cache
         if user_input in self.intent_cache:
-            return self.intent_cache[user_input]
+            # Move to end to maintain LRU order (Python 3.7+ dicts follow insertion order)
+            val = self.intent_cache.pop(user_input)
+            self.intent_cache[user_input] = val
+            return val
             
         # Extract activation for the input
         activation = self.glassbox.get_activation(user_input)
@@ -112,6 +115,16 @@ class GCAOptimizer:
         if similar:
             intent = similar[0][0]
             logger.info(f"Routed intent: '{user_input[:50]}...' -> {intent}")
+
+            # Simple FIFO cache eviction to prevent memory leak
+            if len(self.intent_cache) >= 1000:
+                # Remove oldest item
+                try:
+                    oldest = next(iter(self.intent_cache))
+                    del self.intent_cache[oldest]
+                except StopIteration:
+                    pass
+
             self.intent_cache[user_input] = intent
             return intent
         else:
