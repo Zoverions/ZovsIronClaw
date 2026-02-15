@@ -52,8 +52,8 @@ class GlassBox:
 
         # API Detection
         self.is_api_model = False
-        api_prefixes = ["gpt-", "claude-", "grok-", "gemini-"]
-        if any(self.model_name.lower().startswith(p) for p in api_prefixes):
+        api_prefixes = ["gpt-", "claude-", "grok-", "gemini-", "o1-"]
+        if any(self.model_name.lower().startswith(p) for p in api_prefixes) or os.environ.get("GCA_UPSTREAM_URL"):
             self.is_api_model = True
             self.device = "api" # Virtual device
             logger.info(f"GlassBox detected API model: {self.model_name}")
@@ -183,7 +183,8 @@ class GlassBox:
         steering_vec: Optional[torch.Tensor] = None,
         strength: float = 1.0,
         max_tokens: int = 1024, # Increased for thinking models
-        temperature: float = 0.7
+        temperature: float = 0.7,
+        model: Optional[str] = None
     ) -> str:
         """
         Generate text with geometric steering applied via forward hook.
@@ -192,7 +193,7 @@ class GlassBox:
         if self.is_api_model:
             if steering_vec is not None:
                 logger.warning("Geometric Steering is not supported for API models. Ignoring vector.")
-            return self._generate_api(prompt, max_tokens, temperature)
+            return self._generate_api(prompt, max_tokens, temperature, model=model)
 
         self._ensure_model_loaded()
         handle = None
@@ -246,15 +247,22 @@ class GlassBox:
             if handle:
                 handle.remove()
 
-    def _generate_api(self, prompt: str, max_tokens: int, temperature: float) -> str:
+    def _generate_api(self, prompt: str, max_tokens: int, temperature: float, model: Optional[str] = None) -> str:
         """
         Handles generation via external APIs (OpenAI, Grok, etc.)
         """
-        model_id = self.model_name.lower()
+        model_id = (model or self.model_name).lower()
         api_key = None
-        url = None
+        url = os.environ.get("GCA_UPSTREAM_URL")
 
-        if model_id.startswith("gpt-"):
+        # 1. Check for Custom Upstream (e.g. Local Ollama or Proxy)
+        if url:
+            # For local endpoints, key might be optional but headers require something.
+            api_key = os.environ.get("GCA_UPSTREAM_KEY") or os.environ.get("OPENAI_API_KEY") or "sk-dummy"
+            logger.info(f"Using Custom Upstream: {url}")
+
+        # 2. Default Provider Logic
+        elif model_id.startswith("gpt-") or model_id.startswith("o1-"):
             api_key = os.environ.get("OPENAI_API_KEY")
             url = "https://api.openai.com/v1/chat/completions"
         elif model_id.startswith("grok-"):
@@ -268,7 +276,7 @@ class GlassBox:
             pass
 
         if not api_key:
-            return f"Error: API Key not found for {self.model_name}. Set OPENAI_API_KEY or GROK_API_KEY."
+            return f"Error: API Key not found for {self.model_name}. Set OPENAI_API_KEY, GROK_API_KEY, or GCA_UPSTREAM_URL."
 
         headers = {
             "Authorization": f"Bearer {api_key}",
@@ -292,7 +300,7 @@ class GlassBox:
         # QPT usually structures prompt with internal monologue, so we pass it as user message
         # But we inject the "Ghost in the Machine" (Soul) as a system prompt to maintain alignment
         payload = {
-            "model": self.model_name,
+            "model": model or self.model_name,
             "messages": [
                 {"role": "system", "content": soul_text},
                 {"role": "user", "content": prompt}

@@ -43,6 +43,7 @@ from gca_core.soul_loader import get_soul_loader
 from gca_core.security import SecurityManager
 from gca_core.blockchain import Blockchain, Transaction
 from gca_core.security_guardrail import SecurityGuardrail
+from gca_core.dual_ethics import DualEthicalSystem
 from dreamer import DeepDreamer
 
 # Configure logging
@@ -107,6 +108,9 @@ reflective_logger = ReflectiveLogger(glassbox, bio_mem, moral_kernel)
 
 # Pulse System (v4.8)
 pulse = PulseSystem(bio_mem, glassbox, causal_engine=causal_engine, qpt=qpt)
+
+# Dual Ethical System (v4.9.6)
+dual_ethics = DualEthicalSystem(glassbox, pulse)
 
 # Pulse Intervention Hook
 def pulse_correction(msg):
@@ -575,6 +579,15 @@ async def chat_completions(req: ChatCompletionRequest):
             finish_reason="stop"
         )
 
+    # 1.5 Dual Ethical Verification
+    is_verified, divergence, reason = dual_ethics.verify_intent(user_text, pulse.current_entropy)
+    if not is_verified:
+        return _openai_response_text(
+            f"🛡️ [DUAL ETHICS INTERVENTION] {reason} (Divergence: {divergence:.2f})",
+            req.model,
+            finish_reason="stop"
+        )
+
     # 2. Soul Parsing from Model Name
     soul_name = "Architect"  # Default
     if req.model.lower().startswith("gca-"):
@@ -631,7 +644,8 @@ async def chat_completions(req: ChatCompletionRequest):
             glassbox.generate_steered,
             prompt=structured_prompt,
             strength=1.0,
-            temperature=req.temperature
+            temperature=req.temperature,
+            model=req.model
         )
 
         # Parse for Tool Calls
