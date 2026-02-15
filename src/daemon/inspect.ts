@@ -142,110 +142,109 @@ async function scanLaunchdDir(params: {
   dir: string;
   scope: "user" | "system";
 }): Promise<ExtraGatewayService[]> {
-  const results: ExtraGatewayService[] = [];
   let entries: string[] = [];
   try {
     entries = await fs.readdir(params.dir);
   } catch {
-    return results;
+    return [];
   }
 
-  for (const entry of entries) {
+  const tasks = entries.map(async (entry): Promise<ExtraGatewayService | null> => {
     if (!entry.endsWith(".plist")) {
-      continue;
+      return null;
     }
     const labelFromName = entry.replace(/\.plist$/, "");
     if (isIgnoredLaunchdLabel(labelFromName)) {
-      continue;
+      return null;
     }
     const fullPath = path.join(params.dir, entry);
     let contents = "";
     try {
       contents = await fs.readFile(fullPath, "utf8");
     } catch {
-      continue;
+      return null;
     }
     const marker = detectMarker(contents);
     const label = tryExtractPlistLabel(contents) ?? labelFromName;
     if (!marker) {
       const legacyLabel = isLegacyLabel(labelFromName) || isLegacyLabel(label);
       if (!legacyLabel) {
-        continue;
+        return null;
       }
-      results.push({
+      return {
         platform: "darwin",
         label,
         detail: `plist: ${fullPath}`,
         scope: params.scope,
         marker: isLegacyLabel(label) ? "clawdbot" : "moltbot",
         legacy: true,
-      });
-      continue;
+      };
     }
     if (isIgnoredLaunchdLabel(label)) {
-      continue;
+      return null;
     }
     if (marker === "openclaw" && isOpenClawGatewayLaunchdService(label, contents)) {
-      continue;
+      return null;
     }
-    results.push({
+    return {
       platform: "darwin",
       label,
       detail: `plist: ${fullPath}`,
       scope: params.scope,
       marker,
       legacy: marker !== "openclaw" || isLegacyLabel(label),
-    });
-  }
+    };
+  });
 
-  return results;
+  const results = await Promise.all(tasks);
+  return results.filter((svc): svc is ExtraGatewayService => svc !== null);
 }
 
 async function scanSystemdDir(params: {
   dir: string;
   scope: "user" | "system";
 }): Promise<ExtraGatewayService[]> {
-  const results: ExtraGatewayService[] = [];
   let entries: string[] = [];
   try {
     entries = await fs.readdir(params.dir);
   } catch {
-    return results;
+    return [];
   }
 
-  for (const entry of entries) {
+  const tasks = entries.map(async (entry): Promise<ExtraGatewayService | null> => {
     if (!entry.endsWith(".service")) {
-      continue;
+      return null;
     }
     const name = entry.replace(/\.service$/, "");
     if (isIgnoredSystemdName(name)) {
-      continue;
+      return null;
     }
     const fullPath = path.join(params.dir, entry);
     let contents = "";
     try {
       contents = await fs.readFile(fullPath, "utf8");
     } catch {
-      continue;
+      return null;
     }
     const marker = detectMarker(contents);
     if (!marker) {
-      continue;
+      return null;
     }
     if (marker === "openclaw" && isOpenClawGatewaySystemdService(name, contents)) {
-      continue;
+      return null;
     }
-    results.push({
+    return {
       platform: "linux",
       label: entry,
       detail: `unit: ${fullPath}`,
       scope: params.scope,
       marker,
       legacy: marker !== "openclaw",
-    });
-  }
+    };
+  });
 
-  return results;
+  const results = await Promise.all(tasks);
+  return results.filter((svc): svc is ExtraGatewayService => svc !== null);
 }
 
 type ScheduledTaskInfo = {
@@ -344,23 +343,21 @@ export async function findExtraGatewayServices(
     try {
       const home = resolveHomeDir(env);
       const userDir = path.join(home, "Library", "LaunchAgents");
-      for (const svc of await scanLaunchdDir({
-        dir: userDir,
-        scope: "user",
-      })) {
-        push(svc);
-      }
-      if (opts.deep) {
-        for (const svc of await scanLaunchdDir({
-          dir: path.join(path.sep, "Library", "LaunchAgents"),
-          scope: "system",
-        })) {
-          push(svc);
-        }
-        for (const svc of await scanLaunchdDir({
-          dir: path.join(path.sep, "Library", "LaunchDaemons"),
-          scope: "system",
-        })) {
+      const scanDirs = [
+        scanLaunchdDir({ dir: userDir, scope: "user" }),
+        ...(opts.deep
+          ? [
+              scanLaunchdDir({ dir: path.join(path.sep, "Library", "LaunchAgents"), scope: "system" }),
+              scanLaunchdDir({
+                dir: path.join(path.sep, "Library", "LaunchDaemons"),
+                scope: "system",
+              }),
+            ]
+          : []),
+      ];
+      const scanResults = await Promise.all(scanDirs);
+      for (const list of scanResults) {
+        for (const svc of list) {
           push(svc);
         }
       }
@@ -374,24 +371,18 @@ export async function findExtraGatewayServices(
     try {
       const home = resolveHomeDir(env);
       const userDir = path.join(home, ".config", "systemd", "user");
-      for (const svc of await scanSystemdDir({
-        dir: userDir,
-        scope: "user",
-      })) {
-        push(svc);
-      }
-      if (opts.deep) {
-        for (const dir of [
-          "/etc/systemd/system",
-          "/usr/lib/systemd/system",
-          "/lib/systemd/system",
-        ]) {
-          for (const svc of await scanSystemdDir({
-            dir,
-            scope: "system",
-          })) {
-            push(svc);
-          }
+      const scanDirs = [
+        scanSystemdDir({ dir: userDir, scope: "user" }),
+        ...(opts.deep
+          ? ["/etc/systemd/system", "/usr/lib/systemd/system", "/lib/systemd/system"].map((dir) =>
+              scanSystemdDir({ dir, scope: "system" }),
+            )
+          : []),
+      ];
+      const scanResults = await Promise.all(scanDirs);
+      for (const list of scanResults) {
+        for (const svc of list) {
+          push(svc);
         }
       }
     } catch {
