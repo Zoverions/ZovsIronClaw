@@ -308,7 +308,27 @@ export function applyMoralGuardToolPolicy(tools: AnyAgentTool[]) {
           const token = params._gca_token;
           const [payloadB64, signature] = token.split(".");
 
-          const secret = process.env.GCA_HMAC_SECRET || "dev-secret-do-not-use-in-prod";
+          let secret: string | Buffer = process.env.GCA_HMAC_SECRET || "";
+
+          if (!secret) {
+              // Try to load persistent secret from file if env not set
+              try {
+                  const fs = await import("node:fs");
+                  const path = await import("node:path");
+                  const os = await import("node:os");
+                  const secretPath = path.join(os.homedir(), ".gca", "hmac_secret.dat");
+                  if (fs.existsSync(secretPath)) {
+                      secret = fs.readFileSync(secretPath);
+                  }
+              } catch (e) {
+                  // Ignore file read errors, fallback to dev secret below
+              }
+          }
+
+          if (!secret) {
+              secret = "dev-secret-do-not-use-in-prod";
+          }
+
           const computed = createHmac("sha256", secret).update(payloadB64).digest("hex");
 
           if (computed !== signature) {
