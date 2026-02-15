@@ -1171,13 +1171,32 @@ def _generate_signature(tool: Dict[str, Any], user_id: str) -> str:
     
     env_secret = os.environ.get("GCA_HMAC_SECRET")
     if not env_secret:
-        # Generate a random secret if not provided in environment
-        # Note: This means signatures won't persist across restarts unless secret is set.
-        # This is a security trade-off for safety by default.
-        logger.warning("GCA_HMAC_SECRET not set. Using random ephemeral secret.")
-        if not hasattr(_generate_signature, "_ephemeral_secret"):
-            _generate_signature._ephemeral_secret = secrets.token_bytes(32)
-        secret = _generate_signature._ephemeral_secret
+        # Persistent HMAC secret to ensure signatures last across restarts
+        if not hasattr(_generate_signature, "_persistent_secret"):
+            secret_path = os.path.expanduser("~/.gca/hmac_secret.dat")
+            if os.path.exists(secret_path):
+                try:
+                    with open(secret_path, "rb") as f:
+                        _generate_signature._persistent_secret = f.read()
+                    logger.info("Loaded persistent HMAC secret.")
+                except Exception as e:
+                    logger.error(f"Failed to load HMAC secret: {e}")
+                    # Fallback to ephemeral if read fails
+                    _generate_signature._persistent_secret = secrets.token_bytes(32)
+            else:
+                logger.warning("GCA_HMAC_SECRET not set. Generating and persisting a new secret.")
+                _generate_signature._persistent_secret = secrets.token_bytes(32)
+                try:
+                    os.makedirs(os.path.dirname(secret_path), exist_ok=True)
+                    with open(secret_path, "wb") as f:
+                        f.write(_generate_signature._persistent_secret)
+                    os.chmod(secret_path, 0o600)
+                    logger.info(f"Persisted new HMAC secret to {secret_path}")
+                except Exception as e:
+                    logger.error(f"Failed to persist HMAC secret: {e}")
+                    # Secret is still in memory (_persistent_secret), so it works for this session
+
+        secret = _generate_signature._persistent_secret
     else:
         secret = env_secret.encode()
 
