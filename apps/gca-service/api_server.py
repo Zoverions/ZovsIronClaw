@@ -16,6 +16,8 @@ import os
 import time
 import json
 from pathlib import Path
+import shutil
+import tempfile
 import numpy as np
 from textblob import TextBlob
 from collections import Counter
@@ -959,29 +961,29 @@ async def get_embeddings(request: EmbeddingRequest):
 
 @app.post("/v1/transcribe", response_model=TranscribeResponse)
 async def transcribe_media(file: UploadFile = File(...)):
+    tmp_path = None
     try:
-        content = await file.read()
-        text = await run_in_threadpool(perception.transcribe_audio, content)
+        tmp_path = await save_upload_to_tmp(file)
+        text = await run_in_threadpool(perception.transcribe_audio, tmp_path)
         return TranscribeResponse(text=text)
     except Exception as e:
         logger.error(f"Transcription error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
 @app.post("/v1/describe", response_model=DescribeResponse)
 async def describe_media(
     file: UploadFile = File(...),
     prompt: str = Form("Describe this media.")
 ):
+    tmp_path = None
     try:
-        content = await file.read()
-        # Detect if video by extension or mime if possible, but uploaded file has filename
-        filename = file.filename or "unknown"
-        ext = os.path.splitext(filename)[1].lower()
+        tmp_path = await save_upload_to_tmp(file)
 
-        if ext in ['.mp4', '.avi', '.mov', '.mkv', '.webm']:
-            text = await run_in_threadpool(perception.describe_video_bytes, content, prompt)
-        else:
-            text = await run_in_threadpool(perception.describe_image_bytes, content, prompt)
+        # describe_media handles both image and video based on extension
+        text = await run_in_threadpool(perception.describe_media, tmp_path, prompt)
 
         # Run Causal Flow Analysis on the description
         # We don't change the response structure of describe, but we could log or trigger side effects
@@ -994,6 +996,9 @@ async def describe_media(
     except Exception as e:
         logger.error(f"Description error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
 @app.post("/v1/observe", response_model=ObservationResponse)
 async def observe_user(
@@ -1228,6 +1233,24 @@ def _generate_signature(tool: Dict[str, Any], user_id: str) -> str:
     # Return token as "payload_b64.signature"
     payload_b64 = base64.b64encode(payload_str.encode()).decode()
     return f"{payload_b64}.{signature}"
+
+async def save_upload_to_tmp(file: UploadFile) -> str:
+    """Stream save upload file to temp disk."""
+    suffix = Path(file.filename).suffix if file.filename else ".tmp"
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    try:
+        with tmp:
+            # Use run_in_threadpool to avoid blocking event loop with file I/O
+            await run_in_threadpool(shutil.copyfileobj, file.file, tmp)
+        return tmp.name
+    except Exception:
+        # Clean up if write failed
+        if os.path.exists(tmp.name):
+            try:
+                os.remove(tmp.name)
+            except OSError:
+                pass
+        raise
 
 if __name__ == "__main__":
     import uvicorn
