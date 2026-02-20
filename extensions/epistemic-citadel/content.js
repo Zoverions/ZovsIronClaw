@@ -28,7 +28,7 @@ async function init() {
   
   if (!currentUser) {
     console.log('[Epistemic Citadel] No user found, prompting for setup');
-    // TODO: Show setup modal
+    showSetupModal();
   }
   
   // Start observing the DOM for new tweets
@@ -378,6 +378,106 @@ async function submitStake(tweetData, amount, thesis) {
   } catch (error) {
     console.error('[Epistemic Citadel] Error submitting stake:', error);
     alert('Failed to submit stake');
+  }
+}
+
+/**
+ * Show setup modal
+ */
+function showSetupModal() {
+  // Create modal overlay
+  const modal = document.createElement('div');
+  modal.className = 'epistemic-modal-overlay';
+  modal.innerHTML = `
+    <div class="epistemic-modal">
+      <div class="epistemic-modal-header">
+        <h2>Welcome to Epistemic Citadel</h2>
+      </div>
+      <div class="epistemic-modal-body">
+        <p>To start staking reputation and filtering noise, you need to set up your account.</p>
+        <div class="epistemic-form-group">
+          <label for="setup-username">Choose a Username</label>
+          <input type="text" id="setup-username" placeholder="Enter username" />
+        </div>
+        <div class="epistemic-info">
+          <p>You will start with <strong>100 Reputation Points</strong>.</p>
+          <p>Stake wisely. Your reputation is your only currency here.</p>
+        </div>
+      </div>
+      <div class="epistemic-modal-footer">
+        <button class="epistemic-btn epistemic-btn-primary epistemic-setup-submit">Create Account</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const submitBtn = modal.querySelector('.epistemic-setup-submit');
+  const usernameInput = modal.querySelector('#setup-username');
+
+  // Handle submit
+  submitBtn.addEventListener('click', async () => {
+    const username = usernameInput.value.trim();
+    if (!username) {
+      alert('Please enter a username');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creating...';
+
+    const success = await createAccount(username);
+
+    if (success) {
+      modal.remove();
+    } else {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Create Account';
+    }
+  });
+}
+
+/**
+ * Create a new account
+ */
+async function createAccount(username) {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/users`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
+      },
+      body: JSON.stringify({
+        username: username,
+        reputation_score: 100.0,
+        natural_frequency: 0.01,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Epistemic Citadel] Error creating user:', errorText);
+      alert('Failed to create account. Please try again.');
+      return false;
+    }
+
+    const users = await response.json();
+    currentUser = users[0];
+
+    // Save to storage
+    await chrome.storage.local.set({ user: currentUser });
+
+    console.log('[Epistemic Citadel] User created:', currentUser);
+    alert(`Welcome, ${currentUser.username}! You have 100 Reputation Points.`);
+    return true;
+
+  } catch (error) {
+    console.error('[Epistemic Citadel] Error creating account:', error);
+    alert('An unexpected error occurred.');
+    return false;
   }
 }
 
