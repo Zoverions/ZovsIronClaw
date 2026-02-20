@@ -52,7 +52,7 @@ class IsotropicMemory:
         
         if vector_file.exists():
             try:
-                data = torch.load(vector_file, map_location=self.device)
+                data = torch.load(vector_file, map_location=self.device, weights_only=True)
                 self.vectors = data
                 logger.info(f"Loaded {len(self.vectors)} vectors from storage")
             except Exception as e:
@@ -71,7 +71,7 @@ class IsotropicMemory:
         basis_file = self.storage_path / "basis.pt"
         if basis_file.exists():
             try:
-                self.basis = torch.load(basis_file, map_location=self.device)
+                self.basis = torch.load(basis_file, map_location=self.device, weights_only=True)
                 logger.info(f"Loaded basis matrix of shape {self.basis.shape}")
             except Exception as e:
                 logger.warning(f"Failed to load basis: {e}")
