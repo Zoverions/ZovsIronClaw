@@ -1,6 +1,8 @@
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
 import fs from "node:fs/promises";
+import path from "node:path";
 import { detectMime } from "../../media/mime.js";
+import { resolveConfigDir } from "../../utils.js";
 import { sanitizeToolResultImages } from "../tool-images.js";
 
 // oxlint-disable-next-line typescript/no-explicit-any
@@ -224,12 +226,27 @@ export async function imageResult(params: {
   return await sanitizeToolResultImages(result, params.label);
 }
 
+async function isPathSafe(p: string): Promise<boolean> {
+  const resolved = await fs.realpath(p).catch(() => null);
+  if (!resolved) {
+    return false;
+  }
+  const configDir = resolveConfigDir();
+  const mediaDir = path.join(configDir, "media");
+  const resolvedMediaDir = await fs.realpath(mediaDir).catch(() => mediaDir);
+  return resolved === resolvedMediaDir || resolved.startsWith(resolvedMediaDir + path.sep);
+}
+
 export async function imageResultFromFile(params: {
   label: string;
   path: string;
   extraText?: string;
   details?: Record<string, unknown>;
 }): Promise<AgentToolResult<unknown>> {
+  if (!(await isPathSafe(params.path))) {
+    throw new Error("Access denied: File path is outside the allowed media directory.");
+  }
+
   const buf = await fs.readFile(params.path);
   const mimeType = (await detectMime({ buffer: buf.slice(0, 256) })) ?? "image/png";
   return await imageResult({
