@@ -3,6 +3,7 @@ system:
   # If "auto", resource_manager.py will detect hardware.
   profile: "auto"
   log_level: "INFO"
+  trust_remote_code: false # Security: Set to false to prevent RCE from untrusted models
 
 profiles:
   spark:
@@ -11,6 +12,7 @@ profiles:
       model_id: "Qwen/Qwen2.5-0.5B-Instruct"
       device: "cpu"
       dtype: "float32"
+      trust_remote_code: false
     vision:
       model_id: "vikhyatk/moondream2"
       device: "cpu"
@@ -29,6 +31,7 @@ profiles:
       device: "cuda" # or mps/cpu
       dtype: "float16" # or bfloat16
       quantization: "4bit" # optional
+      trust_remote_code: false
     vision:
       model_id: "Qwen/Qwen2-VL-2B-Instruct"
       device: "cuda"
@@ -45,6 +48,7 @@ profiles:
       model_id: "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
       device: "cuda"
       dtype: "float16"
+      trust_remote_code: false
     vision:
       model_id: "Qwen/Qwen2-VL-7B-Instruct"
       device: "cuda"

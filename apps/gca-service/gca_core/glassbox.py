@@ -50,6 +50,11 @@ class GlassBox:
         self.model_name = model_name or self.cfg.get('system', {}).get('model_id')
         self.device = device or self.cfg.get('system', {}).get('device', 'cpu')
 
+        # Security: trust_remote_code should default to False to prevent RCE
+        self.trust_remote_code = self.cfg.get('system', {}).get('trust_remote_code', False)
+        if self.trust_remote_code:
+            logger.warning("🛡️ SECURITY WARNING: trust_remote_code is enabled for GlassBox. This allows execution of arbitrary code from the model repository.")
+
         # API Detection
         self.is_api_model = False
         api_prefixes = ["gpt-", "claude-", "grok-", "gemini-", "o1-"]
@@ -122,13 +127,13 @@ class GlassBox:
              else:
                 logger.warning(f"⚠️ Quantization (8bit) requested but device is {self.device}. Disabling quantization.")
 
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=self.trust_remote_code)
 
         # Load Model
         self.model = AutoModelForCausalLM.from_pretrained(
             self.model_name,
             torch_dtype=self.dtype,
-            trust_remote_code=True,
+            trust_remote_code=self.trust_remote_code,
             quantization_config=quantization_config,
             device_map=self.device # Use device_map for better handling of multi-gpu or offload
         )
@@ -372,7 +377,7 @@ class GlassBox:
         # Load config only
         from transformers import AutoConfig
         try:
-            config = AutoConfig.from_pretrained(self.model_name, trust_remote_code=True)
+            config = AutoConfig.from_pretrained(self.model_name, trust_remote_code=self.trust_remote_code)
             return config.hidden_size
         except Exception as e:
             logger.warning(f"Could not load AutoConfig for {self.model_name}: {e}. Defaulting to 1024.")

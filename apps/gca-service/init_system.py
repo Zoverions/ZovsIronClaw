@@ -11,14 +11,17 @@ with open(config_path) as f:
     CFG = yaml.safe_load(f)
 
 def map_brain():
-    print(f"[🗺️] Mapping Latent Space for {CFG['system']['model_id']}...")
+    model_id = CFG.get('system', {}).get('model_id')
+    trust_remote_code = CFG.get('system', {}).get('trust_remote_code', False)
+
+    print(f"[🗺️] Mapping Latent Space for {model_id}...")
 
     # 1. Load Model
-    tokenizer = AutoTokenizer.from_pretrained(CFG['system']['model_id'])
+    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=trust_remote_code)
     model = AutoModelForCausalLM.from_pretrained(
-        CFG['system']['model_id'],
-        torch_dtype=getattr(torch, CFG['system']['dtype']),
-        trust_remote_code=True
+        model_id,
+        torch_dtype=getattr(torch, CFG['system'].get('dtype', 'float32')),
+        trust_remote_code=trust_remote_code
     )
 
     # 2. Calibration Prompts (The Compass)
