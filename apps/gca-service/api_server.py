@@ -4,7 +4,8 @@ Exposes GCA reasoning, moral evaluation, and geometric steering via REST API.
 Integrates Recursive Universe Framework for Causal Flow Analysis.
 """
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request, Security, Depends, status
+from fastapi.security import APIKeyHeader
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
@@ -13,6 +14,7 @@ import logging
 import sys
 import yaml
 import os
+import secrets
 import time
 import json
 from pathlib import Path
@@ -305,6 +307,42 @@ class ChatCompletionRequest(BaseModel):
     temperature: Optional[float] = 0.7
     max_tokens: Optional[int] = 1024
     stream: Optional[bool] = False
+
+# ============================================================================
+# Security Dependencies
+# ============================================================================
+
+api_key_header = APIKeyHeader(name="X-GCA-API-Key", auto_error=False)
+
+async def verify_api_key(api_key: str = Security(api_key_header)):
+    """
+    Verifies the API key against the environment variable or config.
+    Prioritizes GCA_API_KEY env var, then config.yaml.
+    """
+    # 1. Check Environment Variable
+    expected_key = os.environ.get("GCA_API_KEY")
+
+    # 2. Check Config
+    if not expected_key:
+        expected_key = CFG.get("security", {}).get("api_key")
+
+    # 3. If no key configured, we are in an insecure state.
+    # For security, we should block access.
+    if not expected_key:
+        logger.error("GCA_API_KEY not configured. Blocking authenticated endpoint.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Server Security Configuration Error: API Key not set."
+        )
+
+    # Use constant-time comparison to prevent timing attacks
+    if api_key and secrets.compare_digest(api_key, expected_key):
+        return api_key
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Could not validate credentials",
+    )
 
 # ============================================================================
 # Endpoints
@@ -736,7 +774,7 @@ async def observe_environment(req: ObservationRequest):
         logger.error(f"Observation error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/v1/reason", response_model=ReasoningResponse)
+@app.post("/v1/reason", response_model=ReasoningResponse, dependencies=[Depends(verify_api_key)])
 async def reasoning_engine(req: ReasonRequest):
     reflective_logger.log("info", f"Incoming from {req.user_id}: {req.text[:50]}...")
 
