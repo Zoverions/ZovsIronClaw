@@ -22,9 +22,14 @@ export interface OneDriveUploadResult {
 }
 
 /**
+ * Threshold for simple upload (4MB).
+ * Files larger than this will use a resumable upload session.
+ */
+const RESUMABLE_UPLOAD_THRESHOLD = 4 * 1024 * 1024;
+
+/**
  * Upload a file to the user's OneDrive root folder.
- * For larger files, this uses the simple upload endpoint (up to 4MB).
- * TODO: For files >4MB, implement resumable upload session.
+ * For larger files (>4MB), this uses a resumable upload session.
  */
 export async function uploadToOneDrive(params: {
   buffer: Buffer;
@@ -38,6 +43,16 @@ export async function uploadToOneDrive(params: {
 
   // Use "OpenClawShared" folder to organize bot-uploaded files
   const uploadPath = `/OpenClawShared/${encodeURIComponent(params.filename)}`;
+
+  // Use resumable upload for larger files
+  if (params.buffer.length > RESUMABLE_UPLOAD_THRESHOLD) {
+    const sessionUrl = await createUploadSession({
+      url: `${GRAPH_ROOT}/me/drive/root:${uploadPath}:/createUploadSession`,
+      token,
+      fetchFn,
+    });
+    return uploadInSession({ sessionUrl, buffer: params.buffer, fetchFn });
+  }
 
   const res = await fetchFn(`${GRAPH_ROOT}/me/drive/root:${uploadPath}:/content`, {
     method: "PUT",
@@ -165,6 +180,7 @@ export async function uploadAndShareOneDrive(params: {
 /**
  * Upload a file to a SharePoint site.
  * This is used for group chats and channels where /me/drive doesn't work for bots.
+ * For larger files (>4MB), this uses a resumable upload session.
  *
  * @param params.siteId - SharePoint site ID (e.g., "contoso.sharepoint.com,guid1,guid2")
  */
@@ -181,6 +197,16 @@ export async function uploadToSharePoint(params: {
 
   // Use "OpenClawShared" folder to organize bot-uploaded files
   const uploadPath = `/OpenClawShared/${encodeURIComponent(params.filename)}`;
+
+  // Use resumable upload for larger files
+  if (params.buffer.length > RESUMABLE_UPLOAD_THRESHOLD) {
+    const sessionUrl = await createUploadSession({
+      url: `${GRAPH_ROOT}/sites/${params.siteId}/drive/root:${uploadPath}:/createUploadSession`,
+      token,
+      fetchFn,
+    });
+    return uploadInSession({ sessionUrl, buffer: params.buffer, fetchFn });
+  }
 
   const res = await fetchFn(
     `${GRAPH_ROOT}/sites/${params.siteId}/drive/root:${uploadPath}:/content`,
@@ -374,6 +400,96 @@ export async function createSharePointSharingLink(params: {
 
   return {
     webUrl: data.link.webUrl,
+  };
+}
+
+// ============================================================================
+// Internal Resumable Upload Helpers
+// ============================================================================
+
+/**
+ * Create a resumable upload session.
+ */
+async function createUploadSession(params: {
+  url: string;
+  token: string;
+  fetchFn: typeof fetch;
+}): Promise<string> {
+  const res = await params.fetchFn(params.url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${params.token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      item: {
+        "@microsoft.graph.conflictBehavior": "replace",
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Create upload session failed: ${res.status} ${res.statusText} - ${body}`);
+  }
+
+  const data = (await res.json()) as { uploadUrl?: string };
+  if (!data.uploadUrl) {
+    throw new Error("Create upload session response missing uploadUrl");
+  }
+
+  return data.uploadUrl;
+}
+
+/**
+ * Upload a buffer in chunks to an active upload session.
+ */
+async function uploadInSession(params: {
+  sessionUrl: string;
+  buffer: Buffer;
+  fetchFn: typeof fetch;
+}): Promise<OneDriveUploadResult> {
+  const totalSize = params.buffer.length;
+  // Recommended chunk size is a multiple of 320 KiB (327,680 bytes).
+  // We'll use 10 * 320 KiB = 3,276,800 bytes (~3.1 MB).
+  const CHUNK_SIZE = 327680 * 10;
+  let start = 0;
+  let lastResult: { id?: string; webUrl?: string; name?: string } | undefined;
+
+  while (start < totalSize) {
+    const end = Math.min(start + CHUNK_SIZE, totalSize);
+    const chunk = params.buffer.subarray(start, end);
+    const contentRange = `bytes ${start}-${end - 1}/${totalSize}`;
+
+    const res = await params.fetchFn(params.sessionUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Length": `${chunk.length}`,
+        "Content-Range": contentRange,
+      },
+      body: new Uint8Array(chunk),
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`Upload session chunk failed: ${res.status} ${res.statusText} - ${body}`);
+    }
+
+    if (res.status === 200 || res.status === 201) {
+      lastResult = (await res.json()) as { id?: string; webUrl?: string; name?: string };
+    }
+
+    start = end;
+  }
+
+  if (!lastResult?.id || !lastResult?.webUrl || !lastResult?.name) {
+    throw new Error("Upload session completed but response missing required fields");
+  }
+
+  return {
+    id: lastResult.id,
+    webUrl: lastResult.webUrl,
+    name: lastResult.name,
   };
 }
 
