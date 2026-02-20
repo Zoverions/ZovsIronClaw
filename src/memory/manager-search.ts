@@ -68,29 +68,89 @@ export async function searchVector(params: {
     }));
   }
 
-  const candidates = listChunks({
+  const iterator = iterateChunks({
     db: params.db,
     providerModel: params.providerModel,
     sourceFilter: params.sourceFilterChunks,
   });
-  const scored = candidates
-    .map((chunk) => ({
-      chunk,
-      score: cosineSimilarity(params.queryVec, chunk.embedding),
-    }))
-    .filter((entry) => Number.isFinite(entry.score));
-  return scored
-    .toSorted((a, b) => b.score - a.score)
-    .slice(0, params.limit)
-    .map((entry) => ({
-      id: entry.chunk.id,
-      path: entry.chunk.path,
-      startLine: entry.chunk.startLine,
-      endLine: entry.chunk.endLine,
-      score: entry.score,
-      snippet: truncateUtf16Safe(entry.chunk.text, params.snippetMaxChars),
-      source: entry.chunk.source,
-    }));
+
+  const candidates: Array<{
+    chunk: {
+      id: string;
+      path: string;
+      startLine: number;
+      endLine: number;
+      text: string;
+      source: SearchSource;
+    };
+    score: number;
+  }> = [];
+
+  for (const chunk of iterator) {
+    const score = cosineSimilarity(params.queryVec, chunk.embedding);
+    if (!Number.isFinite(score)) {
+      continue;
+    }
+    // Optimization: Maintain only top K candidates
+    if (candidates.length < params.limit) {
+      candidates.push({ chunk, score });
+      candidates.sort((a, b) => b.score - a.score);
+    } else if (score > candidates[params.limit - 1].score) {
+      candidates[params.limit - 1] = { chunk, score };
+      candidates.sort((a, b) => b.score - a.score);
+    }
+  }
+
+  return candidates.map((entry) => ({
+    id: entry.chunk.id,
+    path: entry.chunk.path,
+    startLine: entry.chunk.startLine,
+    endLine: entry.chunk.endLine,
+    score: entry.score,
+    snippet: truncateUtf16Safe(entry.chunk.text, params.snippetMaxChars),
+    source: entry.chunk.source,
+  }));
+}
+
+export function* iterateChunks(params: {
+  db: DatabaseSync;
+  providerModel: string;
+  sourceFilter: { sql: string; params: SearchSource[] };
+}): Generator<{
+  id: string;
+  path: string;
+  startLine: number;
+  endLine: number;
+  text: string;
+  embedding: number[];
+  source: SearchSource;
+}> {
+  const stmt = params.db.prepare(
+    `SELECT id, path, start_line, end_line, text, embedding, source\n` +
+      `  FROM chunks\n` +
+      ` WHERE model = ?${params.sourceFilter.sql}`,
+  );
+
+  for (const row of stmt.iterate(params.providerModel, ...params.sourceFilter.params)) {
+    const r = row as {
+      id: string;
+      path: string;
+      start_line: number;
+      end_line: number;
+      text: string;
+      embedding: string;
+      source: SearchSource;
+    };
+    yield {
+      id: r.id,
+      path: r.path,
+      startLine: r.start_line,
+      endLine: r.end_line,
+      text: r.text,
+      embedding: parseEmbedding(r.embedding),
+      source: r.source,
+    };
+  }
 }
 
 export function listChunks(params: {
@@ -106,31 +166,7 @@ export function listChunks(params: {
   embedding: number[];
   source: SearchSource;
 }> {
-  const rows = params.db
-    .prepare(
-      `SELECT id, path, start_line, end_line, text, embedding, source\n` +
-        `  FROM chunks\n` +
-        ` WHERE model = ?${params.sourceFilter.sql}`,
-    )
-    .all(params.providerModel, ...params.sourceFilter.params) as Array<{
-    id: string;
-    path: string;
-    start_line: number;
-    end_line: number;
-    text: string;
-    embedding: string;
-    source: SearchSource;
-  }>;
-
-  return rows.map((row) => ({
-    id: row.id,
-    path: row.path,
-    startLine: row.start_line,
-    endLine: row.end_line,
-    text: row.text,
-    embedding: parseEmbedding(row.embedding),
-    source: row.source,
-  }));
+  return Array.from(iterateChunks(params));
 }
 
 export async function searchKeyword(params: {
