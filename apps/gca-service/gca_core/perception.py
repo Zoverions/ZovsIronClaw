@@ -85,15 +85,23 @@ class PerceptionSystem:
             return embeddings.tolist()
         return embeddings
 
-    def transcribe_audio(self, audio_bytes: bytes) -> str:
+    def transcribe_audio(self, audio_input: Union[bytes, str]) -> str:
         """
-        Transcribe audio bytes to text.
+        Transcribe audio bytes or file path to text.
         """
         self._ensure_audio()
 
+        if isinstance(audio_input, str):
+            if os.path.exists(audio_input):
+                segments, info = self.audio_engine.transcribe(audio_input, beam_size=5)
+                text = " ".join([segment.text for segment in segments])
+                return text.strip()
+            logger.warning(f"transcribe_audio received string but file not found: {audio_input}")
+            return ""
+
         # Write to temp file because faster-whisper likes files
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as tmp:
-            tmp.write(audio_bytes)
+            tmp.write(audio_input)
             tmp.flush()
 
             segments, info = self.audio_engine.transcribe(tmp.name, beam_size=5)
