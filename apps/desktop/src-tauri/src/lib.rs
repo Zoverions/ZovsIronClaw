@@ -1,6 +1,8 @@
 use tauri::Manager;
 use tauri_plugin_shell::ShellExt;
 use tauri_plugin_shell::process::CommandEvent;
+use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_dialog::{MessageDialogButtons, MessageDialogKind};
 use std::path::PathBuf;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
@@ -158,6 +160,18 @@ async fn save_soul_config(soul_name: &str) -> Result<(), String> {
 // Execute Shell Command (Computer Use)
 #[tauri::command]
 async fn execute_shell_command(command: String, app: tauri::AppHandle) -> Result<String, String> {
+    // Security: Require user confirmation before executing any shell command
+    let confirmed = app.dialog()
+        .message(format!("Allow execution of command?\n\n{}", command))
+        .title("Security Warning")
+        .kind(MessageDialogKind::Warning)
+        .buttons(MessageDialogButtons::OkCancel)
+        .blocking_show();
+
+    if !confirmed {
+        return Err("User denied execution".to_string());
+    }
+
     let shell = app.shell();
 
     #[cfg(target_os = "windows")]
@@ -185,6 +199,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let shell = app.shell();
             let sidecar_command = shell.sidecar("gca-brain").expect("failed to setup sidecar");
