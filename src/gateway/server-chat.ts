@@ -227,6 +227,8 @@ export function createAgentEventHandler({
   clearAgentRunContext,
   toolEventRecipients,
 }: AgentEventHandlerOptions) {
+  const verboseLevelCache = new Map<string, string>();
+
   const emitChatDelta = (sessionKey: string, clientRunId: string, seq: number, text: string) => {
     chatRunState.buffers.set(clientRunId, text);
     const now = Date.now();
@@ -301,18 +303,29 @@ export function createAgentEventHandler({
     if (runVerbose) {
       return runVerbose;
     }
+
+    const cached = verboseLevelCache.get(runId);
+    if (cached) {
+      return cached;
+    }
+
     if (!sessionKey) {
       return "off";
     }
     try {
       const { cfg, entry } = loadSessionEntry(sessionKey);
       const sessionVerbose = normalizeVerboseLevel(entry?.verboseLevel);
+      let result = "off";
       if (sessionVerbose) {
-        return sessionVerbose;
+        result = sessionVerbose;
+      } else {
+        const defaultVerbose = normalizeVerboseLevel(cfg.agents?.defaults?.verboseDefault);
+        result = defaultVerbose ?? "off";
       }
-      const defaultVerbose = normalizeVerboseLevel(cfg.agents?.defaults?.verboseDefault);
-      return defaultVerbose ?? "off";
+      verboseLevelCache.set(runId, result);
+      return result;
     } catch {
+      verboseLevelCache.set(runId, "off");
       return "off";
     }
   };
@@ -408,6 +421,7 @@ export function createAgentEventHandler({
     if (lifecyclePhase === "end" || lifecyclePhase === "error") {
       toolEventRecipients.markFinal(evt.runId);
       clearAgentRunContext(evt.runId);
+      verboseLevelCache.delete(evt.runId);
     }
   };
 }
