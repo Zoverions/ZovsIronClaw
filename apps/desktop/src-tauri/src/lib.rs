@@ -29,10 +29,8 @@ fn check_model_exists(filename: &str) -> bool {
     false
 }
 
-// Download model file
-#[tauri::command]
-async fn download_model(url: &str, filename: &str, window: tauri::Window) -> Result<(), String> {
-    // Validate URL against trusted domains
+// Helper to validate download parameters
+fn validate_model_download_params(url: &str, filename: &str) -> Result<(), String> {
     let trusted_domains = vec![
         "https://huggingface.co/",
         "https://cdn-lfs.huggingface.co/",
@@ -40,14 +38,46 @@ async fn download_model(url: &str, filename: &str, window: tauri::Window) -> Res
         "https://ollama.com/"
     ];
 
+    let allowed_extensions = vec![
+        ".gguf",
+        ".bin",
+        ".safetensors",
+        ".json",
+        ".pt",
+    ];
+
+    // 1. Check Domain
     let is_trusted = trusted_domains.iter().any(|&domain| url.starts_with(domain));
     if !is_trusted {
         return Err(format!("URL not allowed. Must start with one of: {:?}", trusted_domains));
     }
 
-    if !is_safe_filename(filename) {
-        return Err("Invalid filename".to_string());
+    // 2. Check URL extension (ignoring query parameters)
+    let url_path = url.split('?').next().unwrap_or(url);
+    let has_valid_url_ext = allowed_extensions.iter().any(|&ext| url_path.ends_with(ext));
+    if !has_valid_url_ext {
+         return Err(format!("URL file type not allowed. Must end with one of: {:?}", allowed_extensions));
     }
+
+    // 3. Check Filename Safety
+    if !is_safe_filename(filename) {
+        return Err("Invalid filename characters".to_string());
+    }
+
+    // 4. Check Filename Extension
+    let has_valid_filename_ext = allowed_extensions.iter().any(|&ext| filename.ends_with(ext));
+    if !has_valid_filename_ext {
+        return Err(format!("Filename extension not allowed. Must end with one of: {:?}", allowed_extensions));
+    }
+
+    Ok(())
+}
+
+// Download model file
+#[tauri::command]
+async fn download_model(url: &str, filename: &str, window: tauri::Window) -> Result<(), String> {
+    // Validate inputs
+    validate_model_download_params(url, filename)?;
 
     let mut path = dirs::data_dir().ok_or("Could not find data directory")?;
     path.push("ZovsIronClaw");
