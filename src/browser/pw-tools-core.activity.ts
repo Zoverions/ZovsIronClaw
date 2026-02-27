@@ -32,6 +32,7 @@ export async function getNetworkRequestsViaPlaywright(opts: {
   const requests = filter ? raw.filter((r) => r.url.includes(filter)) : raw;
   if (opts.clear) {
     state.requests = [];
+    state.requestsMap.clear();
     state.requestIds = new WeakMap();
   }
   return { requests };
