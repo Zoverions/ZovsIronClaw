@@ -32,7 +32,48 @@ export async function normalizeBrowserScreenshot(
   let smallest: { buffer: Buffer; size: number } | null = null;
 
   for (const side of sideGrid) {
-    for (const quality of qualities) {
+    // Optimization: Check the best (highest quality) and worst (lowest quality)
+    // first to prune the search space.
+
+    // 1. Try highest quality (85)
+    const outBest = await resizeToJpeg({
+      buffer,
+      maxSide: side,
+      quality: qualities[0],
+      withoutEnlargement: true,
+    });
+
+    if (!smallest || outBest.byteLength < smallest.size) {
+      smallest = { buffer: outBest, size: outBest.byteLength };
+    }
+
+    if (outBest.byteLength <= maxBytes) {
+      return { buffer: outBest, contentType: "image/jpeg" };
+    }
+
+    // 2. Try lowest quality (35)
+    // If even the lowest quality is too big, skip all intermediate qualities for this size.
+    const outWorst = await resizeToJpeg({
+      buffer,
+      maxSide: side,
+      quality: qualities[qualities.length - 1],
+      withoutEnlargement: true,
+    });
+
+    if (!smallest || outWorst.byteLength < smallest.size) {
+      smallest = { buffer: outWorst, size: outWorst.byteLength };
+    }
+
+    if (outWorst.byteLength > maxBytes) {
+      // Pruning: Lowest quality is still too big, so skip intermediate qualities.
+      continue;
+    }
+
+    // 3. Lowest quality fits, but highest didn't. Search intermediate qualities.
+    // We already checked qualities[0] (85) and qualities[length-1] (35).
+    // Iterate through the rest: 75, 65, 55, 45
+    for (let i = 1; i < qualities.length - 1; i++) {
+      const quality = qualities[i];
       const out = await resizeToJpeg({
         buffer,
         maxSide: side,
@@ -48,6 +89,10 @@ export async function normalizeBrowserScreenshot(
         return { buffer: out, contentType: "image/jpeg" };
       }
     }
+
+    // If we get here, intermediate qualities failed but lowest quality (35) passed.
+    // Return the lowest quality result we already computed.
+    return { buffer: outWorst, contentType: "image/jpeg" };
   }
 
   const best = smallest?.buffer ?? buffer;
