@@ -24,10 +24,19 @@ import {
 } from "./defaults.js";
 import { MissingEnvVarError, resolveConfigEnvVars } from "./env-substitution.js";
 import { collectConfigEnvVars } from "./env-vars.js";
-import { ConfigIncludeError, resolveConfigIncludes } from "./includes.js";
+import {
+  ConfigIncludeError,
+  resolveConfigIncludes,
+  resolveConfigIncludesAsync,
+} from "./includes.js";
 import { findLegacyConfigIssues } from "./legacy.js";
 import { normalizeConfigPaths } from "./normalize-paths.js";
-import { resolveConfigPath, resolveDefaultConfigCandidates, resolveStateDir } from "./paths.js";
+import {
+  resolveConfigPath,
+  resolveConfigPathAsync,
+  resolveDefaultConfigCandidates,
+  resolveStateDir,
+} from "./paths.js";
 import { applyConfigOverrides } from "./runtime-overrides.js";
 import { validateConfigObjectWithPlugins } from "./validation.js";
 import { compareOpenClawVersions } from "./version.js";
@@ -178,6 +187,13 @@ function resolveConfigPathForDeps(deps: Required<ConfigIoDeps>): string {
   return resolveConfigPath(deps.env, resolveStateDir(deps.env, deps.homedir));
 }
 
+async function resolveConfigPathForDepsAsync(deps: Required<ConfigIoDeps>): Promise<string> {
+  if (deps.configPath) {
+    return deps.configPath;
+  }
+  return resolveConfigPathAsync(deps.env, undefined, deps.homedir);
+}
+
 function normalizeDeps(overrides: ConfigIoDeps = {}): Required<ConfigIoDeps> {
   return {
     fs: overrides.fs ?? fs,
@@ -198,6 +214,87 @@ export function parseConfigJson5(
   } catch (err) {
     return { ok: false, error: String(err) };
   }
+}
+
+function processLoadedConfig(
+  resolvedConfig: unknown,
+  configPath: string,
+  deps: Required<ConfigIoDeps>,
+): OpenClawConfig {
+  // Apply config.env to process.env BEFORE substitution so ${VAR} can reference config-defined vars
+  if (resolvedConfig && typeof resolvedConfig === "object" && "env" in resolvedConfig) {
+    applyConfigEnv(resolvedConfig as OpenClawConfig, deps.env);
+  }
+
+  // Substitute ${VAR} env var references
+  const substituted = resolveConfigEnvVars(resolvedConfig, deps.env);
+
+  const finalConfig = substituted;
+  warnOnConfigMiskeys(finalConfig, deps.logger);
+  if (typeof finalConfig !== "object" || finalConfig === null) {
+    return {};
+  }
+  const preValidationDuplicates = findDuplicateAgentDirs(finalConfig as OpenClawConfig, {
+    env: deps.env,
+    homedir: deps.homedir,
+  });
+  if (preValidationDuplicates.length > 0) {
+    throw new DuplicateAgentDirError(preValidationDuplicates);
+  }
+  const validated = validateConfigObjectWithPlugins(finalConfig);
+  if (!validated.ok) {
+    const details = validated.issues
+      .map((iss) => `- ${iss.path || "<root>"}: ${iss.message}`)
+      .join("\n");
+    if (!loggedInvalidConfigs.has(configPath)) {
+      loggedInvalidConfigs.add(configPath);
+      deps.logger.error(`Invalid config at ${configPath}:\\n${details}`);
+    }
+    const error = new Error("Invalid config");
+    (error as { code?: string; details?: string }).code = "INVALID_CONFIG";
+    (error as { code?: string; details?: string }).details = details;
+    throw error;
+  }
+  if (validated.warnings.length > 0) {
+    const details = validated.warnings
+      .map((iss) => `- ${iss.path || "<root>"}: ${iss.message}`)
+      .join("\n");
+    deps.logger.warn(`Config warnings:\\n${details}`);
+  }
+  warnIfConfigFromFuture(validated.config, deps.logger);
+  const cfg = applyModelDefaults(
+    applyCompactionDefaults(
+      applyContextPruningDefaults(
+        applyAgentDefaults(
+          applySessionDefaults(applyLoggingDefaults(applyMessageDefaults(validated.config))),
+        ),
+      ),
+    ),
+  );
+  normalizeConfigPaths(cfg);
+
+  const duplicates = findDuplicateAgentDirs(cfg, {
+    env: deps.env,
+    homedir: deps.homedir,
+  });
+  if (duplicates.length > 0) {
+    throw new DuplicateAgentDirError(duplicates);
+  }
+
+  applyConfigEnv(cfg, deps.env);
+
+  const enabled = shouldEnableShellEnvFallback(deps.env) || cfg.env?.shellEnv?.enabled === true;
+  if (enabled && !shouldDeferShellEnvFallback(deps.env)) {
+    loadShellEnvFallback({
+      enabled: true,
+      env: deps.env,
+      expectedKeys: SHELL_ENV_EXPECTED_KEYS,
+      logger: deps.logger,
+      timeoutMs: cfg.env?.shellEnv?.timeoutMs ?? resolveShellEnvFallbackTimeoutMs(deps.env),
+    });
+  }
+
+  return applyConfigOverrides(cfg);
 }
 
 export function createConfigIO(overrides: ConfigIoDeps = {}) {
@@ -232,80 +329,51 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
         parseJson: (raw) => deps.json5.parse(raw),
       });
 
-      // Apply config.env to process.env BEFORE substitution so ${VAR} can reference config-defined vars
-      if (resolved && typeof resolved === "object" && "env" in resolved) {
-        applyConfigEnv(resolved as OpenClawConfig, deps.env);
+      return processLoadedConfig(resolved, configPath, deps);
+    } catch (err) {
+      if (err instanceof DuplicateAgentDirError) {
+        deps.logger.error(err.message);
+        throw err;
       }
-
-      // Substitute ${VAR} env var references
-      const substituted = resolveConfigEnvVars(resolved, deps.env);
-
-      const resolvedConfig = substituted;
-      warnOnConfigMiskeys(resolvedConfig, deps.logger);
-      if (typeof resolvedConfig !== "object" || resolvedConfig === null) {
+      const error = err as { code?: string };
+      if (error?.code === "INVALID_CONFIG") {
         return {};
       }
-      const preValidationDuplicates = findDuplicateAgentDirs(resolvedConfig as OpenClawConfig, {
-        env: deps.env,
-        homedir: deps.homedir,
-      });
-      if (preValidationDuplicates.length > 0) {
-        throw new DuplicateAgentDirError(preValidationDuplicates);
-      }
-      const validated = validateConfigObjectWithPlugins(resolvedConfig);
-      if (!validated.ok) {
-        const details = validated.issues
-          .map((iss) => `- ${iss.path || "<root>"}: ${iss.message}`)
-          .join("\n");
-        if (!loggedInvalidConfigs.has(configPath)) {
-          loggedInvalidConfigs.add(configPath);
-          deps.logger.error(`Invalid config at ${configPath}:\\n${details}`);
+      deps.logger.error(`Failed to read config at ${configPath}`, err);
+      return {};
+    }
+  }
+
+  async function loadConfigAsync(): Promise<OpenClawConfig> {
+    try {
+      // Re-resolve path async to be safe, though configPath is already resolved synchronously in createConfigIO context.
+      // But if we want full async, we should use createConfigIOAsync.
+      // Since this is inside createConfigIO, configPath is already set.
+      // We'll check existence async.
+      try {
+        await deps.fs.promises.access(configPath);
+      } catch {
+        if (shouldEnableShellEnvFallback(deps.env) && !shouldDeferShellEnvFallback(deps.env)) {
+          loadShellEnvFallback({
+            enabled: true,
+            env: deps.env,
+            expectedKeys: SHELL_ENV_EXPECTED_KEYS,
+            logger: deps.logger,
+            timeoutMs: resolveShellEnvFallbackTimeoutMs(deps.env),
+          });
         }
-        const error = new Error("Invalid config");
-        (error as { code?: string; details?: string }).code = "INVALID_CONFIG";
-        (error as { code?: string; details?: string }).details = details;
-        throw error;
+        return {};
       }
-      if (validated.warnings.length > 0) {
-        const details = validated.warnings
-          .map((iss) => `- ${iss.path || "<root>"}: ${iss.message}`)
-          .join("\n");
-        deps.logger.warn(`Config warnings:\\n${details}`);
-      }
-      warnIfConfigFromFuture(validated.config, deps.logger);
-      const cfg = applyModelDefaults(
-        applyCompactionDefaults(
-          applyContextPruningDefaults(
-            applyAgentDefaults(
-              applySessionDefaults(applyLoggingDefaults(applyMessageDefaults(validated.config))),
-            ),
-          ),
-        ),
-      );
-      normalizeConfigPaths(cfg);
 
-      const duplicates = findDuplicateAgentDirs(cfg, {
-        env: deps.env,
-        homedir: deps.homedir,
+      const raw = await deps.fs.promises.readFile(configPath, "utf-8");
+      const parsed = deps.json5.parse(raw);
+
+      const resolved = await resolveConfigIncludesAsync(parsed, configPath, {
+        readFile: (p) => deps.fs.promises.readFile(p, "utf-8"),
+        parseJson: (raw) => deps.json5.parse(raw),
       });
-      if (duplicates.length > 0) {
-        throw new DuplicateAgentDirError(duplicates);
-      }
 
-      applyConfigEnv(cfg, deps.env);
-
-      const enabled = shouldEnableShellEnvFallback(deps.env) || cfg.env?.shellEnv?.enabled === true;
-      if (enabled && !shouldDeferShellEnvFallback(deps.env)) {
-        loadShellEnvFallback({
-          enabled: true,
-          env: deps.env,
-          expectedKeys: SHELL_ENV_EXPECTED_KEYS,
-          logger: deps.logger,
-          timeoutMs: cfg.env?.shellEnv?.timeoutMs ?? resolveShellEnvFallbackTimeoutMs(deps.env),
-        });
-      }
-
-      return applyConfigOverrides(cfg);
+      return processLoadedConfig(resolved, configPath, deps);
     } catch (err) {
       if (err instanceof DuplicateAgentDirError) {
         deps.logger.error(err.message);
@@ -539,9 +607,47 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
   return {
     configPath,
     loadConfig,
+    loadConfigAsync,
     readConfigFileSnapshot,
     writeConfigFile,
   };
+}
+
+export async function createConfigIOAsync(overrides: ConfigIoDeps = {}) {
+  const deps = normalizeDeps(overrides);
+  const requestedConfigPath = await resolveConfigPathForDepsAsync(deps);
+
+  // For candidate paths, we need an async equivalent of resolving candidates.
+  // resolveDefaultConfigCandidates returns string[], so we can use it.
+  // Then we check existence async.
+  let configPath: string | undefined;
+
+  if (deps.configPath) {
+    configPath = requestedConfigPath;
+  } else {
+    const candidatePaths = resolveDefaultConfigCandidates(deps.env, deps.homedir);
+    for (const candidate of candidatePaths) {
+      try {
+        await deps.fs.promises.access(candidate);
+        configPath = candidate;
+        break;
+      } catch {
+        // Continue
+      }
+    }
+  }
+  if (!configPath) {
+    configPath = requestedConfigPath;
+  }
+
+  // We can reuse the logic from createConfigIO's return object, but we need to ensure
+  // loadConfig is available (even if it might block if called synchronously on an async-resolved path?
+  // No, the path is just a string. The sync/async nature comes from how we read it.)
+
+  // However, createConfigIO is synchronous and returns an object.
+  // We can call createConfigIO internally with the resolved path forced.
+  const io = createConfigIO({ ...overrides, configPath });
+  return io;
 }
 
 // NOTE: These wrappers intentionally do *not* cache the resolved config path at
@@ -591,6 +697,32 @@ export function loadConfig(): OpenClawConfig {
     }
   }
   const config = io.loadConfig();
+  if (shouldUseConfigCache(process.env)) {
+    const cacheMs = resolveConfigCacheMs(process.env);
+    if (cacheMs > 0) {
+      configCache = {
+        configPath,
+        expiresAt: now + cacheMs,
+        config,
+      };
+    }
+  }
+  return config;
+}
+
+export async function loadConfigAsync(): Promise<OpenClawConfig> {
+  const io = await createConfigIOAsync();
+  const configPath = io.configPath;
+  const now = Date.now();
+  if (shouldUseConfigCache(process.env)) {
+    const cached = configCache;
+    if (cached && cached.configPath === configPath && cached.expiresAt > now) {
+      return cached.config;
+    }
+  }
+
+  const config = await io.loadConfigAsync();
+
   if (shouldUseConfigCache(process.env)) {
     const cacheMs = resolveConfigCacheMs(process.env);
     if (cacheMs > 0) {

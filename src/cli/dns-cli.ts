@@ -2,7 +2,7 @@ import type { Command } from "commander";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { loadConfig } from "../config/config.js";
+import { loadConfigAsync } from "../config/config.js";
 import { pickPrimaryTailnetIPv4, pickPrimaryTailnetIPv6 } from "../infra/tailnet.js";
 import { getWideAreaZonePath, resolveWideAreaDiscoveryDomain } from "../infra/widearea-dns.js";
 import { defaultRuntime } from "../runtime.js";
@@ -68,12 +68,14 @@ function mkdirSudoIfNeeded(dirPath: string): void {
   run("sudo", ["mkdir", "-p", dirPath], { inherit: true });
 }
 
-function zoneFileNeedsBootstrap(zonePath: string): boolean {
-  if (!fs.existsSync(zonePath)) {
+async function zoneFileNeedsBootstrap(zonePath: string): Promise<boolean> {
+  try {
+    await fs.promises.access(zonePath);
+  } catch {
     return true;
   }
   try {
-    const content = fs.readFileSync(zonePath, "utf-8");
+    const content = await fs.promises.readFile(zonePath, "utf-8");
     return !/\bSOA\b/.test(content) || !/\bNS\b/.test(content);
   } catch {
     return true;
@@ -89,8 +91,8 @@ function detectBrewPrefix(): string {
   return prefix;
 }
 
-function ensureImportLine(corefilePath: string, importGlob: string): boolean {
-  const existing = fs.readFileSync(corefilePath, "utf-8");
+async function ensureImportLine(corefilePath: string, importGlob: string): Promise<boolean> {
+  const existing = await fs.promises.readFile(corefilePath, "utf-8");
   if (existing.includes(importGlob)) {
     return false;
   }
@@ -120,7 +122,7 @@ export function registerDnsCli(program: Command) {
       false,
     )
     .action(async (opts) => {
-      const cfg = loadConfig();
+      const cfg = await loadConfigAsync();
       const tailnetIPv4 = pickPrimaryTailnetIPv4();
       const tailnetIPv6 = pickPrimaryTailnetIPv6();
       const wideAreaDomain = resolveWideAreaDiscoveryDomain({
@@ -201,10 +203,18 @@ export function registerDnsCli(program: Command) {
 
       mkdirSudoIfNeeded(confDir);
 
-      if (!fs.existsSync(corefilePath)) {
+      let corefileExists = false;
+      try {
+        await fs.promises.access(corefilePath);
+        corefileExists = true;
+      } catch {
+        corefileExists = false;
+      }
+
+      if (!corefileExists) {
         writeFileSudoIfNeeded(corefilePath, `import ${importGlob}\n`);
       } else {
-        ensureImportLine(corefilePath, importGlob);
+        await ensureImportLine(corefilePath, importGlob);
       }
 
       const bindArgs = [tailnetIPv4, tailnetIPv6].filter((v): v is string => Boolean(v?.trim()));
@@ -224,7 +234,7 @@ export function registerDnsCli(program: Command) {
 
       // Ensure the gateway can write its zone file path.
       await fs.promises.mkdir(path.dirname(zonePath), { recursive: true });
-      if (zoneFileNeedsBootstrap(zonePath)) {
+      if (await zoneFileNeedsBootstrap(zonePath)) {
         const y = new Date().getUTCFullYear();
         const m = String(new Date().getUTCMonth() + 1).padStart(2, "0");
         const d = String(new Date().getUTCDate()).padStart(2, "0");
@@ -241,7 +251,7 @@ export function registerDnsCli(program: Command) {
           ``,
         ].filter((line): line is string => Boolean(line));
 
-        fs.writeFileSync(zonePath, zoneLines.join("\n"), "utf-8");
+        await fs.promises.writeFile(zonePath, zoneLines.join("\n"), "utf-8");
       }
 
       defaultRuntime.log("");
