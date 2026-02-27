@@ -41,6 +41,7 @@ import {
 } from "../session-utils.js";
 import { applySessionsPatchToStore } from "../sessions-patch.js";
 import { resolveSessionKeyFromResolveParams } from "../sessions-resolve.js";
+import { findFirstMatch } from "../../utils/array.js";
 
 export const sessionsHandlers: GatewayRequestHandlers = {
   "sessions.list": ({ params, respond }) => {
@@ -108,7 +109,7 @@ export const sessionsHandlers: GatewayRequestHandlers = {
         const store = storeCache.get(target.storePath) ?? loadSessionStore(target.storePath);
         storeCache.set(target.storePath, store);
         const entry =
-          target.storeKeys.map((candidate) => store[candidate]).find(Boolean) ??
+          findFirstMatch(target.storeKeys, (candidate) => store[candidate]) ??
           store[target.canonicalKey];
         if (!entry?.sessionId) {
           previews.push({ key, status: "missing", items: [] });
