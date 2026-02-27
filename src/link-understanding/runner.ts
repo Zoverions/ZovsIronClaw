@@ -133,18 +133,18 @@ export async function runLinkUnderstanding(params: {
     return { urls: links, outputs: [] };
   }
 
-  const outputs: string[] = [];
-  for (const url of links) {
-    const output = await runLinkEntries({
-      entries,
-      ctx: params.ctx,
-      url,
-      config,
-    });
-    if (output) {
-      outputs.push(output);
-    }
-  }
+  const results = await Promise.all(
+    links.map((url) =>
+      runLinkEntries({
+        entries,
+        ctx: params.ctx,
+        url,
+        config,
+      }),
+    ),
+  );
+
+  const outputs = results.filter((o): o is string => !!o);
 
   return { urls: links, outputs };
 }
