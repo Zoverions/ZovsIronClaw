@@ -15,6 +15,15 @@ const GRAPH_ROOT = "https://graph.microsoft.com/v1.0";
 const GRAPH_BETA = "https://graph.microsoft.com/beta";
 const GRAPH_SCOPE = "https://graph.microsoft.com";
 
+// MS Graph API limits:
+// - Simple upload: max 4MB
+// - Upload session: required for > 4MB (and recommended for smaller files too for reliability)
+const LARGE_FILE_THRESHOLD = 4 * 1024 * 1024; // 4 MB
+
+// Upload chunk size must be a multiple of 320 KiB (327,680 bytes)
+// We'll use 10 chunks of 320 KiB = 3.125 MiB as a reasonable chunk size
+const UPLOAD_CHUNK_SIZE = 320 * 1024 * 10; // ~3.2 MB
+
 export interface OneDriveUploadResult {
   id: string;
   webUrl: string;
@@ -23,8 +32,7 @@ export interface OneDriveUploadResult {
 
 /**
  * Upload a file to the user's OneDrive root folder.
- * For larger files, this uses the simple upload endpoint (up to 4MB).
- * TODO: For files >4MB, implement resumable upload session.
+ * For larger files, this uses the resumable upload session endpoint.
  */
 export async function uploadToOneDrive(params: {
   buffer: Buffer;
@@ -35,10 +43,19 @@ export async function uploadToOneDrive(params: {
 }): Promise<OneDriveUploadResult> {
   const fetchFn = params.fetchFn ?? fetch;
   const token = await params.tokenProvider.getAccessToken(GRAPH_SCOPE);
-
-  // Use "OpenClawShared" folder to organize bot-uploaded files
   const uploadPath = `/OpenClawShared/${encodeURIComponent(params.filename)}`;
 
+  if (params.buffer.length > LARGE_FILE_THRESHOLD) {
+    return uploadLargeFile({
+      buffer: params.buffer,
+      // Endpoint to create an upload session
+      createSessionUrl: `${GRAPH_ROOT}/me/drive/root:${uploadPath}:/createUploadSession`,
+      token,
+      fetchFn,
+    });
+  }
+
+  // Simple upload for small files
   const res = await fetchFn(`${GRAPH_ROOT}/me/drive/root:${uploadPath}:/content`, {
     method: "PUT",
     headers: {
@@ -178,10 +195,19 @@ export async function uploadToSharePoint(params: {
 }): Promise<OneDriveUploadResult> {
   const fetchFn = params.fetchFn ?? fetch;
   const token = await params.tokenProvider.getAccessToken(GRAPH_SCOPE);
-
-  // Use "OpenClawShared" folder to organize bot-uploaded files
   const uploadPath = `/OpenClawShared/${encodeURIComponent(params.filename)}`;
 
+  if (params.buffer.length > LARGE_FILE_THRESHOLD) {
+    return uploadLargeFile({
+      buffer: params.buffer,
+      // Endpoint to create an upload session
+      createSessionUrl: `${GRAPH_ROOT}/sites/${params.siteId}/drive/root:${uploadPath}:/createUploadSession`,
+      token,
+      fetchFn,
+    });
+  }
+
+  // Simple upload for small files
   const res = await fetchFn(
     `${GRAPH_ROOT}/sites/${params.siteId}/drive/root:${uploadPath}:/content`,
     {
@@ -450,4 +476,101 @@ export async function uploadAndShareSharePoint(params: {
     shareUrl: shareLink.webUrl,
     name: uploaded.name,
   };
+}
+
+/**
+ * Helper function to upload a large file using a resumable upload session.
+ */
+async function uploadLargeFile(params: {
+  buffer: Buffer;
+  createSessionUrl: string;
+  token: string;
+  fetchFn: typeof fetch;
+}): Promise<OneDriveUploadResult> {
+  const { buffer, createSessionUrl, token, fetchFn } = params;
+
+  // 1. Create upload session
+  const sessionRes = await fetchFn(createSessionUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
+  });
+
+  if (!sessionRes.ok) {
+    const body = await sessionRes.text().catch(() => "");
+    throw new Error(`Create upload session failed: ${sessionRes.status} ${sessionRes.statusText} - ${body}`);
+  }
+
+  const sessionData = (await sessionRes.json()) as {
+    uploadUrl?: string;
+    nextExpectedRanges?: string[];
+  };
+
+  if (!sessionData.uploadUrl) {
+    throw new Error("Create upload session response missing uploadUrl");
+  }
+
+  const uploadUrl = sessionData.uploadUrl;
+  const fileSize = buffer.length;
+  let start = 0;
+  let finalResult: OneDriveUploadResult | undefined;
+
+  // 2. Upload chunks
+  // The uploadUrl is used WITHOUT Authorization header (it includes a token in the URL itself)
+  while (start < fileSize) {
+    let end = start + UPLOAD_CHUNK_SIZE;
+    if (end > fileSize) {
+      end = fileSize;
+    }
+
+    const chunk = buffer.subarray(start, end);
+    // Content-Range format: bytes start-end/total
+    // Note: 'end' in the header is inclusive, so it should be end - 1
+    const contentRange = `bytes ${start}-${end - 1}/${fileSize}`;
+
+    const chunkRes = await fetchFn(uploadUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Length": chunk.length.toString(),
+        "Content-Range": contentRange,
+      },
+      body: new Uint8Array(chunk),
+    });
+
+    if (!chunkRes.ok) {
+       const body = await chunkRes.text().catch(() => "");
+       throw new Error(`Upload chunk failed at ${contentRange}: ${chunkRes.status} ${chunkRes.statusText} - ${body}`);
+    }
+
+    // 201 Created means the file is completely uploaded
+    if (chunkRes.status === 201 || chunkRes.status === 200) {
+      const data = (await chunkRes.json()) as {
+        id?: string;
+        webUrl?: string;
+        name?: string;
+      };
+
+      // Sometimes 200/201 might be returned but we need to verify we have the fields
+      if (data.id && data.webUrl && data.name) {
+          finalResult = {
+              id: data.id,
+              webUrl: data.webUrl,
+              name: data.name,
+          };
+          break; // Done!
+      }
+    }
+
+    // 202 Accepted means continue
+    start = end;
+  }
+
+  if (!finalResult) {
+      throw new Error("Upload session finished but no final result received");
+  }
+
+  return finalResult;
 }
