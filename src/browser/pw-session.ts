@@ -58,6 +58,7 @@ type PageState = {
   console: BrowserConsoleMessage[];
   errors: BrowserPageError[];
   requests: BrowserNetworkRequest[];
+  requestsMap: Map<string, BrowserNetworkRequest>;
   requestIds: WeakMap<Request, string>;
   nextRequestId: number;
   armIdUpload: number;
@@ -190,6 +191,7 @@ export function ensurePageState(page: Page): PageState {
     console: [],
     errors: [],
     requests: [],
+    requestsMap: new Map(),
     requestIds: new WeakMap(),
     nextRequestId: 0,
     armIdUpload: 0,
@@ -227,15 +229,20 @@ export function ensurePageState(page: Page): PageState {
       state.nextRequestId += 1;
       const id = `r${state.nextRequestId}`;
       state.requestIds.set(req, id);
-      state.requests.push({
+      const record = {
         id,
         timestamp: new Date().toISOString(),
         method: req.method(),
         url: req.url(),
         resourceType: req.resourceType(),
-      });
+      };
+      state.requests.push(record);
+      state.requestsMap.set(id, record);
       if (state.requests.length > MAX_NETWORK_REQUESTS) {
-        state.requests.shift();
+        const removed = state.requests.shift();
+        if (removed) {
+          state.requestsMap.delete(removed.id);
+        }
       }
     });
     page.on("response", (resp: Response) => {
@@ -244,14 +251,7 @@ export function ensurePageState(page: Page): PageState {
       if (!id) {
         return;
       }
-      let rec: BrowserNetworkRequest | undefined;
-      for (let i = state.requests.length - 1; i >= 0; i -= 1) {
-        const candidate = state.requests[i];
-        if (candidate && candidate.id === id) {
-          rec = candidate;
-          break;
-        }
-      }
+      const rec = state.requestsMap.get(id);
       if (!rec) {
         return;
       }
@@ -263,14 +263,7 @@ export function ensurePageState(page: Page): PageState {
       if (!id) {
         return;
       }
-      let rec: BrowserNetworkRequest | undefined;
-      for (let i = state.requests.length - 1; i >= 0; i -= 1) {
-        const candidate = state.requests[i];
-        if (candidate && candidate.id === id) {
-          rec = candidate;
-          break;
-        }
-      }
+      const rec = state.requestsMap.get(id);
       if (!rec) {
         return;
       }
