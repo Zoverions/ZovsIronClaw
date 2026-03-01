@@ -3,6 +3,7 @@ import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent
 import { resolveAgentIdentity } from "../agents/identity.js";
 import { loadAgentIdentity } from "../commands/agents.config.js";
 import { normalizeAgentId } from "../routing/session-key.js";
+import { findFirstMatch } from "../utils/array.js";
 
 const MAX_ASSISTANT_NAME = 50;
 const MAX_ASSISTANT_AVATAR = 200;
@@ -118,8 +119,7 @@ export function resolveAssistantIdentity(params: {
     coerceIdentityValue(fileIdentity?.emoji, MAX_ASSISTANT_AVATAR),
   ];
   const avatar =
-    avatarCandidates.map((candidate) => normalizeAvatarValue(candidate)).find(Boolean) ??
-    DEFAULT_ASSISTANT_IDENTITY.avatar;
+    findFirstMatch(avatarCandidates, normalizeAvatarValue) ?? DEFAULT_ASSISTANT_IDENTITY.avatar;
 
   const emojiCandidates = [
     coerceIdentityValue(agentIdentity?.emoji, MAX_ASSISTANT_EMOJI),
@@ -127,7 +127,7 @@ export function resolveAssistantIdentity(params: {
     coerceIdentityValue(agentIdentity?.avatar, MAX_ASSISTANT_EMOJI),
     coerceIdentityValue(fileIdentity?.avatar, MAX_ASSISTANT_EMOJI),
   ];
-  const emoji = emojiCandidates.map((candidate) => normalizeEmojiValue(candidate)).find(Boolean);
+  const emoji = findFirstMatch(emojiCandidates, normalizeEmojiValue);
 
   return { agentId, name, avatar, emoji };
 }
