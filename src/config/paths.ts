@@ -73,6 +73,34 @@ export function resolveStateDir(
   return newDir;
 }
 
+export async function resolveStateDirAsync(
+  env: NodeJS.ProcessEnv = process.env,
+  homedir: () => string = os.homedir,
+): Promise<string> {
+  const override = env.OPENCLAW_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
+  if (override) {
+    return resolveUserPath(override);
+  }
+  const newDir = newStateDir(homedir);
+  const legacyDirs = legacyStateDirs(homedir);
+  try {
+    await fs.promises.access(newDir);
+    return newDir;
+  } catch {
+    // New dir doesn't exist, check legacy
+  }
+
+  for (const dir of legacyDirs) {
+    try {
+      await fs.promises.access(dir);
+      return dir;
+    } catch {
+      // Continue
+    }
+  }
+  return newDir;
+}
+
 function resolveUserPath(input: string): string {
   const trimmed = input.trim();
   if (!trimmed) {
@@ -125,6 +153,22 @@ export function resolveConfigPathCandidate(
   return resolveCanonicalConfigPath(env, resolveStateDir(env, homedir));
 }
 
+export async function resolveConfigPathCandidateAsync(
+  env: NodeJS.ProcessEnv = process.env,
+  homedir: () => string = os.homedir,
+): Promise<string> {
+  const candidates = resolveDefaultConfigCandidates(env, homedir);
+  for (const candidate of candidates) {
+    try {
+      await fs.promises.access(candidate);
+      return candidate;
+    } catch {
+      // Continue
+    }
+  }
+  return resolveCanonicalConfigPath(env, await resolveStateDirAsync(env, homedir));
+}
+
 /**
  * Active config path (prefers existing config files).
  */
@@ -160,6 +204,45 @@ export function resolveConfigPath(
     return resolveConfigPathCandidate(env, homedir);
   }
   return path.join(stateDir, CONFIG_FILENAME);
+}
+
+export async function resolveConfigPathAsync(
+  env: NodeJS.ProcessEnv = process.env,
+  stateDir?: string,
+  homedir: () => string = os.homedir,
+): Promise<string> {
+  const override = env.OPENCLAW_CONFIG_PATH?.trim();
+  if (override) {
+    return resolveUserPath(override);
+  }
+
+  const effectiveStateDir = stateDir ?? (await resolveStateDirAsync(env, homedir));
+
+  const stateOverride = env.OPENCLAW_STATE_DIR?.trim();
+  const candidates = [
+    path.join(effectiveStateDir, CONFIG_FILENAME),
+    ...LEGACY_CONFIG_FILENAMES.map((name) => path.join(effectiveStateDir, name)),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      await fs.promises.access(candidate);
+      return candidate;
+    } catch {
+      // Continue
+    }
+  }
+
+  if (stateOverride) {
+    return path.join(effectiveStateDir, CONFIG_FILENAME);
+  }
+
+  const defaultStateDir = await resolveStateDirAsync(env, homedir);
+  if (path.resolve(effectiveStateDir) === path.resolve(defaultStateDir)) {
+    return resolveConfigPathCandidateAsync(env, homedir);
+  }
+
+  return path.join(effectiveStateDir, CONFIG_FILENAME);
 }
 
 export const CONFIG_PATH = resolveConfigPathCandidate();
