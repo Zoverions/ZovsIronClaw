@@ -326,7 +326,7 @@ export function applyMoralGuardToolPolicy(tools: AnyAgentTool[]) {
           }
 
           if (!secret) {
-              secret = "dev-secret-do-not-use-in-prod";
+              throw new Error("[GCA SECURITY] HMAC secret not configured. Set GCA_HMAC_SECRET or ensure ~/.gca/hmac_secret.dat exists.");
           }
 
           const computed = createHmac("sha256", secret).update(payloadB64).digest("hex");

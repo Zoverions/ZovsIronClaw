@@ -146,6 +146,9 @@ def main():
         logging.info(f"Saving output to: {{args.output}}")
 
     logging.debug("Execution completed")
+    print("This is an example script for {skill_name}")
+    # USER TODO: Add actual script logic here
+    # This could be data processing, file conversion, API calls, etc.
 
 if __name__ == "__main__":
     main()
