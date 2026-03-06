@@ -309,8 +309,9 @@ async function buildDiscordPermissions(params: {
       token,
       accountId: params.account.accountId ?? undefined,
     });
+    const permsSet = new Set(perms.permissions);
     const missing = REQUIRED_DISCORD_PERMISSIONS.filter(
-      (permission) => !perms.permissions.includes(permission),
+      (permission) => !permsSet.has(permission),
     );
     return {
       target,
