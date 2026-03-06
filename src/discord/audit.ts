@@ -109,7 +109,8 @@ export async function auditDiscordChannelPermissions(params: {
         token,
         accountId: params.accountId ?? undefined,
       });
-      const missing = required.filter((p) => !perms.permissions.includes(p));
+      const permsSet = new Set(perms.permissions);
+      const missing = required.filter((p) => !permsSet.has(p));
       channels.push({
         channelId,
         ok: missing.length === 0,
