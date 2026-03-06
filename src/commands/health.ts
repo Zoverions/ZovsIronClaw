@@ -675,17 +675,15 @@ export async function healthCommand(
       const entries = displayAgents.length > 0 ? displayAgents : resolvedAgents;
       const byChannel: Record<string, string[]> = {};
       for (const [channelId, byAgent] of channelBindings.entries()) {
-        const accountIds: string[] = [];
+        const accountIds = new Set<string>();
         for (const agent of entries) {
           const ids = byAgent.get(agent.agentId) ?? [];
           for (const id of ids) {
-            if (!accountIds.includes(id)) {
-              accountIds.push(id);
-            }
+            accountIds.add(id);
           }
         }
-        if (accountIds.length > 0) {
-          byChannel[channelId] = accountIds;
+        if (accountIds.size > 0) {
+          byChannel[channelId] = Array.from(accountIds);
         }
       }
       for (const [channelId, fallbackIds] of Object.entries(channelAccountFallbacks)) {
