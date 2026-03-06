@@ -15,6 +15,7 @@ import { listSkillCommandsForWorkspace, resolveSkillCommandInvocation } from "..
 import { getAbortMemory } from "./abort.js";
 import { buildStatusReply, handleCommands } from "./commands.js";
 import { isDirectiveOnly } from "./directive-handling.js";
+import { randomBytes } from "node:crypto";
 import { extractInlineSimpleCommand } from "./reply-inline.js";
 
 export type InlineActionResult =
@@ -188,7 +189,7 @@ export async function handleInlineActions(params: {
         return { kind: "reply", reply: { text: `❌ Tool not available: ${dispatch.toolName}` } };
       }
 
-      const toolCallId = `cmd_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+      const toolCallId = `cmd_${Date.now()}_${randomBytes(5).toString("hex")}`;
       try {
         const result = await tool.execute(toolCallId, {
           command: rawArgs,
