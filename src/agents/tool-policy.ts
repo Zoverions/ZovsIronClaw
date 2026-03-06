@@ -326,6 +326,7 @@ export function applyMoralGuardToolPolicy(tools: AnyAgentTool[]) {
           }
 
           if (!secret) {
+              throw new Error("[GCA SECURITY] Missing HMAC secret for moral signature verification.");
               throw new Error("[GCA SECURITY] HMAC secret not configured. Set GCA_HMAC_SECRET or ensure ~/.gca/hmac_secret.dat exists.");
           }
 
