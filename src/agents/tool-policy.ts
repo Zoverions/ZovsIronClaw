@@ -326,7 +326,7 @@ export function applyMoralGuardToolPolicy(tools: AnyAgentTool[]) {
           }
 
           if (!secret) {
-              secret = "dev-secret-do-not-use-in-prod";
+              throw new Error("[GCA SECURITY] Missing HMAC secret for moral signature verification.");
           }
 
           const computed = createHmac("sha256", secret).update(payloadB64).digest("hex");
