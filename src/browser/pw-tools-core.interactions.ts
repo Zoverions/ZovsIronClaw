@@ -231,40 +231,38 @@ export async function evaluateViaPlaywright(opts: {
   restoreRoleRefsForTarget({ cdpUrl: opts.cdpUrl, targetId: opts.targetId, page });
   if (opts.ref) {
     const locator = refLocator(page, opts.ref);
-    // Use Function constructor at runtime to avoid esbuild adding __name helper
-    // which doesn't exist in the browser context
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval -- required for browser-context eval
+    // Construct the function in Node to avoid `eval()` within the browser context.
+    // The constructed function object is stringified by Playwright and sent over CDP.
+    // eslint-disable-next-line @typescript-eslint/no-implied-eval -- dynamically generated function
     const elementEvaluator = new Function(
       "el",
-      "fnBody",
       `
       "use strict";
       try {
-        var candidate = eval("(" + fnBody + ")");
+        var candidate = (${fnText});
         return typeof candidate === "function" ? candidate(el) : candidate;
       } catch (err) {
         throw new Error("Invalid evaluate function: " + (err && err.message ? err.message : String(err)));
       }
       `,
-    ) as (el: Element, fnBody: string) => unknown;
-    return await locator.evaluate(elementEvaluator, fnText);
+    ) as (el: Element) => unknown;
+    return await locator.evaluate(elementEvaluator);
   }
-  // Use Function constructor at runtime to avoid esbuild adding __name helper
-  // which doesn't exist in the browser context
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval -- required for browser-context eval
+  // Construct the function in Node to avoid `eval()` within the browser context.
+  // The constructed function object is stringified by Playwright and sent over CDP.
+  // eslint-disable-next-line @typescript-eslint/no-implied-eval -- dynamically generated function
   const browserEvaluator = new Function(
-    "fnBody",
     `
     "use strict";
     try {
-      var candidate = eval("(" + fnBody + ")");
+      var candidate = (${fnText});
       return typeof candidate === "function" ? candidate() : candidate;
     } catch (err) {
       throw new Error("Invalid evaluate function: " + (err && err.message ? err.message : String(err)));
     }
     `,
-  ) as (fnBody: string) => unknown;
-  return await page.evaluate(browserEvaluator, fnText);
+  ) as () => unknown;
+  return await page.evaluate(browserEvaluator);
 }
 
 export async function scrollIntoViewViaPlaywright(opts: {
