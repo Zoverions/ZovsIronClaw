@@ -128,35 +128,42 @@ async function scanMemoryFiles(
   const altMemoryFile = path.join(workspaceDir, "memory.md");
   const memoryDir = path.join(workspaceDir, "memory");
 
-  const primary = await checkReadableFile(memoryFile);
-  const alt = await checkReadableFile(altMemoryFile);
+  const resolvedExtraPaths = normalizeExtraMemoryPaths(workspaceDir, extraPaths);
+
+  const [primary, alt, ...extraIssues] = await Promise.all([
+    checkReadableFile(memoryFile),
+    checkReadableFile(altMemoryFile),
+    ...resolvedExtraPaths.map(async (extraPath) => {
+      try {
+        const stat = await fs.lstat(extraPath);
+        if (stat.isSymbolicLink()) {
+          return null;
+        }
+        const extraCheck = await checkReadableFile(extraPath);
+        if (extraCheck.issue) {
+          return extraCheck.issue;
+        }
+      } catch (err) {
+        const code = (err as NodeJS.ErrnoException).code;
+        if (code === "ENOENT") {
+          return `additional memory path missing (${shortenHomePath(extraPath)})`;
+        } else {
+          return `additional memory path not accessible (${shortenHomePath(extraPath)}): ${code ?? "error"}`;
+        }
+      }
+      return null;
+    }),
+  ]);
+
   if (primary.issue) {
     issues.push(primary.issue);
   }
   if (alt.issue) {
     issues.push(alt.issue);
   }
-
-  const resolvedExtraPaths = normalizeExtraMemoryPaths(workspaceDir, extraPaths);
-  for (const extraPath of resolvedExtraPaths) {
-    try {
-      const stat = await fs.lstat(extraPath);
-      if (stat.isSymbolicLink()) {
-        continue;
-      }
-      const extraCheck = await checkReadableFile(extraPath);
-      if (extraCheck.issue) {
-        issues.push(extraCheck.issue);
-      }
-    } catch (err) {
-      const code = (err as NodeJS.ErrnoException).code;
-      if (code === "ENOENT") {
-        issues.push(`additional memory path missing (${shortenHomePath(extraPath)})`);
-      } else {
-        issues.push(
-          `additional memory path not accessible (${shortenHomePath(extraPath)}): ${code ?? "error"}`,
-        );
-      }
+  for (const issue of extraIssues) {
+    if (issue) {
+      issues.push(issue);
     }
   }
 
