@@ -4,6 +4,8 @@
  * Provides ethical AI reasoning with geometric steering and moral evaluation
  */
 
+import { randomBytes } from "node:crypto";
+
 export interface Message {
   role: string;
   content: string | Array<{ type: string; text?: string; image_url?: string }>;
@@ -270,7 +272,7 @@ export class GCABridgeProvider {
    * Generate unique tool call ID
    */
   private generateToolCallId(): string {
-    return `gca_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `gca_${Date.now()}_${randomBytes(5).toString("hex")}`;
   }
 }
 
