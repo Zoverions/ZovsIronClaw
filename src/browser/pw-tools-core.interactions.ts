@@ -231,38 +231,9 @@ export async function evaluateViaPlaywright(opts: {
   restoreRoleRefsForTarget({ cdpUrl: opts.cdpUrl, targetId: opts.targetId, page });
   if (opts.ref) {
     const locator = refLocator(page, opts.ref);
-    // Construct the function in Node to avoid `eval()` within the browser context.
-    // The constructed function object is stringified by Playwright and sent over CDP.
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval -- dynamically generated function
-    const elementEvaluator = new Function(
-      "el",
-      `
-      "use strict";
-      try {
-        var candidate = (${fnText});
-        return typeof candidate === "function" ? candidate(el) : candidate;
-      } catch (err) {
-        throw new Error("Invalid evaluate function: " + (err && err.message ? err.message : String(err)));
-      }
-      `,
-    ) as (el: Element) => unknown;
-    return await locator.evaluate(elementEvaluator);
+    return await locator.evaluate(fnText);
   }
-  // Construct the function in Node to avoid `eval()` within the browser context.
-  // The constructed function object is stringified by Playwright and sent over CDP.
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval -- dynamically generated function
-  const browserEvaluator = new Function(
-    `
-    "use strict";
-    try {
-      var candidate = (${fnText});
-      return typeof candidate === "function" ? candidate() : candidate;
-    } catch (err) {
-      throw new Error("Invalid evaluate function: " + (err && err.message ? err.message : String(err)));
-    }
-    `,
-  ) as () => unknown;
-  return await page.evaluate(browserEvaluator);
+  return await page.evaluate(fnText);
 }
 
 export async function scrollIntoViewViaPlaywright(opts: {
