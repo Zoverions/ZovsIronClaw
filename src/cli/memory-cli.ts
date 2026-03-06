@@ -161,6 +161,30 @@ async function scanMemoryFiles(
   if (alt.issue) {
     issues.push(alt.issue);
   }
+
+  const resolvedExtraPaths = normalizeExtraMemoryPaths(workspaceDir, extraPaths);
+  const extraIssues = await Promise.all(
+    resolvedExtraPaths.map(async (extraPath) => {
+      try {
+        const stat = await fs.lstat(extraPath);
+        if (stat.isSymbolicLink()) {
+          return null;
+        }
+        const extraCheck = await checkReadableFile(extraPath);
+        if (extraCheck.issue) {
+          return extraCheck.issue;
+        }
+      } catch (err) {
+        const code = (err as NodeJS.ErrnoException).code;
+        if (code === "ENOENT") {
+          return `additional memory path missing (${shortenHomePath(extraPath)})`;
+        } else {
+          return `additional memory path not accessible (${shortenHomePath(extraPath)}): ${code ?? "error"}`;
+        }
+      }
+      return null;
+    }),
+  );
   for (const issue of extraIssues) {
     if (issue) {
       issues.push(issue);
