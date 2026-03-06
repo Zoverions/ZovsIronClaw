@@ -138,25 +138,31 @@ async function scanMemoryFiles(
   }
 
   const resolvedExtraPaths = normalizeExtraMemoryPaths(workspaceDir, extraPaths);
-  for (const extraPath of resolvedExtraPaths) {
-    try {
-      const stat = await fs.lstat(extraPath);
-      if (stat.isSymbolicLink()) {
-        continue;
+  const extraIssues = await Promise.all(
+    resolvedExtraPaths.map(async (extraPath) => {
+      try {
+        const stat = await fs.lstat(extraPath);
+        if (stat.isSymbolicLink()) {
+          return null;
+        }
+        const extraCheck = await checkReadableFile(extraPath);
+        if (extraCheck.issue) {
+          return extraCheck.issue;
+        }
+      } catch (err) {
+        const code = (err as NodeJS.ErrnoException).code;
+        if (code === "ENOENT") {
+          return `additional memory path missing (${shortenHomePath(extraPath)})`;
+        } else {
+          return `additional memory path not accessible (${shortenHomePath(extraPath)}): ${code ?? "error"}`;
+        }
       }
-      const extraCheck = await checkReadableFile(extraPath);
-      if (extraCheck.issue) {
-        issues.push(extraCheck.issue);
-      }
-    } catch (err) {
-      const code = (err as NodeJS.ErrnoException).code;
-      if (code === "ENOENT") {
-        issues.push(`additional memory path missing (${shortenHomePath(extraPath)})`);
-      } else {
-        issues.push(
-          `additional memory path not accessible (${shortenHomePath(extraPath)}): ${code ?? "error"}`,
-        );
-      }
+      return null;
+    }),
+  );
+  for (const issue of extraIssues) {
+    if (issue) {
+      issues.push(issue);
     }
   }
 
