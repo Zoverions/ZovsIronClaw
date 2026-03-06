@@ -89,17 +89,16 @@ export async function fetchReactionsDiscord(
       ? Math.min(Math.max(Math.floor(opts.limit), 1), 100)
       : 100;
 
-  const summaries: DiscordReactionSummary[] = [];
-  for (const reaction of reactions) {
+  const reactionPromises = reactions.map(async (reaction) => {
     const identifier = buildReactionIdentifier(reaction.emoji);
     if (!identifier) {
-      continue;
+      return null;
     }
     const encoded = encodeURIComponent(identifier);
     const users = (await rest.get(Routes.channelMessageReaction(channelId, messageId, encoded), {
       limit,
     })) as Array<{ id: string; username?: string; discriminator?: string }>;
-    summaries.push({
+    return {
       emoji: {
         id: reaction.emoji.id ?? null,
         name: reaction.emoji.name ?? null,
@@ -114,8 +113,11 @@ export async function fetchReactionsDiscord(
             ? `${user.username}#${user.discriminator}`
             : user.username,
       })),
-    });
-  }
+    };
+  });
+
+  const results = await Promise.all(reactionPromises);
+  const summaries = results.filter((r): r is DiscordReactionSummary => r !== null);
   return summaries;
 }
 
