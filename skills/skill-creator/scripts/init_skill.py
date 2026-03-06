@@ -119,10 +119,33 @@ Example real scripts from other skills:
 - pdf/scripts/convert_pdf_to_images.py - Converts PDF pages to images
 """
 
+import argparse
+import sys
+import logging
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
 def main():
-    print("This is an example script for {skill_name}")
-    # TODO: Add actual script logic here
-    # This could be data processing, file conversion, API calls, etc.
+    parser = argparse.ArgumentParser(description="Example script for {skill_name}")
+    parser.add_argument("--input", help="Input file path")
+    parser.add_argument("--output", help="Output file path")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+    args = parser.parse_args()
+
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+
+    logging.debug("Starting example script execution")
+    print(f"This is an example script for {skill_name}")
+
+    # Place actual script logic here.
+    # For example: data processing, file conversion, API calls, etc.
+    if args.input:
+        logging.info(f"Processing input from: {{args.input}}")
+    if args.output:
+        logging.info(f"Saving output to: {{args.output}}")
+
+    logging.debug("Execution completed")
 
 if __name__ == "__main__":
     main()
