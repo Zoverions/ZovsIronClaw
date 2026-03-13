@@ -1,6 +1,7 @@
 import type { Server } from "node:http";
 import express, { type Express } from "express";
 import fs from "node:fs/promises";
+import { corsMiddleware, rateLimitMiddleware } from "../infra/express-utils.js";
 import { danger } from "../globals.js";
 import { SafeOpenError, openFileWithinRoot } from "../infra/fs-safe.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
@@ -94,6 +95,8 @@ export async function startMediaServer(
   runtime: RuntimeEnv = defaultRuntime,
 ): Promise<Server> {
   const app = express();
+  app.use(corsMiddleware);
+  app.use(rateLimitMiddleware);
   attachMediaRoutes(app, ttlMs, runtime);
   return await new Promise((resolve, reject) => {
     const server = app.listen(port);

@@ -1,5 +1,6 @@
 import type { Server } from "node:http";
 import express from "express";
+import { corsMiddleware, rateLimitMiddleware } from "../infra/express-utils.js";
 import type { BrowserRouteRegistrar } from "./routes/types.js";
 import { loadConfig } from "../config/config.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
@@ -24,6 +25,9 @@ export async function startBrowserControlServerFromConfig(): Promise<BrowserServ
   }
 
   const app = express();
+
+  app.use(corsMiddleware);
+  app.use(rateLimitMiddleware);
   app.use(express.json({ limit: "1mb" }));
 
   const ctx = createBrowserRouteContext({
