@@ -19,6 +19,7 @@ describe("normalizeWhatsAppTarget", () => {
     // normalize to "+41796666864", not "+417966668640" (extra digit from ":0")
     expect(normalizeWhatsAppTarget("41796666864:0@s.whatsapp.net")).toBe("+41796666864");
     expect(normalizeWhatsAppTarget("1234567890:123@s.whatsapp.net")).toBe("+1234567890");
+    expect(normalizeWhatsAppTarget("12345:678@hosted")).toBe("+12345");
     // Without device suffix still works
     expect(normalizeWhatsAppTarget("41796666864@s.whatsapp.net")).toBe("+41796666864");
   });
@@ -26,6 +27,13 @@ describe("normalizeWhatsAppTarget", () => {
   it("normalizes LID JIDs to E.164", () => {
     expect(normalizeWhatsAppTarget("123456789@lid")).toBe("+123456789");
     expect(normalizeWhatsAppTarget("123456789@LID")).toBe("+123456789");
+    expect(normalizeWhatsAppTarget("123456789:0@lid")).toBe("+123456789");
+    expect(normalizeWhatsAppTarget("98765:432@hosted.lid")).toBe("+98765");
+  });
+
+  it("normalizes plain phone numbers with device suffix", () => {
+    expect(normalizeWhatsAppTarget("41796666864:0")).toBe("+41796666864");
+    expect(normalizeWhatsAppTarget("+41796666864:123")).toBe("+41796666864");
   });
 
   it("rejects invalid targets", () => {
