@@ -1,7 +1,7 @@
 import { normalizeE164 } from "../utils.js";
 
-const WHATSAPP_USER_JID_RE = /^(\d+)(?::\d+)?@s\.whatsapp\.net$/i;
-const WHATSAPP_LID_RE = /^(\d+)@lid$/i;
+const WHATSAPP_USER_JID_RE = /^(\d+)(?::\d+)?@(s\.whatsapp\.net|hosted)$/i;
+const WHATSAPP_LID_RE = /^(\d+)(?::\d+)?@(lid|hosted\.lid)$/i;
 
 function stripWhatsAppTargetPrefixes(value: string): string {
   let candidate = value.trim();
@@ -38,7 +38,7 @@ export function isWhatsAppUserTarget(value: string): boolean {
 /**
  * Extract the phone number from a WhatsApp user JID.
  * "41796666864:0@s.whatsapp.net" -> "41796666864"
- * "123456@lid" -> "123456"
+ * "123456:0@lid" -> "123456"
  */
 function extractUserJidPhone(jid: string): string | null {
   const userMatch = jid.match(WHATSAPP_USER_JID_RE);
@@ -75,6 +75,8 @@ export function normalizeWhatsAppTarget(value: string): string | null {
   if (candidate.includes("@")) {
     return null;
   }
-  const normalized = normalizeE164(candidate);
+  // Strip device suffix from plain numbers (e.g. "41796666864:0") before E.164 normalization.
+  const phoneCandidate = candidate.split(":")[0];
+  const normalized = normalizeE164(phoneCandidate);
   return normalized.length > 1 ? normalized : null;
 }
