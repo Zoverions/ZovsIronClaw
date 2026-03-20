@@ -1,5 +1,6 @@
 import type { Component, SelectItem } from "@mariozechner/pi-tui";
 import { spawn } from "node:child_process";
+import { splitShellArgs } from "../utils/shell-argv.js";
 import { createSearchableSelectList } from "./components/selectors.js";
 
 type LocalShellDeps = {
@@ -97,12 +98,21 @@ export function createLocalShellRunner(deps: LocalShellDeps) {
       return;
     }
 
+    const args = splitShellArgs(cmd);
+    if (!args || args.length === 0) {
+      deps.chatLog.addSystem("local shell: failed to parse command");
+      deps.tui.requestRender();
+      return;
+    }
+
+    const executable = args[0];
+    const spawnArgs = args.slice(1);
+
     deps.chatLog.addSystem(`[local] $ ${cmd}`);
     deps.tui.requestRender();
 
     await new Promise<void>((resolve) => {
-      const child = spawnCommand(cmd, {
-        shell: true,
+      const child = spawnCommand(executable, spawnArgs, {
         cwd: getCwd(),
         env,
       });
