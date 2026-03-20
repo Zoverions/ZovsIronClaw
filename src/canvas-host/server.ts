@@ -155,9 +155,17 @@ function defaultIndexHTML() {
 }
 
 function normalizeUrlPath(rawPath: string): string {
-  const decoded = decodeURIComponent(rawPath || "/");
-  const normalized = path.posix.normalize(decoded);
-  return normalized.startsWith("/") ? normalized : `/${normalized}`;
+  try {
+    const decoded = decodeURIComponent(rawPath || "/");
+    if (decoded.includes("\0")) {
+      return "/";
+    }
+    const posixPath = decoded.replace(/\\/g, "/");
+    const absolute = posixPath.startsWith("/") ? posixPath : `/${posixPath}`;
+    return path.posix.normalize(absolute);
+  } catch {
+    return "/";
+  }
 }
 
 async function resolveFilePath(rootReal: string, urlPath: string) {
