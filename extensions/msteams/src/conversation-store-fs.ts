@@ -118,12 +118,10 @@ export function createMSTeamsConversationStoreFs(params?: {
     if (!target) {
       return null;
     }
-    for (const entry of await list()) {
-      const { conversationId, reference } = entry;
-      if (reference.user?.aadObjectId === target) {
-        return { conversationId, reference };
-      }
-      if (reference.user?.id === target) {
+    const store = await readStore();
+    for (const conversationId in store.conversations) {
+      const reference = store.conversations[conversationId];
+      if (reference.user?.aadObjectId === target || reference.user?.id === target) {
         return { conversationId, reference };
       }
     }
