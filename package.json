@@ -136,7 +136,7 @@
     "discord-api-types": "^0.38.38",
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
-    "file-type": "^21.3.2",
+    "file-type": "^21.3.3",
     "grammy": "^1.39.3",
     "hono": "4.12.7",
     "jiti": "^2.6.1",
