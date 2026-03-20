@@ -187,7 +187,7 @@ describe("send", () => {
     });
 
     it("returns null when handle only exists in group chat (not DM)", async () => {
-      // This is the critical fix: if a phone number only exists as a participant in a group chat
+      // Ensure that if a phone number only exists as a participant in a group chat
       // (no direct DM chat), we should NOT send to that group. Return null instead.
       mockFetch
         .mockResolvedValueOnce({
