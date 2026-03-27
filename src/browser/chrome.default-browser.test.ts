@@ -6,10 +6,12 @@ vi.mock("node:child_process", () => ({
 vi.mock("node:fs", () => {
   const existsSync = vi.fn();
   const readFileSync = vi.fn();
+  const readFile = vi.fn();
   return {
     existsSync,
     readFileSync,
-    default: { existsSync, readFileSync },
+    promises: { readFile },
+    default: { existsSync, readFileSync, promises: { readFile } },
   };
 });
 import { execFileSync } from "node:child_process";
@@ -46,7 +48,7 @@ describe("browser default executable detection", () => {
     });
 
     const { resolveBrowserExecutableForPlatform } = await import("./chrome.executables.js");
-    const exe = resolveBrowserExecutableForPlatform(
+    const exe = await resolveBrowserExecutableForPlatform(
       {} as Parameters<typeof resolveBrowserExecutableForPlatform>[0],
       "darwin",
     );
@@ -74,7 +76,7 @@ describe("browser default executable detection", () => {
     });
 
     const { resolveBrowserExecutableForPlatform } = await import("./chrome.executables.js");
-    const exe = resolveBrowserExecutableForPlatform(
+    const exe = await resolveBrowserExecutableForPlatform(
       {} as Parameters<typeof resolveBrowserExecutableForPlatform>[0],
       "darwin",
     );

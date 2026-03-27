@@ -41,7 +41,7 @@ export function registerBrowserBasicRoutes(app: BrowserRouteRegistrar, ctx: Brow
     let detectError: string | null = null;
 
     try {
-      const detected = resolveBrowserExecutableForPlatform(current.resolved, process.platform);
+      const detected = await resolveBrowserExecutableForPlatform(current.resolved, process.platform);
       if (detected) {
         detectedBrowser = detected.kind;
         detectedExecutablePath = detected.path;

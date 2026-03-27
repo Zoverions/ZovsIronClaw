@@ -200,7 +200,7 @@ describe("browser chrome helpers", () => {
       "chrome.exe",
     );
     const exists = vi.spyOn(fs, "existsSync").mockImplementation((p) => String(p).includes(marker));
-    const exe = resolveBrowserExecutableForPlatform(
+    const exe = await resolveBrowserExecutableForPlatform(
       {} as Parameters<typeof resolveBrowserExecutableForPlatform>[0],
       "win32",
     );
