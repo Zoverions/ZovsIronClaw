@@ -157,12 +157,14 @@ function inferKindFromExecutableName(name: string): BrowserExecutable["kind"] {
   return "chrome";
 }
 
-function detectDefaultChromiumExecutable(platform: NodeJS.Platform): BrowserExecutable | null {
+async function detectDefaultChromiumExecutable(
+  platform: NodeJS.Platform,
+): Promise<BrowserExecutable | null> {
   if (platform === "darwin") {
     return detectDefaultChromiumExecutableMac();
   }
   if (platform === "linux") {
-    return detectDefaultChromiumExecutableLinux();
+    return await detectDefaultChromiumExecutableLinux();
   }
   if (platform === "win32") {
     return detectDefaultChromiumExecutableWindows();
@@ -250,7 +252,7 @@ function detectDefaultBrowserBundleIdMac(): string | null {
   return resolveScheme("http") ?? resolveScheme("https");
 }
 
-function detectDefaultChromiumExecutableLinux(): BrowserExecutable | null {
+async function detectDefaultChromiumExecutableLinux(): Promise<BrowserExecutable | null> {
   const desktopId =
     execText("xdg-settings", ["get", "default-web-browser"]) ||
     execText("xdg-mime", ["query", "default", "x-scheme-handler/http"]);
@@ -265,7 +267,7 @@ function detectDefaultChromiumExecutableLinux(): BrowserExecutable | null {
   if (!desktopPath) {
     return null;
   }
-  const execLine = readDesktopExecLine(desktopPath);
+  const execLine = await readDesktopExecLine(desktopPath);
   if (!execLine) {
     return null;
   }
@@ -321,9 +323,9 @@ function findDesktopFilePath(desktopId: string): string | null {
   return null;
 }
 
-function readDesktopExecLine(desktopPath: string): string | null {
+async function readDesktopExecLine(desktopPath: string): Promise<string | null> {
   try {
-    const raw = fs.readFileSync(desktopPath, "utf8");
+    const raw = await fs.promises.readFile(desktopPath, "utf8");
     const lines = raw.split(/\r?\n/);
     for (const line of lines) {
       if (line.startsWith("Exec=")) {
@@ -596,10 +598,10 @@ export function findChromeExecutableWindows(): BrowserExecutable | null {
   return findFirstExecutable(candidates);
 }
 
-export function resolveBrowserExecutableForPlatform(
+export async function resolveBrowserExecutableForPlatform(
   resolved: ResolvedBrowserConfig,
   platform: NodeJS.Platform,
-): BrowserExecutable | null {
+): Promise<BrowserExecutable | null> {
   if (resolved.executablePath) {
     if (!exists(resolved.executablePath)) {
       throw new Error(`browser.executablePath not found: ${resolved.executablePath}`);
@@ -607,7 +609,7 @@ export function resolveBrowserExecutableForPlatform(
     return { kind: "custom", path: resolved.executablePath };
   }
 
-  const detected = detectDefaultChromiumExecutable(platform);
+  const detected = await detectDefaultChromiumExecutable(platform);
   if (detected) {
     return detected;
   }
