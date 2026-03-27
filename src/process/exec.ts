@@ -29,6 +29,15 @@ function resolveCommand(command: string): string {
   return command;
 }
 
+/**
+ * Sanitizes a string for use as a command or argument in a child process.
+ * Removes null bytes and non-printable control characters.
+ */
+export function sanitizeArg(arg: string): string {
+  // Remove null bytes and control characters (0x00 - 0x1F, 0x7F)
+  return arg.replace(/[\x00-\x1F\x7F]/g, "");
+}
+
 // Simple promise-wrapped execFile with optional verbosity logging.
 export async function runExec(
   command: string,
@@ -44,7 +53,9 @@ export async function runExec(
           encoding: "utf8" as const,
         };
   try {
-    const { stdout, stderr } = await execFileAsync(resolveCommand(command), args, options);
+    const sanitizedCommand = sanitizeArg(resolveCommand(command));
+    const sanitizedArgs = args.map(sanitizeArg);
+    const { stdout, stderr } = await execFileAsync(sanitizedCommand, sanitizedArgs, options);
     if (shouldLogVerbose()) {
       if (stdout.trim()) {
         logDebug(stdout.trim());
@@ -111,7 +122,9 @@ export async function runCommandWithTimeout(
   }
 
   const stdio = resolveCommandStdio({ hasInput, preferInherit: true });
-  const child = spawn(resolveCommand(argv[0]), argv.slice(1), {
+  const sanitizedCommand = sanitizeArg(resolveCommand(argv[0] ?? ""));
+  const sanitizedArgs = argv.slice(1).map(sanitizeArg);
+  const child = spawn(sanitizedCommand, sanitizedArgs, {
     stdio,
     cwd,
     env: resolvedEnv,
