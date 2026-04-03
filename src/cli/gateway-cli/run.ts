@@ -131,12 +131,6 @@ async function runGatewayCommand(opts: GatewayRunOpts) {
       return;
     }
   }
-  if (opts.token) {
-    const token = toOptionString(opts.token);
-    if (token) {
-      process.env.OPENCLAW_GATEWAY_TOKEN = token;
-    }
-  }
   const authModeRaw = toOptionString(opts.auth);
   const authMode: GatewayAuthMode | null =
     authModeRaw === "token" || authModeRaw === "password" ? authModeRaw : null;

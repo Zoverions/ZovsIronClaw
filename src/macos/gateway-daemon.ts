@@ -105,9 +105,6 @@ async function main() {
   }
 
   const token = argValue(args, "--token");
-  if (token) {
-    process.env.OPENCLAW_GATEWAY_TOKEN = token;
-  }
 
   let server: Awaited<ReturnType<typeof startGatewayServer>> | null = null;
   let lock: GatewayLockHandle | null = null;
@@ -199,7 +196,10 @@ async function main() {
     // eslint-disable-next-line no-constant-condition
     while (true) {
       try {
-        server = await startGatewayServer(port, { bind });
+        server = await startGatewayServer(port, {
+          bind,
+          auth: token ? { token } : undefined,
+        });
       } catch (err) {
         cleanupSignals();
         defaultRuntime.error(`Gateway failed to start: ${String(err)}`);
