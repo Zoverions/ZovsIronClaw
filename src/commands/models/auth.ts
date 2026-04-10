@@ -18,7 +18,7 @@ import { formatCliCommand } from "../../cli/command-format.js";
 import { parseDurationMs } from "../../cli/parse-duration.js";
 import { readConfigFileSnapshot, type OpenClawConfig } from "../../config/config.js";
 import { logConfigUpdated } from "../../config/logging.js";
-import { resolvePluginProviders } from "../../plugins/providers.js";
+import { resolvePluginProviders, buildProviderMap } from "../../plugins/providers.js";
 import { stylePromptHint, stylePromptMessage } from "../../terminal/prompt-style.js";
 import { createClackPrompter } from "../../wizard/clack-prompter.js";
 import { validateAnthropicSetupToken } from "../auth-token.js";
@@ -239,24 +239,6 @@ type LoginOptions = {
   setDefault?: boolean;
 };
 
-function resolveProviderMatch(
-  providers: ProviderPlugin[],
-  rawProvider?: string,
-): ProviderPlugin | null {
-  const raw = rawProvider?.trim();
-  if (!raw) {
-    return null;
-  }
-  const normalized = normalizeProviderId(raw);
-  return (
-    providers.find((provider) => normalizeProviderId(provider.id) === normalized) ??
-    providers.find(
-      (provider) =>
-        provider.aliases?.some((alias) => normalizeProviderId(alias) === normalized) ?? false,
-    ) ??
-    null
-  );
-}
 
 function pickAuthMethod(provider: ProviderPlugin, rawMethod?: string): ProviderAuthMethod | null {
   const raw = rawMethod?.trim();
@@ -349,9 +331,10 @@ export async function modelsAuthLoginCommand(opts: LoginOptions, runtime: Runtim
     );
   }
 
+  const providerMap = buildProviderMap(providers);
   const prompter = createClackPrompter();
   const selectedProvider =
-    resolveProviderMatch(providers, opts.provider) ??
+    (opts.provider ? providerMap.get(normalizeProviderId(opts.provider)) : null) ??
     (await prompter
       .select({
         message: "Select a provider",
@@ -361,7 +344,7 @@ export async function modelsAuthLoginCommand(opts: LoginOptions, runtime: Runtim
           hint: provider.docsPath ? `Docs: ${provider.docsPath}` : undefined,
         })),
       })
-      .then((id) => resolveProviderMatch(providers, String(id))));
+      .then((id) => providerMap.get(normalizeProviderId(String(id))) ?? null));
 
   if (!selectedProvider) {
     throw new Error("Unknown provider. Use --provider <id> to pick a provider plugin.");
