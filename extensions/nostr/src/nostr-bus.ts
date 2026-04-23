@@ -616,37 +616,55 @@ async function sendEncryptedDm(
   // Sort relays by health score (best first)
   const sortedRelays = healthTracker.getSortedRelays(relays);
 
-  // Try relays in order of health, respecting circuit breakers
+  // Try relays in batches to improve concurrency without rate limiting
   let lastError: Error | undefined;
-  for (const relay of sortedRelays) {
-    const cb = circuitBreakers.get(relay);
+  const BATCH_SIZE = 3;
 
-    // Skip if circuit breaker is open
-    if (cb && !cb.canAttempt()) {
-      continue;
-    }
+  for (let i = 0; i < sortedRelays.length; i += BATCH_SIZE) {
+    const batch = sortedRelays.slice(i, i + BATCH_SIZE);
 
-    const startTime = Date.now();
+    const promises = batch.map(async (relay) => {
+      const cb = circuitBreakers.get(relay);
+
+      // Skip if circuit breaker is open
+      if (cb && !cb.canAttempt()) {
+        throw new Error(`Circuit breaker open for ${relay}`);
+      }
+
+      const startTime = Date.now();
+      try {
+        // oxlint-disable-next-line typescript/await-thenable typesciript/no-floating-promises
+        await pool.publish([relay], reply);
+        const latency = Date.now() - startTime;
+
+        // Record success
+        cb?.recordSuccess();
+        healthTracker.recordSuccess(relay, latency);
+
+        return relay;
+      } catch (err) {
+        const latency = Date.now() - startTime;
+
+        // Record failure
+        cb?.recordFailure();
+        healthTracker.recordFailure(relay);
+        metrics.emit("relay.error", 1, { relay, latency });
+
+        onError?.(err as Error, `publish to ${relay}`);
+        throw err;
+      }
+    });
+
     try {
-      // oxlint-disable-next-line typescript/await-thenable typesciript/no-floating-promises
-      await pool.publish([relay], reply);
-      const latency = Date.now() - startTime;
-
-      // Record success
-      cb?.recordSuccess();
-      healthTracker.recordSuccess(relay, latency);
-
+      await Promise.any(promises);
       return; // Success - exit early
     } catch (err) {
-      lastError = err as Error;
-      const latency = Date.now() - startTime;
-
-      // Record failure
-      cb?.recordFailure();
-      healthTracker.recordFailure(relay);
-      metrics.emit("relay.error", 1, { relay, latency });
-
-      onError?.(lastError, `publish to ${relay}`);
+      if (err instanceof AggregateError && err.errors.length > 0) {
+        lastError = err.errors[err.errors.length - 1];
+      } else {
+        lastError = err as Error;
+      }
+      // All relays in this batch failed, continue to next batch
     }
   }
 
