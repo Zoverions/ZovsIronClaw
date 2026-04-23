@@ -80,17 +80,14 @@ export async function resolveMatrixTargets(params: {
   kind: ChannelResolveKind;
   runtime?: RuntimeEnv;
 }): Promise<ChannelResolveResult[]> {
-  const results: ChannelResolveResult[] = [];
-  for (const input of params.inputs) {
+  const promises = params.inputs.map(async (input) => {
     const trimmed = input.trim();
     if (!trimmed) {
-      results.push({ input, resolved: false, note: "empty input" });
-      continue;
+      return { input, resolved: false, note: "empty input" } satisfies ChannelResolveResult;
     }
     if (params.kind === "user") {
       if (trimmed.startsWith("@") && trimmed.includes(":")) {
-        results.push({ input, resolved: true, id: trimmed });
-        continue;
+        return { input, resolved: true, id: trimmed } satisfies ChannelResolveResult;
       }
       try {
         const matches = await listMatrixDirectoryPeersLive({
@@ -99,18 +96,17 @@ export async function resolveMatrixTargets(params: {
           limit: 5,
         });
         const best = pickBestUserMatch(matches, trimmed);
-        results.push({
+        return {
           input,
           resolved: Boolean(best?.id),
           id: best?.id,
           name: best?.name,
           note: best ? undefined : describeUserMatchFailure(matches, trimmed),
-        });
+        } satisfies ChannelResolveResult;
       } catch (err) {
         params.runtime?.error?.(`matrix resolve failed: ${String(err)}`);
-        results.push({ input, resolved: false, note: "lookup failed" });
+        return { input, resolved: false, note: "lookup failed" } satisfies ChannelResolveResult;
       }
-      continue;
     }
     try {
       const matches = await listMatrixDirectoryGroupsLive({
@@ -119,17 +115,17 @@ export async function resolveMatrixTargets(params: {
         limit: 5,
       });
       const best = pickBestGroupMatch(matches, trimmed);
-      results.push({
+      return {
         input,
         resolved: Boolean(best?.id),
         id: best?.id,
         name: best?.name,
         note: matches.length > 1 ? "multiple matches; chose first" : undefined,
-      });
+      } satisfies ChannelResolveResult;
     } catch (err) {
       params.runtime?.error?.(`matrix resolve failed: ${String(err)}`);
-      results.push({ input, resolved: false, note: "lookup failed" });
+      return { input, resolved: false, note: "lookup failed" } satisfies ChannelResolveResult;
     }
-  }
-  return results;
+  });
+  return Promise.all(promises);
 }
