@@ -409,11 +409,20 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
           });
         }
 
-        for (const flexMsg of processed.flexMessages) {
-          lastResult = await sendFlex(to, flexMsg.altText, flexMsg.contents, {
-            verbose: false,
-            accountId: accountId ?? undefined,
-          });
+        const chunkSize = 5;
+        for (let i = 0; i < processed.flexMessages.length; i += chunkSize) {
+          const chunk = processed.flexMessages.slice(i, i + chunkSize);
+          const results = await Promise.all(
+            chunk.map((flexMsg) =>
+              sendFlex(to, flexMsg.altText, flexMsg.contents, {
+                verbose: false,
+                accountId: accountId ?? undefined,
+              }),
+            ),
+          );
+          if (results.length > 0) {
+            lastResult = results[results.length - 1];
+          }
         }
       }
 
@@ -531,11 +540,17 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
       }
 
       // Send flex messages for tables/code blocks
-      for (const flexMsg of processed.flexMessages) {
-        await sendFlex(to, flexMsg.altText, flexMsg.contents, {
-          verbose: false,
-          accountId: accountId ?? undefined,
-        });
+      const chunkSize = 5;
+      for (let i = 0; i < processed.flexMessages.length; i += chunkSize) {
+        const chunk = processed.flexMessages.slice(i, i + chunkSize);
+        await Promise.all(
+          chunk.map((flexMsg) =>
+            sendFlex(to, flexMsg.altText, flexMsg.contents, {
+              verbose: false,
+              accountId: accountId ?? undefined,
+            }),
+          ),
+        );
       }
 
       return { channel: "line", ...result };
