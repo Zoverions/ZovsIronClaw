@@ -429,18 +429,26 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
       }
 
       if (chunks.length > 0) {
-        for (let i = 0; i < chunks.length; i += 1) {
-          const isLast = i === chunks.length - 1;
-          if (isLast && hasQuickReplies) {
-            lastResult = await sendQuickReplies(to, chunks[i], quickReplies, {
-              verbose: false,
-              accountId: accountId ?? undefined,
-            });
-          } else {
-            lastResult = await sendText(to, chunks[i], {
-              verbose: false,
-              accountId: accountId ?? undefined,
-            });
+        for (let i = 0; i < chunks.length; i += 5) {
+          const batch = chunks.slice(i, i + 5);
+          const results = await Promise.all(
+            batch.map((chunk, j) => {
+              const isLast = i + j === chunks.length - 1;
+              if (isLast && hasQuickReplies) {
+                return sendQuickReplies(to, chunk, quickReplies, {
+                  verbose: false,
+                  accountId: accountId ?? undefined,
+                });
+              } else {
+                return sendText(to, chunk, {
+                  verbose: false,
+                  accountId: accountId ?? undefined,
+                });
+              }
+            }),
+          );
+          if (results.length > 0) {
+            lastResult = results[results.length - 1];
           }
         }
       } else if (shouldSendQuickRepliesInline) {
