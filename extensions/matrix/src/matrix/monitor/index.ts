@@ -190,16 +190,18 @@ export async function monitorMatrixProvider(opts: MonitorMatrixOpts = {}): Promi
   }
   if (roomsConfig && Object.keys(roomsConfig).length > 0) {
     const nextRooms = { ...roomsConfig };
-    for (const [roomKey, roomConfig] of Object.entries(roomsConfig)) {
-      const users = roomConfig?.users ?? [];
-      if (users.length === 0) {
-        continue;
-      }
-      const resolvedUsers = await resolveUserAllowlist(`matrix room users (${roomKey})`, users);
-      if (resolvedUsers !== users) {
-        nextRooms[roomKey] = { ...roomConfig, users: resolvedUsers };
-      }
-    }
+    await Promise.all(
+      Object.entries(roomsConfig).map(async ([roomKey, roomConfig]) => {
+        const users = roomConfig?.users ?? [];
+        if (users.length === 0) {
+          return;
+        }
+        const resolvedUsers = await resolveUserAllowlist(`matrix room users (${roomKey})`, users);
+        if (resolvedUsers !== users) {
+          nextRooms[roomKey] = { ...roomConfig, users: resolvedUsers };
+        }
+      }),
+    );
     roomsConfig = nextRooms;
   }
 
