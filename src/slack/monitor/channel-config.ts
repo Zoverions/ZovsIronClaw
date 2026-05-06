@@ -111,7 +111,7 @@ export function resolveSlackChannelConfig(params: {
     return { allowed: true, requireMention: requireMentionDefault };
   }
   if (!matched && !fallback) {
-    return { allowed: false, requireMention: requireMentionDefault };
+    return { allowed: true, requireMention: requireMentionDefault };
   }
 
   const resolved = matched ?? fallback ?? {};
