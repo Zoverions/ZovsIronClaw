@@ -336,26 +336,17 @@ export function createSlackMonitorContext(params: {
       });
       const channelMatchMeta = formatAllowlistMatchMeta(channelConfig);
       const channelAllowed = channelConfig?.allowed !== false;
-      const channelAllowlistConfigured =
-        Boolean(params.channelsConfig) && Object.keys(params.channelsConfig ?? {}).length > 0;
+      const isExplicitMatch = Boolean(channelConfig?.matchSource);
       if (
         !isSlackChannelAllowedByPolicy({
           groupPolicy: params.groupPolicy,
-          channelAllowlistConfigured,
+          isExplicitMatch,
           channelAllowed,
         })
       ) {
         logVerbose(
           `slack: drop channel ${p.channelId} (groupPolicy=${params.groupPolicy}, ${channelMatchMeta})`,
         );
-        return false;
-      }
-      // When groupPolicy is "open", only block channels that are EXPLICITLY denied
-      // (i.e., have a matching config entry with allow:false). Channels not in the
-      // config (matchSource undefined) should be allowed under open policy.
-      const hasExplicitConfig = Boolean(channelConfig?.matchSource);
-      if (!channelAllowed && (params.groupPolicy !== "open" || hasExplicitConfig)) {
-        logVerbose(`slack: drop channel ${p.channelId} (${channelMatchMeta})`);
         return false;
       }
       logVerbose(`slack: allow channel ${p.channelId} (${channelMatchMeta})`);

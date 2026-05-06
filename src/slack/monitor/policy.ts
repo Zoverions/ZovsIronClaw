@@ -1,16 +1,16 @@
 export function isSlackChannelAllowedByPolicy(params: {
   groupPolicy: "open" | "disabled" | "allowlist";
-  channelAllowlistConfigured: boolean;
+  isExplicitMatch: boolean;
   channelAllowed: boolean;
 }): boolean {
-  const { groupPolicy, channelAllowlistConfigured, channelAllowed } = params;
+  const { groupPolicy, isExplicitMatch, channelAllowed } = params;
   if (groupPolicy === "disabled") {
     return false;
   }
   if (groupPolicy === "open") {
-    return true;
+    return channelAllowed;
   }
-  if (!channelAllowlistConfigured) {
+  if (!isExplicitMatch) {
     return false;
   }
   return channelAllowed;
