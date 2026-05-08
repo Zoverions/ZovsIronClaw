@@ -63,6 +63,20 @@ function setupEventListeners() {
   if (refreshBtn) {
     refreshBtn.addEventListener('click', handleRefresh);
   }
+
+  // Feed item clicks (event delegation)
+  const feedList = document.getElementById('slow-feed-list');
+  if (feedList) {
+    feedList.addEventListener('click', (event) => {
+      const feedItem = event.target.closest('.feed-item');
+      if (feedItem) {
+        const refId = feedItem.dataset.externalRefId;
+        if (refId && refId !== '#') {
+          window.open(`https://twitter.com/i/web/status/${refId}`, '_blank');
+        }
+      }
+    });
+  }
 }
 
 /**
@@ -221,7 +235,7 @@ async function loadActiveStakes() {
     stakesList.innerHTML = stakes.map(stake => `
       <div class="stake-item">
         <div class="stake-header">
-          <div class="stake-amount">${stake.amount} REP</div>
+          <div class="stake-amount">${escapeHTML(stake.amount)} REP</div>
           <div class="stake-status ${stake.is_escrowed ? 'active' : 'matured'}">
             ${stake.is_escrowed ? 'In Escrow' : 'Matured'}
           </div>
@@ -229,15 +243,15 @@ async function loadActiveStakes() {
         <div class="stake-info">
           <div class="stake-metric">
             <span class="stake-metric-label">Quality Score:</span>
-            <span class="stake-metric-value">${stake.post_quality_score.toFixed(2)}</span>
+            <span class="stake-metric-value">${escapeHTML(stake.post_quality_score.toFixed(2))}</span>
           </div>
           <div class="stake-metric">
             <span class="stake-metric-label">Estimated ROI:</span>
-            <span class="stake-metric-value">${stake.estimated_roi.toFixed(2)}x</span>
+            <span class="stake-metric-value">${escapeHTML(stake.estimated_roi.toFixed(2))}x</span>
           </div>
           <div class="stake-metric">
             <span class="stake-metric-label">Maturity:</span>
-            <span class="stake-metric-value">${stake.post_maturity_score.toFixed(2)}</span>
+            <span class="stake-metric-value">${escapeHTML(stake.post_maturity_score.toFixed(2))}</span>
           </div>
         </div>
       </div>
@@ -284,28 +298,27 @@ async function loadSlowFeed() {
     }
     
     feedList.innerHTML = posts.map(post => {
-      const tweetUrl = post.external_ref_id 
-        ? `https://twitter.com/i/web/status/${post.external_ref_id}`
-        : '#';
+      const externalRefId = post.external_ref_id || '#';
+      const content = post.content ? escapeHTML(post.content) : 'View on Twitter →';
       
       return `
-        <div class="feed-item" onclick="window.open('${tweetUrl}', '_blank')">
+        <div class="feed-item" data-external-ref-id="${escapeHTML(externalRefId)}">
           <div class="feed-header">
             <div class="feed-metrics">
               <div class="feed-metric">
-                <strong>${post.total_stakes}</strong> stakes
+                <strong>${escapeHTML(post.total_stakes)}</strong> stakes
               </div>
               <div class="feed-metric">
-                <strong>${post.average_roi.toFixed(2)}x</strong> avg ROI
+                <strong>${escapeHTML(post.average_roi.toFixed(2))}x</strong> avg ROI
               </div>
             </div>
           </div>
           <div class="feed-content">
-            ${post.content || 'View on Twitter →'}
+            ${content}
           </div>
           <div class="feed-metrics">
-            <div class="feed-metric">Quality: <strong>${post.quality_score.toFixed(2)}</strong></div>
-            <div class="feed-metric">Age: <strong>${getRelativeTime(post.created_at)}</strong></div>
+            <div class="feed-metric">Quality: <strong>${escapeHTML(post.quality_score.toFixed(2))}</strong></div>
+            <div class="feed-metric">Age: <strong>${escapeHTML(getRelativeTime(post.created_at))}</strong></div>
           </div>
         </div>
       `;
@@ -330,4 +343,17 @@ function getRelativeTime(timestamp) {
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
   return `${diffDays} days ago`;
+}
+
+/**
+ * Escape HTML to prevent XSS
+ */
+function escapeHTML(str) {
+  if (str === undefined || str === null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
