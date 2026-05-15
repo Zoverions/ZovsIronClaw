@@ -273,21 +273,21 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
 
   entries.push(...(await resolveMemoryBootstrapEntries(resolvedDir)));
 
-  const result: WorkspaceBootstrapFile[] = [];
-  for (const entry of entries) {
-    try {
-      const content = await fs.readFile(entry.filePath, "utf-8");
-      result.push({
-        name: entry.name,
-        path: entry.filePath,
-        content,
-        missing: false,
-      });
-    } catch {
-      result.push({ name: entry.name, path: entry.filePath, missing: true });
-    }
-  }
-  return result;
+  return Promise.all(
+    entries.map(async (entry) => {
+      try {
+        const content = await fs.readFile(entry.filePath, "utf-8");
+        return {
+          name: entry.name,
+          path: entry.filePath,
+          content,
+          missing: false,
+        };
+      } catch {
+        return { name: entry.name, path: entry.filePath, missing: true };
+      }
+    }),
+  );
 }
 
 const SUBAGENT_BOOTSTRAP_ALLOWLIST = new Set([DEFAULT_AGENTS_FILENAME, DEFAULT_TOOLS_FILENAME]);
