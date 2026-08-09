@@ -1,5 +1,7 @@
 # ZovsIronClaw
 
+> **Status:** Experimental fork-derived runtime and gateway. GCA, moral, soul, entropy, and thermodynamic components are policy experiments, not proof of ethical correctness or production safety. The default-branch baseline is not clean, and a revoked credential artifact remains in public history. See [`PORTFOLIO_STATUS.md`](PORTFOLIO_STATUS.md).
+
 ![ZovsIronClaw](README-header.png)
 
 **A fork of OpenClaw with deep integration of the GCA (Geometric Conscience Architecture) framework.**
