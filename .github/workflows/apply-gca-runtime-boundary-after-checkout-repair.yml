@@ -1,0 +1,84 @@
+name: Apply GCA Runtime Boundary After Checkout Repair
+
+on:
+  push:
+    branches:
+      - agent/status-and-scope-2026-08
+    paths:
+      - ".github/workflows/apply-gca-runtime-boundary-after-checkout-repair.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-gca-runtime-boundary-after-checkout-repair
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact feature branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: agent/status-and-scope-2026-08
+          fetch-depth: 0
+
+      - name: Verify preimages and apply bounded patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test "$(git hash-object apps/gca-service/api_server.py)" = "f626e5536bc73d2fee304325acde38bef06b185f"
+          test "$(git hash-object README.md)" = "daee8cc4390b809959f6e6d8a15ad900da1839a3"
+          python scripts/apply-gca-boundary-patch-once.py
+
+          git rm .github/workflows/apply-gca-runtime-boundary-once.yml
+          git rm .github/workflows/apply-gca-runtime-boundary-after-checkout-repair.yml
+          git rm scripts/apply-gca-boundary-patch-once.py
+
+          mapfile -t changed < <(git diff --name-only HEAD | sort)
+          expected=(
+            .github/workflows/apply-gca-runtime-boundary-after-checkout-repair.yml
+            .github/workflows/apply-gca-runtime-boundary-once.yml
+            README.md
+            apps/gca-service/api_server.py
+            scripts/apply-gca-boundary-patch-once.py
+          )
+          if [[ "${changed[*]}" != "${expected[*]}" ]]; then
+            printf 'unexpected changed paths:\n%s\n' "${changed[@]}"
+            exit 1
+          fi
+
+      - name: Verify offline authority contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            apps/gca-service/runtime_boundary.py \
+            apps/gca-service/api_server.py \
+            apps/gca-service/tests/test_runtime_boundary.py
+          python -m unittest discover -s apps/gca-service/tests -p 'test_runtime_boundary.py' -v
+
+      - name: Commit bounded patch and remove temporary writers
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add README.md apps/gca-service/api_server.py \
+            .github/workflows/apply-gca-runtime-boundary-once.yml \
+            .github/workflows/apply-gca-runtime-boundary-after-checkout-repair.yml \
+            scripts/apply-gca-boundary-patch-once.py
+          git diff --cached --name-only | sort > "$RUNNER_TEMP/staged.txt"
+          printf '%s\n' \
+            .github/workflows/apply-gca-runtime-boundary-after-checkout-repair.yml \
+            .github/workflows/apply-gca-runtime-boundary-once.yml \
+            README.md \
+            apps/gca-service/api_server.py \
+            scripts/apply-gca-boundary-patch-once.py \
+            > "$RUNNER_TEMP/expected.txt"
+          cmp "$RUNNER_TEMP/staged.txt" "$RUNNER_TEMP/expected.txt"
+          git commit -m 'security: default-deny experimental GCA authority'
+          git push origin HEAD:agent/status-and-scope-2026-08
