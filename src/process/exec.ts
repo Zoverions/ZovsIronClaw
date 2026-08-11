@@ -89,8 +89,16 @@ export type CommandOptions = {
   windowsVerbatimArguments?: boolean;
 };
 
-export async function runCommandWithTimeout(
-  argv: string[],
+/**
+ * Runs an executable with arguments kept in a separate data-flow channel.
+ *
+ * Prefer this API when arguments can contain untrusted content. Keeping the
+ * executable separate prevents an argument from being reinterpreted as argv[0]
+ * while the request moves through the application.
+ */
+export async function runCommandWithTimeoutArgs(
+  command: string,
+  args: string[],
   optionsOrTimeout: number | CommandOptions,
 ): Promise<SpawnResult> {
   const options: CommandOptions =
@@ -100,12 +108,12 @@ export async function runCommandWithTimeout(
   const hasInput = input !== undefined;
 
   const shouldSuppressNpmFund = (() => {
-    const cmd = path.basename(argv[0] ?? "");
+    const cmd = path.basename(command);
     if (cmd === "npm" || cmd === "npm.cmd" || cmd === "npm.exe") {
       return true;
     }
     if (cmd === "node" || cmd === "node.exe") {
-      const script = argv[1] ?? "";
+      const script = args[0] ?? "";
       return script.includes("npm-cli.js");
     }
     return false;
@@ -122,8 +130,8 @@ export async function runCommandWithTimeout(
   }
 
   const stdio = resolveCommandStdio({ hasInput, preferInherit: true });
-  const sanitizedCommand = sanitizeArg(resolveCommand(argv[0] ?? ""));
-  const sanitizedArgs = argv.slice(1).map(sanitizeArg);
+  const sanitizedCommand = sanitizeArg(resolveCommand(command));
+  const sanitizedArgs = args.map(sanitizeArg);
   const child = spawn(sanitizedCommand, sanitizedArgs, {
     stdio,
     cwd,
@@ -169,4 +177,11 @@ export async function runCommandWithTimeout(
       resolve({ stdout, stderr, code, signal, killed: child.killed });
     });
   });
+}
+
+export async function runCommandWithTimeout(
+  argv: string[],
+  optionsOrTimeout: number | CommandOptions,
+): Promise<SpawnResult> {
+  return await runCommandWithTimeoutArgs(argv[0] ?? "", argv.slice(1), optionsOrTimeout);
 }

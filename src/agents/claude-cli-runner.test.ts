@@ -29,7 +29,7 @@ async function waitForCalls(mockFn: { mock: { calls: unknown[][] } }, count: num
 }
 
 vi.mock("../process/exec.js", () => ({
-  runCommandWithTimeout: (...args: unknown[]) => runCommandWithTimeoutMock(...args),
+  runCommandWithTimeoutArgs: (...args: unknown[]) => runCommandWithTimeoutMock(...args),
 }));
 
 describe("runClaudeCliAgent", () => {
@@ -57,10 +57,11 @@ describe("runClaudeCliAgent", () => {
     });
 
     expect(runCommandWithTimeoutMock).toHaveBeenCalledTimes(1);
-    const argv = runCommandWithTimeoutMock.mock.calls[0]?.[0] as string[];
-    expect(argv).toContain("claude");
-    expect(argv).toContain("--session-id");
-    expect(argv).toContain("hi");
+    const command = runCommandWithTimeoutMock.mock.calls[0]?.[0];
+    const args = runCommandWithTimeoutMock.mock.calls[0]?.[1] as string[];
+    expect(command).toBe("claude");
+    expect(args).toContain("--session-id");
+    expect(args).toContain("hi");
   });
 
   it("uses --resume when a claude session id is provided", async () => {
@@ -84,10 +85,12 @@ describe("runClaudeCliAgent", () => {
     });
 
     expect(runCommandWithTimeoutMock).toHaveBeenCalledTimes(1);
-    const argv = runCommandWithTimeoutMock.mock.calls[0]?.[0] as string[];
-    expect(argv).toContain("--resume");
-    expect(argv).toContain("c9d7b831-1c31-4d22-80b9-1e50ca207d4b");
-    expect(argv).toContain("hi");
+    const command = runCommandWithTimeoutMock.mock.calls[0]?.[0];
+    const args = runCommandWithTimeoutMock.mock.calls[0]?.[1] as string[];
+    expect(command).toBe("claude");
+    expect(args).toContain("--resume");
+    expect(args).toContain("c9d7b831-1c31-4d22-80b9-1e50ca207d4b");
+    expect(args).toContain("hi");
   });
 
   it("serializes concurrent claude-cli runs", async () => {

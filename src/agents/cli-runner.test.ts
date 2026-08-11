@@ -7,7 +7,7 @@ const runCommandWithTimeoutMock = vi.fn();
 const runExecMock = vi.fn();
 
 vi.mock("../process/exec.js", () => ({
-  runCommandWithTimeout: (...args: unknown[]) => runCommandWithTimeoutMock(...args),
+  runCommandWithTimeoutArgs: (...args: unknown[]) => runCommandWithTimeoutMock(...args),
   runExec: (...args: unknown[]) => runExecMock(...args),
 }));
 
@@ -43,6 +43,11 @@ describe("runCliAgent resume cleanup", () => {
       runId: "run-1",
       cliSessionId: "thread-123",
     });
+
+    expect(runCommandWithTimeoutMock).toHaveBeenCalledTimes(1);
+    const [command, args] = runCommandWithTimeoutMock.mock.calls[0] ?? [];
+    expect(command).toBe("codex");
+    expect(args).toEqual(expect.arrayContaining(["hi"]));
 
     if (process.platform === "win32") {
       expect(runExecMock).not.toHaveBeenCalled();

@@ -6,7 +6,7 @@ import { resolveHeartbeatPrompt } from "../auto-reply/heartbeat.js";
 import { shouldLogVerbose } from "../globals.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
-import { runCommandWithTimeout } from "../process/exec.js";
+import { runCommandWithTimeoutArgs } from "../process/exec.js";
 import { resolveUserPath } from "../utils.js";
 import { resolveSessionAgentIds } from "./agent-scope.js";
 import { makeBootstrapWarn, resolveBootstrapContextForRun } from "./bootstrap-files.js";
@@ -218,7 +218,7 @@ export async function runCliAgent(params: {
         await cleanupResumeProcesses(backend, cliSessionIdToSend);
       }
 
-      const result = await runCommandWithTimeout([backend.command, ...args], {
+      const result = await runCommandWithTimeoutArgs(backend.command, args, {
         timeoutMs: params.timeoutMs,
         cwd: workspaceDir,
         env,
