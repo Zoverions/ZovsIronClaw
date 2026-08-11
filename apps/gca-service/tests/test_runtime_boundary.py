@@ -75,6 +75,19 @@ class SourceContractTests(unittest.TestCase):
             source,
         )
 
+    def test_service_tool_calls_are_default_off(self):
+        source = (SERVICE_DIR / "api_server.py").read_text()
+        self.assertIn(
+            'EXPERIMENTAL_TOOL_CALLS_ENABLED = env_flag("GCA_ENABLE_EXPERIMENTAL_TOOL_CALLS")',
+            source,
+        )
+        self.assertGreaterEqual(
+            source.count("if not EXPERIMENTAL_TOOL_CALLS_ENABLED:"),
+            2,
+        )
+        self.assertIn("tool_suggestion_suppressed", source)
+        self.assertIn("Suggested tool call", source)
+
 
 if __name__ == "__main__":
     unittest.main()
