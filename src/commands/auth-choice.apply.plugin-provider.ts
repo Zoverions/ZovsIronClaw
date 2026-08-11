@@ -11,7 +11,7 @@ import { upsertAuthProfile } from "../agents/auth-profiles.js";
 import { normalizeProviderId } from "../agents/model-selection.js";
 import { resolveDefaultAgentWorkspaceDir } from "../agents/workspace.js";
 import { enablePluginInConfig } from "../plugins/enable.js";
-import { resolvePluginProviders } from "../plugins/providers.js";
+import { resolvePluginProviders, buildProviderMap } from "../plugins/providers.js";
 import { isRemoteEnvironment } from "./oauth-env.js";
 import { createVpsAwareOAuthHandlers } from "./oauth-flow.js";
 import { applyAuthProfileConfig } from "./onboard-auth.js";
@@ -25,20 +25,6 @@ export type PluginProviderAuthChoiceOptions = {
   label: string;
 };
 
-function resolveProviderMatch(
-  providers: ProviderPlugin[],
-  rawProvider: string,
-): ProviderPlugin | null {
-  const normalized = normalizeProviderId(rawProvider);
-  return (
-    providers.find((provider) => normalizeProviderId(provider.id) === normalized) ??
-    providers.find(
-      (provider) =>
-        provider.aliases?.some((alias) => normalizeProviderId(alias) === normalized) ?? false,
-    ) ??
-    null
-  );
-}
 
 function pickAuthMethod(provider: ProviderPlugin, rawMethod?: string): ProviderAuthMethod | null {
   const raw = rawMethod?.trim();
@@ -124,7 +110,8 @@ export async function applyAuthChoicePluginProvider(
     resolveAgentWorkspaceDir(nextConfig, agentId) ?? resolveDefaultAgentWorkspaceDir();
 
   const providers = resolvePluginProviders({ config: nextConfig, workspaceDir });
-  const provider = resolveProviderMatch(providers, options.providerId);
+  const providerMap = buildProviderMap(providers);
+  const provider = providerMap.get(normalizeProviderId(options.providerId)) ?? null;
   if (!provider) {
     await params.prompter.note(
       `${options.label} auth plugin is not available. Enable it and re-run the wizard.`,
