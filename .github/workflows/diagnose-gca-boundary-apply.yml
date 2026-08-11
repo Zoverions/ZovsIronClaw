@@ -22,6 +22,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          echo 'diagnostic iteration: post-staging-fix'
           for workflow in \
             apply-gca-runtime-boundary-after-checkout-repair.yml \
             apply-gca-runtime-boundary-once.yml; do
