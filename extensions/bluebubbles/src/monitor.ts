@@ -2204,26 +2204,26 @@ async function processMessage(
               accountId: account.accountId,
             });
             const text = core.channel.text.convertMarkdownTables(payload.text ?? "", tableMode);
-            let first = true;
-            for (const mediaUrl of mediaList) {
-              const caption = first ? text : undefined;
-              first = false;
-              const result = await sendBlueBubblesMedia({
-                cfg: config,
-                to: outboundTarget,
-                mediaUrl,
-                caption: caption ?? undefined,
-                replyToId: replyToMessageGuid || null,
-                accountId: account.accountId,
-              });
-              const cachedBody = (caption ?? "").trim() || "<media:attachment>";
-              maybeEnqueueOutboundMessageId(result.messageId, cachedBody);
-              sentMessage = true;
-              statusSink?.({ lastOutboundAt: Date.now() });
-              if (info.kind === "block") {
-                restartTypingSoon();
-              }
-            }
+            await Promise.all(
+              mediaList.map(async (mediaUrl, index) => {
+                const caption = index === 0 ? text : undefined;
+                const result = await sendBlueBubblesMedia({
+                  cfg: config,
+                  to: outboundTarget,
+                  mediaUrl,
+                  caption: caption ?? undefined,
+                  replyToId: replyToMessageGuid || null,
+                  accountId: account.accountId,
+                });
+                const cachedBody = (caption ?? "").trim() || "<media:attachment>";
+                maybeEnqueueOutboundMessageId(result.messageId, cachedBody);
+                sentMessage = true;
+                statusSink?.({ lastOutboundAt: Date.now() });
+                if (info.kind === "block") {
+                  restartTypingSoon();
+                }
+              }),
+            );
             return;
           }
 
