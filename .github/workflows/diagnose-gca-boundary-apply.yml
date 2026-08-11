@@ -1,0 +1,33 @@
+name: Diagnose GCA Boundary Apply
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/diagnose-gca-boundary-apply.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Report one-shot workflow runs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for workflow in \
+            apply-gca-runtime-boundary-after-checkout-repair.yml \
+            apply-gca-runtime-boundary-once.yml; do
+            echo "=== ${workflow} ==="
+            gh api \
+              -H 'Accept: application/vnd.github+json' \
+              "/repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?branch=agent%2Fstatus-and-scope-2026-08&per_page=5" \
+              --jq '.workflow_runs[] | [.id, .status, (.conclusion // ""), .event, .head_sha, .created_at] | @tsv' || true
+          done
