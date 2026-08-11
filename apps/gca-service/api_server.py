@@ -7,6 +7,7 @@ Integrates Recursive Universe Framework for Causal Flow Analysis.
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request, Security, Depends, status
 from fastapi.security import APIKeyHeader
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any, Union
@@ -49,6 +50,7 @@ from gca_core.blockchain import Blockchain, Transaction
 from gca_core.security_guardrail import SecurityGuardrail
 from gca_core.dual_ethics import DualEthicalSystem
 from dreamer import DeepDreamer
+from runtime_boundary import api_key_status, configured_api_key, env_flag, side_effect_allowed
 
 # Configure logging
 logging.basicConfig(
@@ -64,6 +66,7 @@ resource_manager = ResourceManager(config_path=config_path)
 CFG = resource_manager.get_active_config()
 logger = logging.getLogger("GCA.API")
 logger.info(f"Loaded Profile: {CFG.get('active_profile', 'unknown').upper()}")
+EXPERIMENTAL_RUNTIME_ENABLED = env_flag("GCA_ENABLE_EXPERIMENTAL_RUNTIME")
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -105,7 +108,6 @@ causal_engine = CausalFlowEngine(glassbox)
 # Init Security Guardrail
 # Pass perception system for semantic scanning
 guardrail = SecurityGuardrail(perception_system=perception)
-guardrail = SecurityGuardrail()
 
 # Init Reflective Logger first so Pulse can use it
 reflective_logger = ReflectiveLogger(glassbox, bio_mem, moral_kernel)
@@ -123,7 +125,10 @@ def pulse_correction(msg):
     bio_mem.perceive(f"SYSTEM_INTERVENTION: {msg}")
 
 pulse.set_intervention_callback(pulse_correction)
-pulse.start()
+if EXPERIMENTAL_RUNTIME_ENABLED:
+    pulse.start()
+else:
+    logger.warning("Experimental Pulse background loop disabled by default. Set GCA_ENABLE_EXPERIMENTAL_RUNTIME=1 only for isolated evaluation.")
 
 # Initialize Security Manager
 # Use user home directory for persistent identity
@@ -144,46 +149,32 @@ swarm_network = SwarmNetwork(glassbox, reflective_logger, moral_kernel, profile=
 if security_manager.private_key:
     swarm_network.mesh.set_security_manager(security_manager)
 
-    # AUTO-REGISTRATION: Check if we are on chain, if not, broadcast REGISTER tx
-    my_id = swarm_network.mesh.agent_id
-    my_key = security_manager.get_public_key_b64()
-
-    if not blockchain.verify_identity(my_id, my_key):
-        logger.info(f"Identity {my_id} not on chain. Broadcasting REGISTER_DEVICE...")
-        reg_tx = Transaction(
-            id=f"reg-{int(time.time())}",
-            type="REGISTER_DEVICE",
-            sender=my_key,
-            recipient="REGISTRY",
-            payload={"agent_id": str(my_id)},
-            timestamp=time.time()
-        )
-        reg_tx.signature = security_manager.sign_message(reg_tx.calculate_hash())
-        blockchain.add_transaction(reg_tx)
-        # Note: We can't broadcast yet as mesh starts below, but add_transaction queues it.
-        # We need to ensure it gets mined or broadcasted.
-        # For now, let's just queue it. The mining loop (manual or auto) will pick it up.
-        # Wait, Mesh broadcasts PENDING txs? No, only broadcast_transaction call does.
-        # So we should broadcast it explicitly after start.
-
 swarm_network.mesh.set_blockchain(blockchain)
-swarm_network.mesh.start()
 
-# Late broadcast of registration if needed
-if security_manager.private_key:
-    # We re-check or just broadcast if we just created it.
-    # To keep it simple, we just broadcast the tx we created if any.
-    # Ideally we'd store the tx object.
-    # Let's just do a clean check again.
-    my_id = swarm_network.mesh.agent_id
-    my_key = security_manager.get_public_key_b64()
-    if not blockchain.verify_identity(my_id, my_key):
-         # Create again to broadcast (idempotent in logic if same ID, but unique TX ID avoids dupes)
-         # We already added to pending. We just need to find it and broadcast.
-         for tx in blockchain.pending_transactions:
-             if tx.type == "REGISTER_DEVICE" and tx.sender == my_key:
-                 swarm_network.mesh.broadcast_transaction(tx)
-                 break
+if EXPERIMENTAL_RUNTIME_ENABLED:
+    swarm_network.mesh.start()
+
+    # Experimental registration is network-visible and therefore opt-in.
+    if security_manager.private_key:
+        my_id = swarm_network.mesh.agent_id
+        my_key = security_manager.get_public_key_b64()
+        if not blockchain.verify_identity(my_id, my_key):
+            logger.info(f"Identity {my_id} not on local chain. Broadcasting experimental REGISTER_DEVICE...")
+            reg_tx = Transaction(
+                id=f"reg-{int(time.time())}",
+                type="REGISTER_DEVICE",
+                sender=my_key,
+                recipient="REGISTRY",
+                payload={"agent_id": str(my_id)},
+                timestamp=time.time(),
+            )
+            reg_tx.signature = security_manager.sign_message(reg_tx.calculate_hash())
+            blockchain.add_transaction(reg_tx)
+            swarm_network.mesh.broadcast_transaction(reg_tx)
+else:
+    logger.warning(
+        "Experimental mesh/governance runtime disabled by default; no mesh listener or registration broadcast was started."
+    )
 
 # Bind Introspection Loop: Logger -> Observer
 # We create a lambda to bridge the callback signature
@@ -317,34 +308,49 @@ class ChatCompletionRequest(BaseModel):
 api_key_header = APIKeyHeader(name="X-GCA-API-Key", auto_error=False)
 
 async def verify_api_key(api_key: str = Security(api_key_header)):
-    """
-    Verifies the API key against the environment variable or config.
-    Prioritizes GCA_API_KEY env var, then config.yaml.
-    """
-    # 1. Check Environment Variable
-    expected_key = os.environ.get("GCA_API_KEY")
-
-    # 2. Check Config
-    if not expected_key:
-        expected_key = CFG.get("security", {}).get("api_key")
-
-    # 3. If no key configured, we are in an insecure state.
-    # For security, we should block access.
-    if not expected_key:
-        logger.error("GCA_API_KEY not configured. Blocking authenticated endpoint.")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Server Security Configuration Error: API Key not set."
-        )
-
-    # Use constant-time comparison to prevent timing attacks
-    if api_key and secrets.compare_digest(api_key, expected_key):
+    """Require the configured GCA API key and fail closed when none exists."""
+    expected_key = configured_api_key(CFG)
+    decision = api_key_status(expected_key, api_key)
+    if decision == 200:
         return api_key
-
+    if decision == 503:
+        logger.error("GCA_API_KEY not configured. Blocking control endpoint.")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="GCA control API is disabled until GCA_API_KEY is configured.",
+        )
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="Could not validate credentials",
     )
+
+
+@app.middleware("http")
+async def enforce_gca_control_boundary(request: Request, call_next):
+    """Authenticate every /v1 control route and gate network/governance mutations."""
+    path = request.url.path
+    if path.startswith("/v1/"):
+        expected_key = configured_api_key(CFG)
+        decision = api_key_status(expected_key, request.headers.get("X-GCA-API-Key"))
+        if decision != 200:
+            detail = (
+                "GCA control API is disabled until GCA_API_KEY is configured."
+                if decision == 503
+                else "Could not validate credentials"
+            )
+            return JSONResponse(status_code=decision, content={"detail": detail})
+        if not side_effect_allowed(path, EXPERIMENTAL_RUNTIME_ENABLED):
+            return JSONResponse(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                content={
+                    "detail": (
+                        "Experimental mesh/governance mutation is disabled. "
+                        "Set GCA_ENABLE_EXPERIMENTAL_RUNTIME=1 only for isolated evaluation."
+                    )
+                },
+            )
+    return await call_next(request)
+
 
 # ============================================================================
 # Endpoints
@@ -354,6 +360,7 @@ async def verify_api_key(api_key: str = Security(api_key_header)):
 async def health():
     return {
         "status": "healthy",
+        "experimental_runtime_enabled": EXPERIMENTAL_RUNTIME_ENABLED,
         "profile": CFG.get("active_profile"),
         "model": glassbox.model_name,
         "device": glassbox.device,
@@ -873,8 +880,8 @@ async def reasoning_engine(req: ReasonRequest):
         # 6.6 HIVE MIND SYNC (Memory Teleportation)
         # Check if new significant memories were formed during this interaction
         new_memories = bio_mem.get_flagged_memories()
-        if new_memories:
-            # Fire and forget sync in background (using threadpool for simplicity)
+        if EXPERIMENTAL_RUNTIME_ENABLED and new_memories:
+            # Experimental mesh propagation is explicit opt-in.
             # In production, use BackgroundTasks
             await run_in_threadpool(swarm_network.broadcast_memory, new_memories)
 
