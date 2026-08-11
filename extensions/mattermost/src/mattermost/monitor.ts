@@ -802,15 +802,20 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
               });
             }
           } else {
-            let first = true;
-            for (const mediaUrl of mediaUrls) {
-              const caption = first ? text : "";
-              first = false;
-              await sendMessageMattermost(to, caption, {
-                accountId: account.accountId,
-                mediaUrl,
-                replyToId: threadRootId,
-              });
+            const BATCH_SIZE = 5;
+            for (let i = 0; i < mediaUrls.length; i += BATCH_SIZE) {
+              const batch = mediaUrls.slice(i, i + BATCH_SIZE);
+              await Promise.all(
+                batch.map((mediaUrl, indexInBatch) => {
+                  const isFirst = i === 0 && indexInBatch === 0;
+                  const caption = isFirst ? text : "";
+                  return sendMessageMattermost(to, caption, {
+                    accountId: account.accountId,
+                    mediaUrl,
+                    replyToId: threadRootId,
+                  });
+                }),
+              );
             }
           }
           runtime.log?.(`delivered reply to ${to}`);
