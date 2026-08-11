@@ -36,12 +36,14 @@ jobs:
 
           git rm .github/workflows/apply-gca-runtime-boundary-once.yml
           git rm .github/workflows/apply-gca-runtime-boundary-after-checkout-repair.yml
+          git rm .github/workflows/diagnose-gca-boundary-apply.yml
           git rm scripts/apply-gca-boundary-patch-once.py
 
           mapfile -t changed < <(git diff --name-only HEAD | sort)
           expected=(
             .github/workflows/apply-gca-runtime-boundary-after-checkout-repair.yml
             .github/workflows/apply-gca-runtime-boundary-once.yml
+            .github/workflows/diagnose-gca-boundary-apply.yml
             README.md
             apps/gca-service/api_server.py
             scripts/apply-gca-boundary-patch-once.py
@@ -67,14 +69,18 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add README.md apps/gca-service/api_server.py \
+          git add -A -- \
+            README.md \
+            apps/gca-service/api_server.py \
             .github/workflows/apply-gca-runtime-boundary-once.yml \
             .github/workflows/apply-gca-runtime-boundary-after-checkout-repair.yml \
+            .github/workflows/diagnose-gca-boundary-apply.yml \
             scripts/apply-gca-boundary-patch-once.py
           git diff --cached --name-only | sort > "$RUNNER_TEMP/staged.txt"
           printf '%s\n' \
             .github/workflows/apply-gca-runtime-boundary-after-checkout-repair.yml \
             .github/workflows/apply-gca-runtime-boundary-once.yml \
+            .github/workflows/diagnose-gca-boundary-apply.yml \
             README.md \
             apps/gca-service/api_server.py \
             scripts/apply-gca-boundary-patch-once.py \
