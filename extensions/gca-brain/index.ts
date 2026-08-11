@@ -1,6 +1,29 @@
 import { Service } from '../../src/gateway/service';
 import { ModelProvider, ChatContext, ChatResponse } from '../../src/types/models';
 
+function envEnabled(name: string): boolean {
+  return ['1', 'true', 'yes', 'on'].includes((process.env[name] || '').trim().toLowerCase());
+}
+
+function resolveGcaApiUrl(): string | null {
+  const raw = process.env.GCA_API_URL || 'http://127.0.0.1:8000';
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return null;
+  }
+
+  const loopbackHosts = new Set(['127.0.0.1', 'localhost', '[::1]']);
+  if (url.protocol === 'http:' && !loopbackHosts.has(url.hostname)) {
+    return null;
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return null;
+  }
+  return url.toString().replace(/\/$/, '');
+}
+
 export default class GCAProvider extends Service implements ModelProvider {
   name = 'gca-ironclaw';
   id = 'gca-local';
@@ -8,73 +31,99 @@ export default class GCAProvider extends Service implements ModelProvider {
   async generateResponse(context: ChatContext): Promise<ChatResponse> {
     const userMessage = context.lastMessage.text;
 
-    // 1. Get the Soul configuration from the Agent's file
-    // OpenClaw loads .agent/prompts/SOUL.md into memory
-    const soulConfig = context.agent.prompts?.find((p: any) => p.id === 'SOUL')?.text || "";
+    // GCA is an experimental advisory provider. It does not get an implicit
+    // execution capability merely because a heuristic policy layer approved text.
+    const apiKey = process.env.GCA_API_KEY;
+    if (!apiKey) {
+      return {
+        text: '[GCA DISABLED] GCA_API_KEY is not configured. The experimental GCA provider fails closed.',
+      };
+    }
+
+    const apiUrl = resolveGcaApiUrl();
+    if (!apiUrl) {
+      return {
+        text:
+          '[GCA DISABLED] GCA_API_URL is invalid or uses plaintext HTTP beyond loopback. ' +
+          'Use loopback HTTP for a local sidecar or HTTPS for non-local transport.',
+      };
+    }
+
+    // 1. Get the Soul configuration from the Agent's file.
+    // OpenClaw loads .agent/prompts/SOUL.md into memory.
+    const soulConfig = context.agent.prompts?.find((p: any) => p.id === 'SOUL')?.text || '';
 
     try {
-      // 2. Call the Python Brain
-      const apiUrl = process.env.GCA_API_URL || 'http://gca-service:8000';
+      // 2. Call the Python Brain through the authenticated boundary.
       const response = await fetch(`${apiUrl}/v1/reason`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-GCA-API-Key': apiKey,
+        },
         body: JSON.stringify({
           user_id: context.user.id,
           text: userMessage,
           soul_config: soulConfig,
-          input_modality: context.inputType || 'text'
-        })
+          input_modality: context.inputType || 'text',
+        }),
       });
 
       if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText}`);
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
 
-      // 3. Return to OpenClaw User
-      // Handle Moral Refusal
+      // 3. Return advisory output to OpenClaw.
       if (data.status === 'BLOCKED') {
-        return { text: `[SYSTEM HALT] ${data.content}` };
+        return { text: `[GCA ADVISORY] ${data.content}` };
       }
 
-      // Handle Approved Tool Call
       if (data.tool_call) {
-        // We inject the moral signature (token) into the arguments
-        // This effectively "stamps" the tool call with approval
-        // The tool runner policy will verify this stamp.
-        let args = data.tool_call.args;
+        const toolName = typeof data.tool_call.name === 'string' ? data.tool_call.name : 'unknown';
 
-        // Ensure args is an object
+        // Default-deny: a GCA moral/entropy/thermodynamic score or signature is not
+        // an execution authorization. Experimental tool-call forwarding must be
+        // explicitly enabled and remains subject to the normal OpenClaw tool policy.
+        if (!envEnabled('GCA_ENABLE_EXPERIMENTAL_TOOL_CALLS')) {
+          return {
+            text:
+              `[GCA ADVISORY] Suggested tool call '${toolName}' was not forwarded. ` +
+              'Set GCA_ENABLE_EXPERIMENTAL_TOOL_CALLS=1 only for isolated evaluation.',
+          };
+        }
+
+        let args = data.tool_call.args;
         if (typeof args === 'string') {
-            try { args = JSON.parse(args); } catch(e) {}
+          try {
+            args = JSON.parse(args);
+          } catch {
+            // Preserve malformed/raw arguments as inert data for the normal tool layer.
+          }
         }
         if (typeof args !== 'object' || args === null) {
-            args = { _raw_args: args };
-        }
-
-        // Inject Token
-        if (data.moral_signature) {
-            args._gca_token = data.moral_signature;
+          args = { _raw_args: args };
         }
 
         return {
-            text: data.content || "Executing approved action...",
-            toolCalls: [{
-                name: data.tool_call.name,
-                arguments: args
-            }]
-        } as any; // Cast to any to avoid type check issues in this environment
+          text: data.content || '[GCA ADVISORY] Experimental tool suggestion forwarded for normal policy handling.',
+          toolCalls: [
+            {
+              name: toolName,
+              arguments: args,
+            },
+          ],
+        } as any;
       }
 
       return {
         text: data.content,
-        usage: { inputTokens: 0, outputTokens: 0 }
+        usage: { inputTokens: 0, outputTokens: 0 },
       };
-
     } catch (err) {
       this.logger.error(`GCA Connection Error: ${err}`);
-      return { text: `[GCA CONNECTION ERROR] Is the Brain container running? ${err}` };
+      return { text: `[GCA CONNECTION ERROR] Experimental provider unavailable: ${err}` };
     }
   }
 }

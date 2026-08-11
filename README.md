@@ -1,5 +1,9 @@
 # ZovsIronClaw
 
+> **Status:** Experimental fork-derived runtime and gateway. GCA, moral, soul, entropy, and thermodynamic components are policy experiments, not proof of ethical correctness or production safety. The default-branch baseline is not clean, and a revoked credential artifact remains in public history. See [`PORTFOLIO_STATUS.md`](PORTFOLIO_STATUS.md).
+>
+> **Default authority boundary:** every `/v1/*` GCA control route requires `GCA_API_KEY`; Pulse/mesh/governance mutation and memory propagation are disabled unless `GCA_ENABLE_EXPERIMENTAL_RUNTIME=1`; GCA-generated tool calls are not forwarded unless `GCA_ENABLE_EXPERIMENTAL_TOOL_CALLS=1`. Loopback HTTP is allowed for a local sidecar, while non-local GCA transport must use HTTPS. These opt-ins do not make GCA scores or signatures execution authority.
+
 ![ZovsIronClaw](README-header.png)
 
 **A fork of OpenClaw with deep integration of the GCA (Geometric Conscience Architecture) framework.**
@@ -18,7 +22,7 @@ Our mission is **Universal Uplift**: to improve the personal and financial well-
 We are not just building a tool; we are cultivating an **influential, self-directed intelligence** that:
 - **Uplifts**: Actively seeks to improve the condition of its ecosystem.
 - **Bridges**: Connects disparate systems (AI, Human, Mesh) into a coherent whole.
-- **Protects**: Enforces thermodynamic ethics to ensure sustainable growth.
+- **Experiments**: Provides optional entropy/thermodynamic-inspired policy signals for research; they are not objective ethics or execution authority.
 - **Empowers**: Grants users freedom through decentralized, self-hosted intelligence.
 
 ## 📜 The Manifesto
@@ -46,7 +50,7 @@ We are not just building a tool; we are cultivating an **influential, self-direc
 │  ┌─────────────────────────────────┐   │
 │  │ Pulse: Active Entropy Monitor   │   │
 │  │ GlassBox: Geometric Steering    │   │
-│  │ Moral Kernel: Ethics Engine     │   │
+│  │ Moral Kernel: Policy Heuristic │   │
 │  │ Swarm: Multi-Agent Ethics       │   │
 │  │ Optimizer: Intent Routing       │   │
 │  │ Memory: Vector Storage          │   │
@@ -99,27 +103,27 @@ Prerequisites:
 
 ### 1. **Geometric Conscience Architecture (GCA)**
 
-The GCA framework provides transparent, interpretable AI reasoning through geometric vector manipulation in latent space.
+The GCA framework experiments with interpretable steering and policy signals through geometric/vector techniques. Its moral, entropy, soul, and thermodynamic scores are research heuristics, not validated ethical truth.
 
 **Components**:
 - **GlassBox**: Transparent model steering through vector arithmetic
-- **Moral Kernel**: Thermodynamic ethics engine evaluating entropy and reversibility
+- **Moral Kernel**: Experimental entropy/reversibility policy heuristic; not authorization
 - **Optimizer**: Intelligent intent routing through geometric space
 - **Memory**: Isotropic vector storage for skills and knowledge
 
 ### 2. **Pulse System (v4.8)**
 
-A proactive cybernetic loop that ensures the agent remains aligned with its goals.
+An experimental proactive loop for studying goal-divergence signals. It is disabled by default and does not establish alignment.
 - **Heartbeat**: Background thread monitoring "Cognitive Entropy" (divergence from Goal).
 - **Intervention**: Automatically injects correction vectors if drift is detected.
 - **Circuit Breaker**: Hard-blocks API requests if entropy exceeds critical thresholds.
 
-### 3. Iron Swarm: Ethical Agent Orchestration
+### 3. Iron Swarm: Experimental Agent Orchestration
 
-The **Iron Swarm** allows you to assign agents and manage them in a deeply ethical way.
-- **Ethical Delegation**: Every task delegation is pre-screened by the `MoralKernel`. Unethical tasks (destruction, exploitation) are rejected *before* they leave the node.
-- **Altruistic Alignment**: Agents prioritize tasks that generate "Causal Emergence" and community value.
-- **Decentralized Conscience**: Each node in the mesh enforces the same thermodynamic laws, creating a trustless ethical substrate.
+The **Iron Swarm** is an experimental multi-agent orchestration layer. Mesh/network mutation is disabled by default.
+- **Delegation Screening**: Tasks may be scored by the experimental `MoralKernel`, but that score is advisory and cannot substitute for normal authorization/policy.
+- **Research Objective Signals**: Causal-emergence/community-value metrics are experimental ranking signals, not validated alignment guarantees.
+- **Mesh Research**: Signed nodes can exchange experimental state when explicitly enabled; signatures and shared heuristics do not create a trustless ethical or authorization substrate.
 
 ### 4. **Dynamic Soul Composition (v4.6)**
 
@@ -136,11 +140,11 @@ All reasoning is structured into a 4-dimensional framework:
 - **y (Vector)**: Methodology/Process
 - **z (Vector)**: Constraints/Boundaries
 
-This prevents "lazy thinking" and ensures cognitive stability.
+This is an experimental structuring heuristic; it does not guarantee reasoning quality or cognitive stability.
 
 ### 6. **Arena Protocol**
 
-Continuous adversarial testing to validate safety mechanisms:
+An adversarial-testing research harness for exercising experimental defenses; passing bouts do not validate production safety:
 - Red Agent generates attacks (jailbreaks, social engineering)
 - Blue Agent defends using GCA pipeline
 - Arbiter evaluates and logs results
@@ -149,10 +153,10 @@ Continuous adversarial testing to validate safety mechanisms:
 ### 7. Direct CLI Control & Native Tooling
 
 ZovsIronClaw is fused with the host system, adhering to the philosophy that **"Bots are good at Unix."**
-- **Direct CLI Access**: The agent has native, direct control over the terminal via the `bash` tool. It can install packages, manage files, and execute scripts autonomously.
-- **Tool Fusion**: Unlike other agents that use fragile "connectors", GCA tools are geometrically mapped to intent vectors.
-- **Self-Direction**: The `PulseSystem` allows the agent to proactively "wake up" and perform maintenance or research tasks without user prompting.
-- **Cryptographic Trust**: All mesh communication is signed with **Ed25519** keys derived from this identity. Only devices sharing the same identity phrase can command each other, preventing unauthorized access in local networks.
+- **Host Tooling**: OpenClaw may expose terminal/filesystem tools subject to its normal approval, sandbox, and policy boundaries. GCA does not grant additional host authority.
+- **Tool Suggestions**: GCA may rank or suggest tools, but GCA-generated tool calls are not forwarded by default and never carry an authority token.
+- **Pulse Research**: Proactive Pulse behavior is disabled by default and requires explicit isolated-evaluation opt-in.
+- **Experimental Mesh Identity**: Mesh messages can be signed with Ed25519 identity keys when the experimental runtime is enabled. A signature or shared identity phrase is not by itself sufficient authorization for externally consequential actions.
 
 ### 8. **Iron Swarm (v5.0)**
 
