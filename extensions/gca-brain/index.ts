@@ -5,6 +5,25 @@ function envEnabled(name: string): boolean {
   return ['1', 'true', 'yes', 'on'].includes((process.env[name] || '').trim().toLowerCase());
 }
 
+function resolveGcaApiUrl(): string | null {
+  const raw = process.env.GCA_API_URL || 'http://127.0.0.1:8000';
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return null;
+  }
+
+  const loopbackHosts = new Set(['127.0.0.1', 'localhost', '[::1]']);
+  if (url.protocol === 'http:' && !loopbackHosts.has(url.hostname)) {
+    return null;
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return null;
+  }
+  return url.toString().replace(/\/$/, '');
+}
+
 export default class GCAProvider extends Service implements ModelProvider {
   name = 'gca-ironclaw';
   id = 'gca-local';
@@ -21,13 +40,21 @@ export default class GCAProvider extends Service implements ModelProvider {
       };
     }
 
+    const apiUrl = resolveGcaApiUrl();
+    if (!apiUrl) {
+      return {
+        text:
+          '[GCA DISABLED] GCA_API_URL is invalid or uses plaintext HTTP beyond loopback. ' +
+          'Use loopback HTTP for a local sidecar or HTTPS for non-local transport.',
+      };
+    }
+
     // 1. Get the Soul configuration from the Agent's file.
     // OpenClaw loads .agent/prompts/SOUL.md into memory.
     const soulConfig = context.agent.prompts?.find((p: any) => p.id === 'SOUL')?.text || '';
 
     try {
-      // 2. Call the Python Brain through the authenticated local/service boundary.
-      const apiUrl = process.env.GCA_API_URL || 'http://gca-service:8000';
+      // 2. Call the Python Brain through the authenticated boundary.
       const response = await fetch(`${apiUrl}/v1/reason`, {
         method: 'POST',
         headers: {
