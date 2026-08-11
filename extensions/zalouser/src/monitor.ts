@@ -398,21 +398,26 @@ async function deliverZalouserReply(params: {
       : [];
 
   if (mediaList.length > 0) {
-    let first = true;
-    for (const mediaUrl of mediaList) {
-      const caption = first ? text : undefined;
-      first = false;
-      try {
-        logVerbose(core, runtime, `Sending media to ${chatId}`);
-        await sendMessageZalouser(chatId, caption ?? "", {
-          profile,
-          mediaUrl,
-          isGroup,
-        });
-        statusSink?.({ lastOutboundAt: Date.now() });
-      } catch (err) {
-        runtime.error(`Zalouser media send failed: ${String(err)}`);
-      }
+    const chunkSize = 3;
+    for (let i = 0; i < mediaList.length; i += chunkSize) {
+      const chunk = mediaList.slice(i, i + chunkSize);
+      await Promise.all(
+        chunk.map(async (mediaUrl, chunkIndex) => {
+          const isFirst = i === 0 && chunkIndex === 0;
+          const caption = isFirst ? text : undefined;
+          try {
+            logVerbose(core, runtime, `Sending media to ${chatId}`);
+            await sendMessageZalouser(chatId, caption ?? "", {
+              profile,
+              mediaUrl,
+              isGroup,
+            });
+            statusSink?.({ lastOutboundAt: Date.now() });
+          } catch (err) {
+            runtime.error(`Zalouser media send failed: ${String(err)}`);
+          }
+        }),
+      );
     }
     return;
   }
