@@ -126,8 +126,10 @@ export async function monitorMatrixProvider(opts: MonitorMatrixOpts = {}): Promi
   let groupAllowFrom = cfg.channels?.matrix?.groupAllowFrom ?? [];
   let roomsConfig = cfg.channels?.matrix?.groups ?? cfg.channels?.matrix?.rooms;
 
-  allowFrom = await resolveUserAllowlist("matrix dm allowlist", allowFrom);
-  groupAllowFrom = await resolveUserAllowlist("matrix group allowlist", groupAllowFrom);
+  [allowFrom, groupAllowFrom] = await Promise.all([
+    resolveUserAllowlist("matrix dm allowlist", allowFrom),
+    resolveUserAllowlist("matrix group allowlist", groupAllowFrom),
+  ]);
 
   if (roomsConfig && Object.keys(roomsConfig).length > 0) {
     const mapping: string[] = [];
@@ -190,16 +192,20 @@ export async function monitorMatrixProvider(opts: MonitorMatrixOpts = {}): Promi
   }
   if (roomsConfig && Object.keys(roomsConfig).length > 0) {
     const nextRooms = { ...roomsConfig };
-    for (const [roomKey, roomConfig] of Object.entries(roomsConfig)) {
+
+    const entries = Object.entries(roomsConfig);
+    const resolvedPromises = entries.map(async ([roomKey, roomConfig]) => {
       const users = roomConfig?.users ?? [];
       if (users.length === 0) {
-        continue;
+        return;
       }
       const resolvedUsers = await resolveUserAllowlist(`matrix room users (${roomKey})`, users);
       if (resolvedUsers !== users) {
         nextRooms[roomKey] = { ...roomConfig, users: resolvedUsers };
       }
-    }
+    });
+
+    await Promise.all(resolvedPromises);
     roomsConfig = nextRooms;
   }
 
