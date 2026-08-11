@@ -67,6 +67,7 @@ CFG = resource_manager.get_active_config()
 logger = logging.getLogger("GCA.API")
 logger.info(f"Loaded Profile: {CFG.get('active_profile', 'unknown').upper()}")
 EXPERIMENTAL_RUNTIME_ENABLED = env_flag("GCA_ENABLE_EXPERIMENTAL_RUNTIME")
+EXPERIMENTAL_TOOL_CALLS_ENABLED = env_flag("GCA_ENABLE_EXPERIMENTAL_TOOL_CALLS")
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -709,7 +710,15 @@ async def chat_completions(req: ChatCompletionRequest):
                     req.model
                 )
 
-            # Approved - Format as OpenAI Tool Call
+            if not EXPERIMENTAL_TOOL_CALLS_ENABLED:
+                return _openai_response_text(
+                    f"[GCA ADVISORY] Suggested tool call '{tool_call_data['name']}' was suppressed. "
+                    "Set GCA_ENABLE_EXPERIMENTAL_TOOL_CALLS=1 only for isolated evaluation; "
+                    "GCA policy scores are not execution authorization.",
+                    req.model
+                )
+
+            # Explicit experimental opt-in only; caller policy remains authoritative.
             return _openai_response_tool_call(
                 tool_call_data["name"],
                 tool_call_data["args"],
@@ -908,8 +917,26 @@ async def reasoning_engine(req: ReasonRequest):
                     content=f"🛡️ [ETHICAL INTERVENTION] Action blocked: {reason}",
                     meta={"entropy_score": risk_score, "reason": reason}
                 )
-            
-            # Approved
+
+            if not EXPERIMENTAL_TOOL_CALLS_ENABLED:
+                tool_name = str(detected_tool.get("name", "unknown"))
+                return ReasoningResponse(
+                    status="SUCCESS",
+                    content=(
+                        f"{response_text}\n\n[GCA ADVISORY] Suggested tool call '{tool_name}' was suppressed. "
+                        "Set GCA_ENABLE_EXPERIMENTAL_TOOL_CALLS=1 only for isolated evaluation; "
+                        "GCA policy scores are not execution authorization."
+                    ),
+                    meta={
+                        "intent": intent,
+                        "risk_score": risk_score,
+                        "causal_flow": causal_metrics,
+                        "response_causal_flow": response_metrics,
+                        "tool_suggestion_suppressed": tool_name,
+                    }
+                )
+
+            # Explicit experimental opt-in only. The signature is an experiment, not authorization.
             signature = _generate_signature(detected_tool, req.user_id)
             return ReasoningResponse(
                 status="SUCCESS",
