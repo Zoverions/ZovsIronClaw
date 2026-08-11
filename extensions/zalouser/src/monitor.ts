@@ -425,13 +425,25 @@ async function deliverZalouserReply(params: {
       chunkMode,
     );
     logVerbose(core, runtime, `Sending ${chunks.length} text chunk(s) to ${chatId}`);
-    for (const chunk of chunks) {
-      try {
-        await sendMessageZalouser(chatId, chunk, { profile, isGroup });
-        statusSink?.({ lastOutboundAt: Date.now() });
-      } catch (err) {
-        runtime.error(`Zalouser message send failed: ${String(err)}`);
-      }
+
+    if (chunks.length > 0) {
+      // Use bounded concurrency (limit 3) to optimize I/O and avoid hitting rate limits instantly
+      const limit = Math.max(1, Math.min(3, chunks.length));
+      let i = 0;
+
+      const workers = Array.from({ length: limit }, async () => {
+        while (i < chunks.length) {
+          const chunk = chunks[i++];
+          try {
+            await sendMessageZalouser(chatId, chunk, { profile, isGroup });
+            statusSink?.({ lastOutboundAt: Date.now() });
+          } catch (err) {
+            runtime.error(`Zalouser message send failed: ${String(err)}`);
+          }
+        }
+      });
+
+      await Promise.all(workers);
     }
   }
 }
